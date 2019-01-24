@@ -169,18 +169,20 @@ namespace nsZip
 						{
 							breakCondition = iNow;
 						}
-
-						inputFile.Read(input[iNow], 0, input[iNow].Length);
-						task[iNow] = Task.Factory.StartNew(() => CompressBlock(ref input[iNow], ref output[iNow]));
+						else
+						{
+							inputFile.Read(input[iNow], 0, input[iNow].Length);
+							task[iNow] = Task.Factory.StartNew(() => CompressBlock(ref input[iNow], ref output[iNow]));
+						}
 					}
 				}
 
 				LastBlock:
-
 				var lastBlockInput = new byte[inputFile.Length - inputFile.Position];
 				byte[] lastBlockOutput = null;
 				inputFile.Read(lastBlockInput, 0, lastBlockInput.Length);
 				CompressBlock(ref lastBlockInput, ref lastBlockOutput);
+				outputFile.Write(lastBlockInput, 0, lastBlockInput.Length);
 				inputFile.Dispose();
 				outputFile.Dispose();
 			}
