@@ -140,11 +140,13 @@ namespace nsZip
 			var output = new byte[threadsUsedToCompress][];
 			var task = new Task[threadsUsedToCompress];
 			var dirDecrypted = new DirectoryInfo("decrypted");
-			var outputFile = File.Open("RESULT.nsz", FileMode.Create);
 
 			foreach (var file in dirDecrypted.GetFiles())
 			{
+				var outputFile = File.Open($"NSZ/{file.Name}.nsz", FileMode.Create);
 				var inputFile = File.Open(file.FullName, FileMode.Open);
+				var breakCondition = -1;
+
 				while (true)
 				{
 					for (var i = 0; i < threadsUsedToCompress; ++i)
@@ -156,9 +158,16 @@ namespace nsZip
 							outputFile.Write(output[iNow], 0, output[iNow].Length);
 						}
 
-						if (inputFile.Position + input[iNow].Length >= inputFile.Length)
+						if (breakCondition > -1)
 						{
-							goto LastBlock;
+							if (iNow == breakCondition)
+							{
+								goto LastBlock;
+							}
+						}
+						else if (inputFile.Position + input[iNow].Length >= inputFile.Length)
+						{
+							breakCondition = iNow;
 						}
 
 						inputFile.Read(input[iNow], 0, input[iNow].Length);
@@ -167,14 +176,14 @@ namespace nsZip
 				}
 
 				LastBlock:
+
 				var lastBlockInput = new byte[inputFile.Length - inputFile.Position];
-				var lastBlockOutput = new byte[inputFile.Length - inputFile.Position];
+				byte[] lastBlockOutput = null;
 				inputFile.Read(lastBlockInput, 0, lastBlockInput.Length);
 				CompressBlock(ref lastBlockInput, ref lastBlockOutput);
 				inputFile.Dispose();
+				outputFile.Dispose();
 			}
-
-			outputFile.Dispose();
 		}
 
 		private void CompressBlock(ref byte[] input, ref byte[] output)
