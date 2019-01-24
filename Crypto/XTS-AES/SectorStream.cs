@@ -117,7 +117,9 @@ namespace XTSSharp
 		private void ValidateSizeMultiple(long value)
 		{
 			if (value % SectorSize != 0)
+			{
 				throw new ArgumentException(string.Format("Value needs to be a multiple of {0}", SectorSize));
+			}
 		}
 
 		/// <summary>
@@ -126,7 +128,9 @@ namespace XTSSharp
 		protected void ValidateSize(long value)
 		{
 			if (value != SectorSize)
+			{
 				throw new ArgumentException(string.Format("Value needs to be {0}", SectorSize));
+			}
 		}
 
 		/// <summary>
@@ -135,7 +139,9 @@ namespace XTSSharp
 		protected void ValidateSize(int value)
 		{
 			if (value != SectorSize)
+			{
 				throw new ArgumentException(string.Format("Value needs to be {0}", SectorSize));
+			}
 		}
 
 		/// <summary>

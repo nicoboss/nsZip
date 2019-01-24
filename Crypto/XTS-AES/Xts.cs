@@ -48,17 +48,27 @@ namespace XTSSharp
 		protected Xts(Func<SymmetricAlgorithm> create, byte[] key1, byte[] key2, bool isLittleEndian)
 		{
 			if (create == null)
+			{
 				throw new ArgumentNullException("create");
+			}
+
 			if (key1 == null)
+			{
 				throw new ArgumentNullException("key1");
+			}
+
 			if (key2 == null)
+			{
 				throw new ArgumentNullException("key2");
+			}
 
 			_key1 = create();
 			_key2 = create();
 
 			if (key1.Length != key2.Length)
+			{
 				throw new ArgumentException("Key lengths don't match");
+			}
 
 			//set the key sizes
 			_key1.KeySize = key1.Length * 8;
@@ -110,11 +120,15 @@ namespace XTSSharp
 		protected static byte[] VerifyKey(int expectedSize, byte[] key)
 		{
 			if (key == null)
+			{
 				throw new ArgumentNullException("key");
+			}
 
 			if (key.Length * 8 != expectedSize)
+			{
 				throw new ArgumentException(string.Format("Expected key length of {0} bits, got {1}", expectedSize,
 					key.Length * 8));
+			}
 
 			return key;
 		}

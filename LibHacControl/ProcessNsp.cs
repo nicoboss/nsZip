@@ -61,7 +61,10 @@ namespace nsZip.LibHacControl
 
 			var builder = new Pfs0Builder();
 
-			foreach (var nca in title.Ncas) builder.AddFile(nca.Filename, nca.GetStorage().AsStream());
+			foreach (var nca in title.Ncas)
+			{
+				builder.AddFile(nca.Filename, nca.GetStorage().AsStream());
+			}
 
 			var ticket = new Ticket
 			{

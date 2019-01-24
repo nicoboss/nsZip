@@ -98,7 +98,9 @@ namespace XTSSharp
 			set
 			{
 				if (value < 0L)
+				{
 					throw new ArgumentOutOfRangeException("value");
+				}
 
 				var sectorPosition = value % _bufferSize;
 				var position = value - sectorPosition;
@@ -117,7 +119,9 @@ namespace XTSSharp
 
 				//write it
 				if (_bufferDirty)
+				{
 					WriteSector();
+				}
 
 				_s.Position = position;
 
@@ -144,7 +148,9 @@ namespace XTSSharp
 			base.Dispose(disposing);
 
 			if (_isStreamOwned)
+			{
 				_s.Dispose();
+			}
 		}
 
 		/// <summary>
@@ -153,7 +159,9 @@ namespace XTSSharp
 		public override void Flush()
 		{
 			if (_bufferDirty)
+			{
 				WriteSector();
+			}
 		}
 
 		/// <summary>
@@ -198,7 +206,10 @@ namespace XTSSharp
 		{
 			var remainder = value % _s.SectorSize;
 
-			if (remainder > 0) value = value - remainder + _bufferSize;
+			if (remainder > 0)
+			{
+				value = value - remainder + _bufferSize;
+			}
 
 			_s.SetLength(value);
 		}
@@ -225,10 +236,15 @@ namespace XTSSharp
 		{
 			var position = Position;
 
-			if (position + count > _s.Length) count = (int) (_s.Length - position);
+			if (position + count > _s.Length)
+			{
+				count = (int) (_s.Length - position);
+			}
 
 			if (!_bufferLoaded)
+			{
 				ReadSector();
+			}
 
 			var totalBytesRead = 0;
 			while (count > 0)
@@ -244,7 +260,9 @@ namespace XTSSharp
 				totalBytesRead += bytesToRead;
 
 				if (_bufferPos == _bufferSize)
+				{
 					ReadSector();
+				}
 			}
 
 			return totalBytesRead;
@@ -268,7 +286,9 @@ namespace XTSSharp
 			while (count > 0)
 			{
 				if (!_bufferLoaded)
+				{
 					ReadSector();
+				}
 
 				var bytesToWrite = Math.Min(count, _bufferSize - _bufferPos);
 
@@ -280,7 +300,9 @@ namespace XTSSharp
 				_bufferDirty = true;
 
 				if (_bufferPos == _bufferSize)
+				{
 					WriteSector();
+				}
 			}
 		}
 
@@ -289,15 +311,23 @@ namespace XTSSharp
 		/// </summary>
 		private void ReadSector()
 		{
-			if (_bufferLoaded && _bufferDirty) WriteSector();
+			if (_bufferLoaded && _bufferDirty)
+			{
+				WriteSector();
+			}
 
-			if (_s.Position == _s.Length) return;
+			if (_s.Position == _s.Length)
+			{
+				return;
+			}
 
 			var bytesRead = _s.Read(_buffer, 0, _buffer.Length);
 
 			//clean the end of it
 			if (bytesRead != _bufferSize)
+			{
 				Array.Clear(_buffer, bytesRead, _buffer.Length - bytesRead);
+			}
 
 			_bufferLoaded = true;
 			_bufferPos = 0;
@@ -309,7 +339,10 @@ namespace XTSSharp
 		/// </summary>
 		private void WriteSector()
 		{
-			if (_bufferLoaded) _s.Seek(-_bufferSize, SeekOrigin.Current);
+			if (_bufferLoaded)
+			{
+				_s.Seek(-_bufferSize, SeekOrigin.Current);
+			}
 
 			//write it
 			_s.Write(_buffer, 0, _bufferSize);

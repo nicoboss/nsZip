@@ -16,8 +16,12 @@ namespace nsZip.LibHacControl
 				nca.ParseNpdm();
 
 				for (var i = 0; i < 3; ++i)
+				{
 					if (nca.Sections[i] != null)
+					{
 						nca.VerifySection(i, logger);
+					}
+				}
 
 				nca.OpenDecryptedNca().WriteAllBytes(outFile, logger);
 
@@ -56,11 +60,15 @@ namespace nsZip.LibHacControl
 				LibHacControl.Print.PrintItem(sb, colLen, "Key Area Encryption Key:", nca.Header.KaekInd);
 				sb.AppendLine("Key Area (Encrypted):");
 				for (var i = 0; i < 4; i++)
+				{
 					LibHacControl.Print.PrintItem(sb, colLen, $"    Key {i} (Encrypted):", nca.Header.EncryptedKeys[i]);
+				}
 
 				sb.AppendLine("Key Area (Decrypted):");
 				for (var i = 0; i < 4; i++)
+				{
 					LibHacControl.Print.PrintItem(sb, colLen, $"    Key {i} (Decrypted):", nca.DecryptedKeys[i]);
+				}
 			}
 
 			PrintSections();
@@ -74,7 +82,10 @@ namespace nsZip.LibHacControl
 				for (var i = 0; i < 4; i++)
 				{
 					var sect = nca.Sections[i];
-					if (sect == null) continue;
+					if (sect == null)
+					{
+						continue;
+					}
 
 					var isExefs = nca.Header.ContentType == ContentType.Program && i == (int) ProgramPartitionType.Code;
 

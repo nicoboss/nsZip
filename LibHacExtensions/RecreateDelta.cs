@@ -14,11 +14,18 @@ namespace nsZip.LibHacExtensions
 			var writer = File.Open("fragment_recreated", FileMode.Create);
 
 			var Segments = new List<DeltaFragmentSegment>();
-			if (fragmentMeta.Length < 0x40) throw new InvalidDataException("Delta file is too small.");
+			if (fragmentMeta.Length < 0x40)
+			{
+				throw new InvalidDataException("Delta file is too small.");
+			}
 
 			var Header = new DeltaFragmentHeader(new StorageFile(fragmentMeta, OpenMode.Read));
 
-			if (Header.Magic != DeltaTools.Ndv0Magic) throw new InvalidDataException("NDV0 magic value is missing.");
+			if (Header.Magic != DeltaTools.Ndv0Magic)
+			{
+				throw new InvalidDataException("NDV0 magic value is missing.");
+			}
+
 			var fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
 
 			var reader = new FileReader(new StorageFile(fragmentMeta, OpenMode.Read));

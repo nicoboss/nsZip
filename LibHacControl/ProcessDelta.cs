@@ -21,7 +21,9 @@ namespace nsZip.LibHacControl
 					var fs = nca.OpenSectionFileSystem(0, IntegrityCheckLevel.ErrorOnInvalid);
 
 					if (!fs.FileExists(FragmentFileName))
+					{
 						throw new FileNotFoundException("Specified NCA does not contain a delta fragment");
+					}
 
 					deltaStorage = new FileStorage(fs.OpenFile(FragmentFileName, OpenMode.Read));
 				}
@@ -32,19 +34,23 @@ namespace nsZip.LibHacControl
 				var delta = new DeltaFragment(deltaStorage);
 
 				if (baseFile != null)
+				{
 					using (var baseFileStorage =
 						new StreamStorage(new FileStream(baseFile, FileMode.Open, FileAccess.Read), false))
 					{
 						delta.SetBaseStorage(baseFileStorage);
 
 						if (outFile != null)
+						{
 							using (var outFileStream =
 								new FileStream(outFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
 							{
 								var patchedStorage = delta.GetPatchedStorage();
 								patchedStorage.CopyToStream(outFileStream, patchedStorage.Length, logger);
 							}
+						}
 					}
+				}
 
 				logger.LogMessage(delta.Print());
 			}

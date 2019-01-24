@@ -27,34 +27,61 @@ namespace nsZip
 			var array = Array.CreateInstance(type, lengths[index]);
 
 			var elementType = type.GetElementType();
-			if (elementType == null) return array;
+			if (elementType == null)
+			{
+				return array;
+			}
 
 			for (var i = 0; i < lengths[index]; i++)
+			{
 				array.SetValue(InitializeJaggedArray(elementType, index + 1, lengths), i);
+			}
 
 			return array;
 		}
 
 		public static bool ArraysEqual<T>(T[] a1, T[] a2)
 		{
-			if (a1 == null || a2 == null) return false;
-			if (a1 == a2) return true;
-			if (a1.Length != a2.Length) return false;
+			if (a1 == null || a2 == null)
+			{
+				return false;
+			}
+
+			if (a1 == a2)
+			{
+				return true;
+			}
+
+			if (a1.Length != a2.Length)
+			{
+				return false;
+			}
 
 			for (var i = 0; i < a1.Length; i++)
+			{
 				if (!a1[i].Equals(a2[i]))
+				{
 					return false;
+				}
+			}
 
 			return true;
 		}
 
 		public static bool IsEmpty(this byte[] array)
 		{
-			if (array == null) throw new ArgumentNullException(nameof(array));
+			if (array == null)
+			{
+				throw new ArgumentNullException(nameof(array));
+			}
 
 			for (var i = 0; i < array.Length; ++i)
+			{
 				if (array[i] != 0)
+				{
 					return false;
+				}
+			}
 
 			return true;
 		}
@@ -65,7 +92,10 @@ namespace nsZip
 			var size = 0;
 
 			// Read until we hit the end of the stream (-1) or a zero
-			while (reader.BaseStream.ReadByte() - 1 > 0 && size < maxLength) size++;
+			while (reader.BaseStream.ReadByte() - 1 > 0 && size < maxLength)
+			{
+				size++;
+			}
 
 			reader.BaseStream.Position = start;
 			var text = reader.ReadAscii(size);
@@ -79,7 +109,10 @@ namespace nsZip
 			var size = 0;
 
 			// Read until we hit the end of the stream (-1) or a zero
-			while (reader.BaseStream.ReadByte() - 1 > 0 && size < maxLength) size++;
+			while (reader.BaseStream.ReadByte() - 1 > 0 && size < maxLength)
+			{
+				size++;
+			}
 
 			reader.BaseStream.Position = start;
 			var text = reader.ReadUtf8(size);
@@ -119,7 +152,9 @@ namespace nsZip
 			var fullFile = file.FullName;
 
 			if (!fullFile.StartsWith(fullDirectory))
+			{
 				throw new ArgumentException($"{nameof(path)} is not a subpath of {nameof(basePath)}");
+			}
 
 			return fullFile.Substring(fullDirectory.Length + 1);
 		}
@@ -198,7 +233,9 @@ namespace nsZip
 			for (var i = 0; i < input.Length; i++)
 			{
 				if (!TryHexToInt(input[lastchar - i], out var hexInt))
+				{
 					throw new FormatException($"Unrecognized hex char {input[lastchar - i]}");
+				}
 
 				result[lastcell - (i >> 1)] |= ByteLookup[i & 1, hexInt];
 			}
@@ -309,10 +346,14 @@ namespace nsZip
 		public static long GetNextMultiple(long value, int multiple)
 		{
 			if (multiple <= 0)
+			{
 				return value;
+			}
 
 			if (value % multiple == 0)
+			{
 				return value;
+			}
 
 			return value + multiple - value % multiple;
 		}
@@ -350,8 +391,12 @@ namespace nsZip
 		public static void IncrementByteArray(byte[] array)
 		{
 			for (var i = array.Length - 1; i >= 0; i--)
+			{
 				if (++array[i] != 0)
+				{
 					break;
+				}
+			}
 		}
 
 		public static void MemDump(this StringBuilder sb, string prefix, byte[] data)
@@ -375,7 +420,10 @@ namespace nsZip
 					sb.Append(' ', prefix.Length);
 				}
 
-				for (var i = 0; i < max; i++) sb.Append($"{data[offset++]:X2}");
+				for (var i = 0; i < max; i++)
+				{
+					sb.Append($"{data[offset++]:X2}");
+				}
 
 				sb.AppendLine();
 				remaining -= max;
@@ -444,10 +492,12 @@ namespace nsZip
 			using (Stream output = File.OpenWrite(Output))
 			{
 				foreach (var inputFile in Inputs)
+				{
 					using (Stream In = File.OpenRead(inputFile))
 					{
 						In.CopyTo(output);
 					}
+				}
 			}
 		}
 	}

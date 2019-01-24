@@ -91,9 +91,13 @@ namespace XTSSharp
 			int outputOffset, ulong sector)
 		{
 			if (_isLittleEndian) //Nintendo Switch uses Little Endian
+			{
 				FillArrayFromSectorLittleEndian(_tweak, sector);
+			}
 			else //Default is Big Endian
+			{
 				FillArrayFromSectorBigEndian(_tweak, sector);
+			}
 
 			int lim;
 
@@ -106,9 +110,13 @@ namespace XTSSharp
 
 			/* for i = 0 to m-2 do */
 			if (mo == 0)
+			{
 				lim = m;
+			}
 			else
+			{
 				lim = m - 1;
+			}
 
 			for (var i = 0; i < lim; i++)
 			{
@@ -136,7 +144,10 @@ namespace XTSSharp
 						outputBuffer[16 + i + outputOffset] = _pp[i];
 					}
 
-					for (; i < 16; i++) _cc[i] = _pp[i];
+					for (; i < 16; i++)
+					{
+						_cc[i] = _pp[i];
+					}
 
 					/* Cm-1 = Tweak encrypt PP */
 					TweakCrypt(_cc, 0, outputBuffer, outputOffset, _t);
@@ -154,7 +165,10 @@ namespace XTSSharp
 						outputBuffer[16 + i + outputOffset] = _cc[i];
 					}
 
-					for (; i < 16; i++) _pp[i] = _cc[i];
+					for (; i < 16; i++)
+					{
+						_pp[i] = _cc[i];
+					}
 
 					/* Cm-1 = Tweak encrypt PP */
 					TweakCrypt(_pp, 0, outputBuffer, outputOffset, _t);
@@ -203,12 +217,17 @@ namespace XTSSharp
 		/// </summary>
 		private void TweakCrypt(byte[] inputBuffer, int inputOffset, byte[] outputBuffer, int outputOffset, byte[] t)
 		{
-			for (var x = 0; x < 16; x++) outputBuffer[x + outputOffset] = (byte) (inputBuffer[x + inputOffset] ^ t[x]);
+			for (var x = 0; x < 16; x++)
+			{
+				outputBuffer[x + outputOffset] = (byte) (inputBuffer[x + inputOffset] ^ t[x]);
+			}
 
 			_key1.TransformBlock(outputBuffer, outputOffset, 16, outputBuffer, outputOffset);
 
 			for (var x = 0; x < 16; x++)
+			{
 				outputBuffer[x + outputOffset] = (byte) (outputBuffer[x + outputOffset] ^ t[x]);
+			}
 
 			MultiplyByX(t);
 		}
@@ -229,7 +248,9 @@ namespace XTSSharp
 			}
 
 			if (tt > 0)
+			{
 				i[0] ^= 0x87;
+			}
 		}
 	}
 }

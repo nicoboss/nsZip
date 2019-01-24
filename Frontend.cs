@@ -32,14 +32,19 @@ namespace nsZip
 		private void OutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
 		{
 			if (outLine.Data != null)
+			{
 				BeginInvoke((MethodInvoker) delegate { DebugOutput.AppendText($"{outLine.Data}\r\n"); });
+			}
 		}
 
 		private static Keyset OpenKeyset()
 		{
 			var homeKeyFile = Path.Combine("keys.txt");
 
-			if (!File.Exists(homeKeyFile)) throw new ArgumentException("Keys.txt not found!", "Keys.txt missing!");
+			if (!File.Exists(homeKeyFile))
+			{
+				throw new ArgumentException("Keys.txt not found!", "Keys.txt missing!");
+			}
 
 			return ExternalKeys.ReadKeyFile(homeKeyFile);
 		}
@@ -48,7 +53,10 @@ namespace nsZip
 		{
 			var entry = Header.SectionEntries[index];
 			var header = Header.FsHeaders[index];
-			if (entry.MediaStartOffset == 0) return null;
+			if (entry.MediaStartOffset == 0)
+			{
+				return null;
+			}
 
 			var sect = new NcaSection();
 
@@ -63,7 +71,11 @@ namespace nsZip
 
 		private void cleanFolder(string folderName)
 		{
-			if (Directory.Exists(folderName)) Directory.Delete(folderName, true);
+			if (Directory.Exists(folderName))
+			{
+				Directory.Delete(folderName, true);
+			}
+
 			Thread.Sleep(50); //Wait for folder deletion!
 			Directory.CreateDirectory(folderName);
 		}
@@ -92,8 +104,11 @@ namespace nsZip
 				TicketFile.Read(titleKey, 0, 0x10);
 				var ticketNameWithoutExtension = Path.GetFileNameWithoutExtension(file.Name);
 				if (!ticketNameWithoutExtension.TryToBytes(out var rightsId))
+				{
 					throw new InvalidDataException(
 						$"Invalid rights ID \"{ticketNameWithoutExtension}\" as ticket file name");
+				}
+
 				keyset.TitleKeys[rightsId] = titleKey;
 				TicketFile.Dispose();
 			}
@@ -120,6 +135,7 @@ namespace nsZip
 			{
 				threadsUsedToCompress = Math.Min(16, threadsUsedToCompress);
 			}
+
 			var input = Utils.CreateJaggedArray<byte[][]>(threadsUsedToCompress, 262144);
 			var output = new byte[threadsUsedToCompress][];
 			var task = new Task[threadsUsedToCompress];
@@ -130,6 +146,7 @@ namespace nsZip
 			{
 				var inputFile = File.Open(file.FullName, FileMode.Open);
 				while (true)
+				{
 					for (var i = 0; i < threadsUsedToCompress; ++i)
 					{
 						var iNow = i;
@@ -139,10 +156,15 @@ namespace nsZip
 							outputFile.Write(output[iNow], 0, output[iNow].Length);
 						}
 
-						if (inputFile.Position + input[iNow].Length >= inputFile.Length) goto LastBlock;
+						if (inputFile.Position + input[iNow].Length >= inputFile.Length)
+						{
+							goto LastBlock;
+						}
+
 						inputFile.Read(input[iNow], 0, input[iNow].Length);
 						task[iNow] = Task.Factory.StartNew(() => CompressBlock(ref input[iNow], ref output[iNow]));
 					}
+				}
 
 				LastBlock:
 				var lastBlockInput = new byte[inputFile.Length - inputFile.Position];
@@ -183,7 +205,10 @@ namespace nsZip
 
 			var Header = new NcaHeader(new BinaryReader(new MemoryStream(DecryptedHeader)), keyset);
 			var CryptoType = Math.Max(Header.CryptoType, Header.CryptoType2);
-			if (CryptoType > 0) CryptoType--;
+			if (CryptoType > 0)
+			{
+				CryptoType--;
+			}
 
 			var HasRightsId = !Header.RightsId.IsEmpty();
 
@@ -191,8 +216,11 @@ namespace nsZip
 			{
 				TB.AppendText("Key Area (Encrypted):\r\n");
 				if (keyset.KeyAreaKeys[CryptoType][Header.KaekInd].IsEmpty())
+				{
 					throw new ArgumentException($"key_area_key_{KakNames[Header.KaekInd]}_{CryptoType:x2}",
 						"Missing area key!");
+				}
+
 				TB.AppendText(
 					$"key_area_key_{KakNames[Header.KaekInd]}_{CryptoType:x2}: {Utils.BytesToString(keyset.KeyAreaKeys[CryptoType][Header.KaekInd])}\r\n");
 
@@ -224,9 +252,17 @@ namespace nsZip
 			for (var i = 0; i < 4; ++i)
 			{
 				var section = ParseSection(Header, i);
-				if (section == null) continue;
+				if (section == null)
+				{
+					continue;
+				}
+
 				SectionsByOffset.Add(section.Offset, i);
-				if (section.Offset < lowestOffset) lowestOffset = section.Offset;
+				if (section.Offset < lowestOffset)
+				{
+					lowestOffset = section.Offset;
+				}
+
 				Sections[i] = section;
 			}
 
@@ -260,7 +296,10 @@ namespace nsZip
 			foreach (var i in SectionsByOffset.OrderBy(i => i.Key).Select(item => item.Value))
 			{
 				var sect = Sections[i];
-				if (sect == null) continue;
+				if (sect == null)
+				{
+					continue;
+				}
 
 				var isExefs = Header.ContentType == ContentType.Program && i == (int) ProgramPartitionType.Code;
 				var PartitionType = isExefs ? "ExeFS" : sect.Type.ToString();
@@ -273,7 +312,10 @@ namespace nsZip
 				var initialCounter = new byte[0x10];
 
 
-				if (sect.Header.Ctr != null) Array.Copy(sect.Header.Ctr, initialCounter, 8);
+				if (sect.Header.Ctr != null)
+				{
+					Array.Copy(sect.Header.Ctr, initialCounter, 8);
+				}
 
 				TB.AppendText($"initialCounter: {Utils.BytesToString(initialCounter)}\r\n");
 
@@ -409,15 +451,23 @@ namespace nsZip
 		private void SelectNspFileToCompressButton_Click(object sender, EventArgs e)
 		{
 			if (SelectNspDialog.ShowDialog() == DialogResult.OK)
+			{
 				foreach (var filename in SelectNspDialog.FileNames)
+				{
 					TaskQueue.Items.Add(filename);
+				}
+			}
 		}
 
 		private void SelectNszFileToDecompressButton_Click(object sender, EventArgs e)
 		{
 			if (SelectNszDialog.ShowDialog() == DialogResult.OK)
+			{
 				foreach (var filename in SelectNszDialog.FileNames)
+				{
 					TaskQueue.Items.Add(filename);
+				}
+			}
 		}
 
 		private void listBox_KeyDown(object sender, PreviewKeyDownEventArgs e)
@@ -428,7 +478,10 @@ namespace nsZip
 			{
 				var selected = new int[listBox.SelectedIndices.Count];
 				listBox.SelectedIndices.CopyTo(selected, 0);
-				foreach (var selectedItemIndex in selected.Reverse()) listBox.Items.RemoveAt(selectedItemIndex);
+				foreach (var selectedItemIndex in selected.Reverse())
+				{
+					listBox.Items.RemoveAt(selectedItemIndex);
+				}
 			}
 		}
 	}

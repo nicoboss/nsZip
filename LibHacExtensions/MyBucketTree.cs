@@ -80,7 +80,10 @@ namespace nsZip.LibHacExtensions
 			OffsetEnd = reader.ReadInt64();
 			Entries = new T[EntryCount];
 
-			for (var i = 0; i < EntryCount; i++) Entries[i] = new T().Read(reader);
+			for (var i = 0; i < EntryCount; i++)
+			{
+				Entries[i] = new T().Read(reader);
+			}
 		}
 	}
 

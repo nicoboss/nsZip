@@ -18,10 +18,12 @@ namespace nsZip.Crypto
 			var blockSize = aes.BlockSize / 8;
 
 			if (salt.Length != blockSize)
+			{
 				throw new ArgumentException(
 					string.Format(
 						"Salt size must be same as block size (actual: {0}, expected: {1})",
 						salt.Length, blockSize));
+			}
 
 			var counter = (byte[]) salt.Clone();
 
@@ -41,10 +43,17 @@ namespace nsZip.Crypto
 						counter, 0, counter.Length, counterModeBlock, 0);
 
 					for (var i2 = counter.Length - 1; i2 >= 0; i2--)
+					{
 						if (++counter[i2] != 0)
+						{
 							break;
+						}
+					}
 
-					foreach (var b2 in counterModeBlock) xorMask.Enqueue(b2);
+					foreach (var b2 in counterModeBlock)
+					{
+						xorMask.Enqueue(b2);
+					}
 				}
 
 				var mask = xorMask.Dequeue();

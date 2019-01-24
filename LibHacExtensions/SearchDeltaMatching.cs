@@ -10,15 +10,24 @@ namespace nsZip.LibHacExtensions
 		{
 			var fragmentFile = File.Open($"{fragmentInputFilename}", FileMode.Open).AsStorage();
 
-			if (fragmentFile.Length < 0x40) throw new InvalidDataException("Delta file is too small.");
+			if (fragmentFile.Length < 0x40)
+			{
+				throw new InvalidDataException("Delta file is too small.");
+			}
 
 			var Header = new DeltaFragmentHeader(new StorageFile(fragmentFile, OpenMode.Read));
 
-			if (Header.Magic != DeltaTools.Ndv0Magic) throw new InvalidDataException("NDV0 magic value is missing.");
+			if (Header.Magic != DeltaTools.Ndv0Magic)
+			{
+				throw new InvalidDataException("NDV0 magic value is missing.");
+			}
+
 			var fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
 			if (fragmentFile.Length < fragmentSize)
+			{
 				throw new InvalidDataException(
 					$"Delta file is smaller than the header indicates. (0x{fragmentSize} bytes)");
+			}
 
 			var fragmentFileReader = new FileReader(new StorageFile(fragmentFile, OpenMode.Read));
 			fragmentFileReader.Position = Header.FragmentHeaderSize;
@@ -27,9 +36,16 @@ namespace nsZip.LibHacExtensions
 			foreach (var file in d.GetFiles("*.nca"))
 			{
 				var newBaseFile = File.Open(file.FullName, FileMode.Open);
-				if (newBaseFile.Length != Header.NewSize) continue;
+				if (newBaseFile.Length != Header.NewSize)
+				{
+					continue;
+				}
 
-				if (VerifyMatching(newBaseFile, fragmentFileReader, Header)) return file.Name;
+				if (VerifyMatching(newBaseFile, fragmentFileReader, Header))
+				{
+					return file.Name;
+				}
+
 				newBaseFile.Dispose();
 			}
 
@@ -50,7 +66,10 @@ namespace nsZip.LibHacExtensions
 			{
 				ReadSegmentHeader(fragmentFileReader, out var size, out var seek);
 
-				if (seek > 0) offset += seek;
+				if (seek > 0)
+				{
+					offset += seek;
+				}
 
 				if (size > 0)
 				{
@@ -62,8 +81,12 @@ namespace nsZip.LibHacExtensions
 						newBaseFile.Read(BaseFileBlock, 0, bs);
 						var readFragmentFile = fragmentFileReader.ReadBytes(bs);
 						for (var i = 0; i < bs; ++i)
+						{
 							if (BaseFileBlock[i] != readFragmentFile[i])
+							{
 								return false;
+							}
+						}
 					}
 
 					offset += size;

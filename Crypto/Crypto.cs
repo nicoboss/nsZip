@@ -36,7 +36,11 @@ namespace nsZip.Crypto
 		{
 			using (var aes = Aes.Create())
 			{
-				if (aes == null) throw new CryptographicException("Unable to create AES object");
+				if (aes == null)
+				{
+					throw new CryptographicException("Unable to create AES object");
+				}
+
 				aes.Key = key;
 				aes.Mode = CipherMode.ECB;
 				aes.Padding = PaddingMode.None;
@@ -55,7 +59,11 @@ namespace nsZip.Crypto
 		{
 			using (var aes = Aes.Create())
 			{
-				if (aes == null) throw new CryptographicException("Unable to create AES object");
+				if (aes == null)
+				{
+					throw new CryptographicException("Unable to create AES object");
+				}
+
 				aes.Key = key;
 				aes.IV = iv;
 				aes.Mode = CipherMode.CBC;
@@ -75,7 +83,11 @@ namespace nsZip.Crypto
 		{
 			using (var aes = Aes.Create())
 			{
-				if (aes == null) throw new CryptographicException("Unable to create AES object");
+				if (aes == null)
+				{
+					throw new CryptographicException("Unable to create AES object");
+				}
+
 				aes.Key = key;
 				aes.IV = iv;
 				aes.Mode = CipherMode.CBC;
@@ -99,9 +111,13 @@ namespace nsZip.Crypto
 			DecryptEcb(kek, src, srcKek, Aes128Size);
 
 			if (keySeed != null)
+			{
 				DecryptEcb(srcKek, keySeed, dest, Aes128Size);
+			}
 			else
+			{
 				Array.Copy(srcKek, dest, Aes128Size);
+			}
 		}
 
 		internal static BigInteger GetBigInteger(byte[] bytes)
@@ -146,7 +162,10 @@ namespace nsZip.Crypto
 			var testEnc = rsa.Encrypt(test, false);
 			var testDec = rsa.Decrypt(testEnc, false);
 
-			if (!Utils.ArraysEqual(test, testDec)) throw new InvalidDataException("Could not verify RSA key pair");
+			if (!Utils.ArraysEqual(test, testDec))
+			{
+				throw new InvalidDataException("Could not verify RSA key pair");
+			}
 		}
 
 		public static Validity Rsa2048Pkcs1Verify(byte[] data, byte[] signature, byte[] modulus)
@@ -196,7 +215,10 @@ namespace nsZip.Crypto
 			{
 				var k = d * e - 1;
 
-				if (!k.IsEven) throw new InvalidOperationException("d*e - 1 is odd");
+				if (!k.IsEven)
+				{
+					throw new InvalidOperationException("d*e - 1 is odd");
+				}
 
 				BigInteger two = 2;
 				var t = BigInteger.One;
@@ -211,7 +233,10 @@ namespace nsZip.Crypto
 
 				var rndBuf = n.ToByteArray();
 
-				if (rndBuf[rndBuf.Length - 1] == 0) rndBuf = new byte[rndBuf.Length - 1];
+				if (rndBuf[rndBuf.Length - 1] == 0)
+				{
+					rndBuf = new byte[rndBuf.Length - 1];
+				}
 
 				var nMinusOne = n - BigInteger.One;
 
@@ -246,13 +271,19 @@ namespace nsZip.Crypto
 							break;
 						}
 
-						if (x == nMinusOne) break;
+						if (x == nMinusOne)
+						{
+							break;
+						}
 
 						y = x;
 					}
 				}
 
-				if (!cracked) throw new InvalidOperationException("Prime factors not found");
+				if (!cracked)
+				{
+					throw new InvalidOperationException("Prime factors not found");
+				}
 
 				var p = BigInteger.GreatestCommonDivisor(y - BigInteger.One, n);
 				var q = n / p;
@@ -281,15 +312,22 @@ namespace nsZip.Crypto
 		{
 			var bytes = value.ToByteArray();
 
-			if (size == -1) size = bytes.Length;
+			if (size == -1)
+			{
+				size = bytes.Length;
+			}
 
 			if (bytes.Length > size + 1)
+			{
 				throw new InvalidOperationException(
 					$"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
+			}
 
 			if (bytes.Length == size + 1 && bytes[bytes.Length - 1] != 0)
+			{
 				throw new InvalidOperationException(
 					$"Cannot squeeze value {value} to {size} bytes from {bytes.Length}.");
+			}
 
 			Array.Resize(ref bytes, size);
 			Array.Reverse(bytes);
@@ -317,7 +355,10 @@ namespace nsZip.Crypto
 				newR = temp - quotient * newR;
 			}
 
-			if (t < 0) t = t + n;
+			if (t < 0)
+			{
+				t = t + n;
+			}
 
 			return t;
 		}
@@ -332,11 +373,15 @@ namespace nsZip.Crypto
 
 			var firstSubkey = Rol(l);
 			if ((l[0] & 0x80) == 0x80)
+			{
 				firstSubkey[15] ^= 0x87;
+			}
 
 			var secondSubkey = Rol(firstSubkey);
 			if ((firstSubkey[0] & 0x80) == 0x80)
+			{
 				secondSubkey[15] ^= 0x87;
+			}
 
 			if (length != 0 && length % 16 == 0)
 			{
@@ -344,7 +389,9 @@ namespace nsZip.Crypto
 				Array.Copy(src, srcIndex, paddedMessage, 0, length);
 
 				for (var j = 0; j < firstSubkey.Length; j++)
+				{
 					paddedMessage[length - 16 + j] ^= firstSubkey[j];
+				}
 			}
 			else
 			{
@@ -354,7 +401,9 @@ namespace nsZip.Crypto
 				Array.Copy(src, srcIndex, paddedMessage, 0, length);
 
 				for (var j = 0; j < secondSubkey.Length; j++)
+				{
 					paddedMessage[paddedLength - 16 + j] ^= secondSubkey[j];
+				}
 			}
 
 			var encResult = new byte[paddedMessage.Length];
