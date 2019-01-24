@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using LibHac;
 using nsZip.Crypto;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
+using Zstandard.Net;
 using ProgressBar = LibHac.ProgressBar;
 
 namespace nsZip
@@ -79,8 +82,8 @@ namespace nsZip
 			TaskQueue.Items.RemoveAt(0);
 			ProcessNsp.Process(nspFile, "extracted/", logger);
 
-			var d = new DirectoryInfo("extracted");
-			var TikFiles = d.GetFiles("*.tik");
+			var dirExtracted = new DirectoryInfo("extracted");
+			var TikFiles = dirExtracted.GetFiles("*.tik");
 			var titleKey = new byte[0x10];
 			foreach (var file in TikFiles)
 			{
@@ -97,8 +100,8 @@ namespace nsZip
 
 			DebugOutput.AppendText($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
 
-			var Files = d.GetFiles();
-			foreach (var file in Files)
+			foreach (var file in dirExtracted.GetFiles())
+			{
 				if (file.Name.EndsWith(".nca"))
 				{
 					ProcessNca.Process($"extracted/{file.Name}", $"decrypted/{file.Name}", keyset, logger);
@@ -108,8 +111,61 @@ namespace nsZip
 				{
 					File.Copy($"extracted/{file.Name}", $"encrypted/{file.Name}");
 				}
+			}
 
-			//Todo: Compress the decrypted nca files.
+
+			var threadsUsedToCompress = Environment.ProcessorCount;
+			// To not exceed the 2 GB RAM Limit
+			if (!Environment.Is64BitProcess)
+			{
+				threadsUsedToCompress = Math.Min(16, threadsUsedToCompress);
+			}
+			var input = Utils.CreateJaggedArray<byte[][]>(threadsUsedToCompress, 262144);
+			var output = new byte[threadsUsedToCompress][];
+			var task = new Task[threadsUsedToCompress];
+			var dirDecrypted = new DirectoryInfo("decrypted");
+			var outputFile = File.Open("RESULT.nsz", FileMode.Create);
+
+			foreach (var file in dirDecrypted.GetFiles())
+			{
+				var inputFile = File.Open(file.FullName, FileMode.Open);
+				while (true)
+					for (var i = 0; i < threadsUsedToCompress; ++i)
+					{
+						var iNow = i;
+						if (task[iNow] != null)
+						{
+							task[iNow].Wait();
+							outputFile.Write(output[iNow], 0, output[iNow].Length);
+						}
+
+						if (inputFile.Position + input[iNow].Length >= inputFile.Length) goto LastBlock;
+						inputFile.Read(input[iNow], 0, input[iNow].Length);
+						task[iNow] = Task.Factory.StartNew(() => CompressBlock(ref input[iNow], ref output[iNow]));
+					}
+
+				LastBlock:
+				var lastBlockInput = new byte[inputFile.Length - inputFile.Position];
+				var lastBlockOutput = new byte[inputFile.Length - inputFile.Position];
+				inputFile.Read(lastBlockInput, 0, lastBlockInput.Length);
+				CompressBlock(ref lastBlockInput, ref lastBlockOutput);
+				inputFile.Dispose();
+			}
+
+			outputFile.Dispose();
+		}
+
+		private void CompressBlock(ref byte[] input, ref byte[] output)
+		{
+			// compress
+			using (var memoryStream = new MemoryStream())
+			using (var compressionStream = new ZstandardStream(memoryStream, CompressionMode.Compress))
+			{
+				compressionStream.CompressionLevel = 19;
+				compressionStream.Write(input, 0, input.Length);
+				compressionStream.Close();
+				output = memoryStream.ToArray();
+			}
 		}
 
 		private void EncryptNCA(string ncaName, Keyset keyset, RichTextBox TB)
