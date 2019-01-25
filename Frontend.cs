@@ -156,6 +156,7 @@ namespace nsZip
 						{
 							task[iNow].Wait();
 							outputFile.Write(output[iNow], 0, output[iNow].Length);
+							task[iNow] = null;
 						}
 
 						if (breakCondition > -1)
@@ -182,7 +183,7 @@ namespace nsZip
 				byte[] lastBlockOutput = null;
 				inputFile.Read(lastBlockInput, 0, lastBlockInput.Length);
 				CompressBlock(ref lastBlockInput, ref lastBlockOutput);
-				outputFile.Write(lastBlockInput, 0, lastBlockInput.Length);
+				outputFile.Write(lastBlockInput, 0, lastBlockOutput.Length);
 				inputFile.Dispose();
 				outputFile.Dispose();
 			}
