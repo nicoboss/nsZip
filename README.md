@@ -24,7 +24,9 @@ Work in progress file format for compressed Nintendo Switch games and a tool to 
 |0x0D + x * y    |y - 1   |cbs = Compressed Block Size   |
 |0x0C + (x+1) * y|sum(cbs)|Concatenated compressed blocks|
 
-$y = \left\lceil\dfrac{\log_2(bs)}{8}\right\rceil+1$
+`y = ceil(log2(bs)/8) + 1`
+**Note:** The compressed block isn't allowed to be larger than the decompressed data - please use compression algorithm 0x00 (None) in that case or cbs might overflow!
+
 
 ## Type 2:
 | Offset         |Size    |Description                   |
@@ -35,11 +37,11 @@ $y = \left\lceil\dfrac{\log_2(bs)}{8}\right\rceil+1$
 |0x09 + x * y + s|s       |cbs = Compressed Block Size   |
 |0x0C + (x+1) * y|sum(cbs)|Concatenated compressed blocks|
 
-$y = 2 * s + 1$
+`y = 2 * s + 1`
 
 ## Compression algorithms:
 |Value|Algorithm|Recommended Parameters       |
 |-----|---------|-----------------------------|
-|0x00 |None     |bs = Decompressed Block Size |
+|0x00 |None     |None - Just use memcpy       |
 |0x01 |Zstandard|CompressionLevel = 19        |
 |0x02 |lzma     |Dic=1536, WordS=273, cLevel=9|
