@@ -60,6 +60,7 @@
 			this.DebugOutput.Size = new System.Drawing.Size(1220, 545);
 			this.DebugOutput.TabIndex = 28;
 			this.DebugOutput.Text = "";
+			this.DebugOutput.TextChanged += new System.EventHandler(this.DebugOutput_TextChanged);
 			// 
 			// SelectNspDialog
 			// 
