@@ -12,13 +12,20 @@ using nsZip.Crypto;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
 using Zstandard.Net;
+using System.Security.Cryptography;
 using ProgressBar = LibHac.ProgressBar;
 
 namespace nsZip
 {
 	public partial class Frontend : Form
 	{
+		private static readonly RNGCryptoServiceProvider secureRNG = new RNGCryptoServiceProvider();
 		internal static readonly string[] KakNames = {"application", "ocean", "system"};
+		private int amountOfBlocks;
+		private int currentBlockID;
+
+		private byte[] nsZipHeader;
+		private int sizeOfSize;
 
 		public Frontend()
 		{
@@ -146,23 +153,27 @@ namespace nsZip
 			{
 				var outputFile = File.Open($"NSZ/{file.Name}.nsz", FileMode.Create);
 				var inputFile = File.Open(file.FullName, FileMode.Open);
-				amountOfBlocks = (int)Math.Ceiling((decimal)inputFile.Length / bs);
-				sizeOfSize = (int)Math.Ceiling(Math.Log(bs, 2) / 8);
+				amountOfBlocks = (int) Math.Ceiling((decimal) inputFile.Length / bs);
+				sizeOfSize = (int) Math.Ceiling(Math.Log(bs, 2) / 8);
 				var perBlockHeaderSize = sizeOfSize + 1;
-				var headerSize = 0x0C + perBlockHeaderSize * amountOfBlocks;
+				var headerSize = 0x11 + perBlockHeaderSize * amountOfBlocks;
 				outputFile.Position = headerSize;
 				var breakCondition = -1;
 				var nsZipMagic = new byte[] {0x6e, 0x73, 0x5a, 0x69, 0x70};
+				var nsZipMagicRandomKey = new byte[5];
+				secureRNG.GetBytes(nsZipMagicRandomKey);
+				Util.XorArrays(nsZipMagic, nsZipMagicRandomKey);
 				currentBlockID = 0;
 				nsZipHeader = new byte[headerSize];
-				Array.Copy(nsZipMagic, nsZipHeader, 0x05);
-				nsZipHeader[0x5] = 0x00; //Version
-				nsZipHeader[0x6] = 0x01; //Type
-				nsZipHeader[0x7] = (byte)(bs >> 32);
-				nsZipHeader[0x8] = (byte)(bs >> 24);
-				nsZipHeader[0x9] = (byte)(bs >> 16);
-				nsZipHeader[0xA] = (byte)(bs >> 8);
-				nsZipHeader[0xB] = (byte)(bs);
+				Array.Copy(nsZipMagic, 0x00, nsZipHeader, 0x00, 0x05);
+				Array.Copy(nsZipMagicRandomKey, 0x00, nsZipHeader, 0x05, 0x05);
+				nsZipHeader[0x0A] = 0x00; //Version
+				nsZipHeader[0x0B] = 0x01; //Type
+				nsZipHeader[0x0C] = (byte) (bs >> 32);
+				nsZipHeader[0x0D] = (byte) (bs >> 24);
+				nsZipHeader[0x0E] = (byte) (bs >> 16);
+				nsZipHeader[0x0F] = (byte) (bs >> 8);
+				nsZipHeader[0x10] = (byte) bs;
 
 				DebugOutput.AppendText(Utils.BytesToString(nsZipHeader) + "\n\r");
 
@@ -210,37 +221,35 @@ namespace nsZip
 			}
 		}
 
-		private byte[] nsZipHeader;
-		private int sizeOfSize;
-		private int amountOfBlocks;
-		private int currentBlockID;
 		private void WriteBlock(FileStream outputFile, byte[] input, byte[] output)
 		{
-			var offset = currentBlockID * (sizeOfSize+1);
+			var offset = currentBlockID * (sizeOfSize + 1);
 			var inputLen = input.Length;
 			var outputLen = output.Length;
 			if (outputLen >= inputLen)
 			{
-				nsZipHeader[0x0C + offset] = 0x00;
+				nsZipHeader[0x11 + offset] = 0x00;
 				for (var j = 0; j < sizeOfSize; ++j)
 				{
-					nsZipHeader[0x0D + offset + j] = (byte)(inputLen >> (sizeOfSize - j - 1) * 8);
+					nsZipHeader[0x12 + offset + j] = (byte) (inputLen >> ((sizeOfSize - j - 1) * 8));
 				}
+
 				outputFile.Write(input, 0, inputLen);
 			}
 			else
 			{
-				nsZipHeader[0x0C + offset] = 0x01;
+				nsZipHeader[0x11 + offset] = 0x01;
 				for (var j = 0; j < sizeOfSize; ++j)
 				{
 					DebugOutput.ScrollToCaret();
 					DebugOutput.Refresh();
-					nsZipHeader[0x0D + offset + j] = (byte)(outputLen >> (sizeOfSize - j - 1) * 8);
+					nsZipHeader[0x12 + offset + j] = (byte) (outputLen >> ((sizeOfSize - j - 1) * 8));
 				}
+
 				outputFile.Write(output, 0, outputLen);
 			}
 
-			DebugOutput.AppendText($"{currentBlockID+1}/{amountOfBlocks} Blocks written\r\n");
+			DebugOutput.AppendText($"{currentBlockID + 1}/{amountOfBlocks} Blocks written\r\n");
 			++currentBlockID;
 		}
 

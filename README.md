@@ -4,38 +4,40 @@ Work in progress file format for compressed Nintendo Switch games and a tool to 
 
 # NSZ file format:
 ## Header:
-| Offset|Size |Description           |
-|-------|-----|----------------------|
-|0x00   |0x05 |Magic ("nsZip")       |
-|0x05   |0x01 |Version (for now 0x00)|
-|0x06   |0x01 |nsZip Type            |
+| Offset|Size |Description                    |
+|-------|-----|-------------------------------|
+|0x00   |0x05 |XOR-Encrypted magic ("nsZip")  |
+|0x05   |0x05 |Random key to decrypt the magic|
+|0x0A   |0x01 |Version (for now 0x00)         |
+|0x0B   |0x01 |nsZip Type                     |
 
 ## Type 0:
 | Offset|Size            |Description          |
 |-------|----------------|---------------------|
-|0x07   |0x01            |Compression algorithm|
-|0x08   |File size - 0x08|Full compressed file |
+|0x0C   |0x01            |Compression algorithm|
+|0x0D   |File size - 0x0D|Full compressed file |
 
 ## Type 1:
 | Offset         |Size    |Description                   |
 |----------------|--------|------------------------------|
-|0x07            |0x05    |bs = Decompressed Block Size  |
-|0x0C + x * y    |0x01    |Compression algorithm         |
-|0x0D + x * y    |y - 1   |cbs = Compressed Block Size   |
-|0x0C + (x+1) * y|sum(cbs)|Concatenated compressed blocks|
+|0x0C            |0x05    |bs = Decompressed Block Size  |
+|0x11 + x * y    |0x01    |Compression algorithm         |
+|0x12 + x * y    |y - 1   |cbs = Compressed Block Size   |
+|0x11 + (x+1) * y|sum(cbs)|Concatenated compressed blocks|
 
 `y = ceil(log2(bs)/8) + 1`
+
 **Note:** The compressed block isn't allowed to be larger than the decompressed data - please use compression algorithm 0x00 (None) in that case or cbs might overflow!
 
 
 ## Type 2:
 | Offset         |Size    |Description                   |
 |----------------|--------|------------------------------|
-|0x07            |0x01    |s = Size of size parameters   |
-|0x08 + x * y    |0x01    |Compression algorithm         |
-|0x09 + x * y    |s       |bs = Decompressed Block Size  |
-|0x09 + x * y + s|s       |cbs = Compressed Block Size   |
-|0x0C + (x+1) * y|sum(cbs)|Concatenated compressed blocks|
+|0x0C            |0x01    |s = Size of size parameters   |
+|0x0D + x * y    |0x01    |Compression algorithm         |
+|0x0E + x * y    |s       |bs = Decompressed Block Size  |
+|0x0E + x * y + s|s       |cbs = Compressed Block Size   |
+|0x0E + (x+1) * y|sum(cbs)|Concatenated compressed blocks|
 
 `y = 2 * s + 1`
 
