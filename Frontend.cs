@@ -136,7 +136,8 @@ namespace nsZip
 				threadsUsedToCompress = Math.Min(16, threadsUsedToCompress);
 			}
 
-			var input = Utils.CreateJaggedArray<byte[][]>(threadsUsedToCompress, 262144);
+			var bs = 262144;
+			var input = Utils.CreateJaggedArray<byte[][]>(threadsUsedToCompress, bs);
 			var output = new byte[threadsUsedToCompress][];
 			var task = new Task[threadsUsedToCompress];
 			var dirDecrypted = new DirectoryInfo("decrypted");
@@ -145,7 +146,25 @@ namespace nsZip
 			{
 				var outputFile = File.Open($"NSZ/{file.Name}.nsz", FileMode.Create);
 				var inputFile = File.Open(file.FullName, FileMode.Open);
+				amountOfBlocks = (int)Math.Ceiling((decimal)inputFile.Length / bs);
+				sizeOfSize = (int)Math.Ceiling(Math.Log(bs, 2) / 8);
+				var perBlockHeaderSize = sizeOfSize + 1;
+				var headerSize = 0x0C + perBlockHeaderSize * amountOfBlocks;
+				outputFile.Position = headerSize;
 				var breakCondition = -1;
+				var nsZipMagic = new byte[] {0x6e, 0x73, 0x5a, 0x69, 0x70};
+				currentBlockID = 0;
+				nsZipHeader = new byte[headerSize];
+				Array.Copy(nsZipMagic, nsZipHeader, 0x05);
+				nsZipHeader[0x5] = 0x00; //Version
+				nsZipHeader[0x6] = 0x01; //Type
+				nsZipHeader[0x7] = (byte)(bs >> 32);
+				nsZipHeader[0x8] = (byte)(bs >> 24);
+				nsZipHeader[0x9] = (byte)(bs >> 16);
+				nsZipHeader[0xA] = (byte)(bs >> 8);
+				nsZipHeader[0xB] = (byte)(bs);
+
+				DebugOutput.AppendText(Utils.BytesToString(nsZipHeader) + "\n\r");
 
 				while (true)
 				{
@@ -155,7 +174,7 @@ namespace nsZip
 						if (task[iNow] != null)
 						{
 							task[iNow].Wait();
-							outputFile.Write(output[iNow], 0, output[iNow].Length);
+							WriteBlock(outputFile, input[iNow], output[iNow]);
 							task[iNow] = null;
 						}
 
@@ -183,11 +202,48 @@ namespace nsZip
 				byte[] lastBlockOutput = null;
 				inputFile.Read(lastBlockInput, 0, lastBlockInput.Length);
 				CompressBlock(ref lastBlockInput, ref lastBlockOutput);
-				outputFile.Write(lastBlockInput, 0, lastBlockOutput.Length);
+				WriteBlock(outputFile, lastBlockInput, lastBlockOutput);
+				outputFile.Position = 0;
+				outputFile.Write(nsZipHeader, 0, headerSize);
 				inputFile.Dispose();
 				outputFile.Dispose();
 			}
 		}
+
+		private byte[] nsZipHeader;
+		private int sizeOfSize;
+		private int amountOfBlocks;
+		private int currentBlockID;
+		private void WriteBlock(FileStream outputFile, byte[] input, byte[] output)
+		{
+			var offset = currentBlockID * (sizeOfSize+1);
+			var inputLen = input.Length;
+			var outputLen = output.Length;
+			if (outputLen >= inputLen)
+			{
+				nsZipHeader[0x0C + offset] = 0x00;
+				for (var j = 0; j < sizeOfSize; ++j)
+				{
+					nsZipHeader[0x0D + offset + j] = (byte)(inputLen >> (sizeOfSize - j - 1) * 8);
+				}
+				outputFile.Write(input, 0, inputLen);
+			}
+			else
+			{
+				nsZipHeader[0x0C + offset] = 0x01;
+				for (var j = 0; j < sizeOfSize; ++j)
+				{
+					DebugOutput.ScrollToCaret();
+					DebugOutput.Refresh();
+					nsZipHeader[0x0D + offset + j] = (byte)(outputLen >> (sizeOfSize - j - 1) * 8);
+				}
+				outputFile.Write(output, 0, outputLen);
+			}
+
+			DebugOutput.AppendText($"{currentBlockID+1}/{amountOfBlocks} Blocks written\r\n");
+			++currentBlockID;
+		}
+
 
 		private void CompressBlock(ref byte[] input, ref byte[] output)
 		{
