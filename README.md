@@ -12,18 +12,21 @@ Work in progress file format for compressed Nintendo Switch games and a tool to 
 |0x0B   |0x01 |nsZip Type                     |
 
 ## Type 0:
-| Offset|Size            |Description          |
-|-------|----------------|---------------------|
-|0x0C   |0x01            |Compression algorithm|
-|0x0D   |File size - 0x0D|Full compressed file |
+| Offset         |Size             |Description               |
+|----------------|-----------------|--------------------------|
+|0x0C            |0x01             |Compression algorithm     |
+|0x0D            |File size - 0x1D |Full compressed file      |
+|File size - 0x10|0x10 (first half)|SHA256 of everything above|
 
 ## Type 1:
-| Offset         |Size    |Description                   |
-|----------------|--------|------------------------------|
-|0x0C            |0x05    |bs = Decompressed Block Size  |
-|0x11 + x * y    |0x01    |Compression algorithm         |
-|0x12 + x * y    |y - 1   |cbs = Compressed Block Size   |
-|0x11 + (x+1) * y|sum(cbs)|Concatenated compressed blocks|
+| Offset         |Size             |Description                        |
+|----------------|-----------------|-----------------------------------|
+|0x0C            |0x05             |bs = Decompressed Block Size       |
+|0x11            |0x04             |Amount of Blocks                   |
+|0x15 + x * y    |0x01             |Compression algorithm              |
+|0x16 + x * y    |y - 1            |cbs = Compressed Block Size        |
+|0x15 + (x+1) * y|sum(cbs)         |Concatenated compressed blocks     |
+|File size - 0x10|0x10 (first half)|SHA256 header XOR SHA256 compressed|
 
 `y = ceil(log2(bs)/8) + 1`
 
@@ -31,13 +34,15 @@ Work in progress file format for compressed Nintendo Switch games and a tool to 
 
 
 ## Type 2:
-| Offset         |Size    |Description                   |
-|----------------|--------|------------------------------|
-|0x0C            |0x01    |s = Size of size parameters   |
-|0x0D + x * y    |0x01    |Compression algorithm         |
-|0x0E + x * y    |s       |bs = Decompressed Block Size  |
-|0x0E + x * y + s|s       |cbs = Compressed Block Size   |
-|0x0E + (x+1) * y|sum(cbs)|Concatenated compressed blocks|
+| Offset         |Size             |Description                        |
+|----------------|-----------------|-----------------------------------|
+|0x0C            |0x04             |Amount of Blocks                   |
+|0x10            |0x01             |s = Size of size parameters        |
+|0x11 + x * y    |0x01             |Compression algorithm              |
+|0x12 + x * y    |s                |bs = Decompressed Block Size       |
+|0x12 + x * y + s|s                |cbs = Compressed Block Size        |
+|0x12 + (x+1) * y|sum(cbs)         |Concatenated compressed blocks     |
+|File size - 0x10|0x10 (first half)|SHA256 header XOR SHA256 compressed|
 
 `y = 2 * s + 1`
 
