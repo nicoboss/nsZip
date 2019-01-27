@@ -19,6 +19,8 @@ namespace nsZip
 		private readonly string folderPath;
 		private byte[] nsZipHeader;
 		private int sizeOfSize;
+		private SHA256 sha256Compressed;
+		private SHA256 sha256Header;
 
 		private CompressFolder(RichTextBox debugOutputArg, string folderPathArg, int bsArg = 262144)
 		{
@@ -54,7 +56,7 @@ namespace nsZip
 				amountOfBlocks = (int) Math.Ceiling((decimal) inputFile.Length / bs);
 				sizeOfSize = (int) Math.Ceiling(Math.Log(bs, 2) / 8);
 				var perBlockHeaderSize = sizeOfSize + 1;
-				var headerSize = 0x11 + perBlockHeaderSize * amountOfBlocks;
+				var headerSize = 0x15 + perBlockHeaderSize * amountOfBlocks;
 				outputFile.Position = headerSize;
 				var breakCondition = -1;
 				var nsZipMagic = new byte[] {0x6e, 0x73, 0x5a, 0x69, 0x70};
@@ -72,6 +74,12 @@ namespace nsZip
 				nsZipHeader[0x0E] = (byte) (bs >> 16);
 				nsZipHeader[0x0F] = (byte) (bs >> 8);
 				nsZipHeader[0x10] = (byte) bs;
+				nsZipHeader[0x11] = (byte)(amountOfBlocks >> 24);
+				nsZipHeader[0x12] = (byte)(amountOfBlocks >> 16);
+				nsZipHeader[0x13] = (byte)(amountOfBlocks >> 8);
+				nsZipHeader[0x14] = (byte)amountOfBlocks;
+				sha256Compressed = SHA256.Create();
+				
 
 				while (true)
 				{
@@ -81,7 +89,7 @@ namespace nsZip
 						if (task[iNow] != null)
 						{
 							task[iNow].Wait();
-							WriteBlock(outputFile, input[iNow], output[iNow]);
+							WriteBlock(outputFile, input[iNow], output[iNow], false);
 							task[iNow] = null;
 						}
 
@@ -109,38 +117,60 @@ namespace nsZip
 				byte[] lastBlockOutput = null;
 				inputFile.Read(lastBlockInput, 0, lastBlockInput.Length);
 				CompressBlock(ref lastBlockInput, ref lastBlockOutput);
-				WriteBlock(outputFile, lastBlockInput, lastBlockOutput);
+				WriteBlock(outputFile, lastBlockInput, lastBlockOutput, true);
 				outputFile.Position = 0;
 				outputFile.Write(nsZipHeader, 0, headerSize);
+				sha256Header = SHA256.Create();
+				sha256Header.ComputeHash(nsZipHeader);
+				var sha256Hash = new byte[0x20];
+				Array.Copy(sha256Header.Hash, sha256Hash, 0x20);
+				Util.XorArrays(sha256Hash, sha256Compressed.Hash);
+				outputFile.Seek(0, SeekOrigin.End);
+				outputFile.Write(sha256Hash, 0, 0x10);
 				inputFile.Dispose();
 				outputFile.Dispose();
 			}
 		}
 
-		private void WriteBlock(FileStream outputFile, byte[] input, byte[] output)
+		private void WriteBlock(FileStream outputFile, byte[] input, byte[] output, bool lastBlock)
 		{
 			var offset = currentBlockID * (sizeOfSize + 1);
 			var inputLen = input.Length;
 			var outputLen = output.Length;
 			if (outputLen >= inputLen)
 			{
-				nsZipHeader[0x11 + offset] = 0x00;
+				nsZipHeader[0x15 + offset] = 0x00;
 				for (var j = 0; j < sizeOfSize; ++j)
 				{
-					nsZipHeader[0x12 + offset + j] = (byte) (inputLen >> ((sizeOfSize - j - 1) * 8));
+					nsZipHeader[0x16 + offset + j] = (byte) (inputLen >> ((sizeOfSize - j - 1) * 8));
 				}
-
 				outputFile.Write(input, 0, inputLen);
+				if (lastBlock)
+				{
+					sha256Compressed.TransformFinalBlock(input, 0, inputLen);
+				}
+				else
+				{
+					sha256Compressed.TransformBlock(input, 0, inputLen, input, 0);
+				}
 			}
 			else
 			{
-				nsZipHeader[0x11 + offset] = 0x01;
+				nsZipHeader[0x15 + offset] = 0x01;
 				for (var j = 0; j < sizeOfSize; ++j)
 				{
-					nsZipHeader[0x12 + offset + j] = (byte) (outputLen >> ((sizeOfSize - j - 1) * 8));
+					nsZipHeader[0x16 + offset + j] = (byte) (outputLen >> ((sizeOfSize - j - 1) * 8));
 				}
-
 				outputFile.Write(output, 0, outputLen);
+				if (lastBlock)
+				{
+					sha256Compressed.TransformFinalBlock(output, 0, outputLen);
+				}
+				else
+				{
+					sha256Compressed.TransformBlock(output, 0, outputLen, output, 0);
+				}
+				
 			}
 
 			DebugOutput.AppendText($"{currentBlockID + 1}/{amountOfBlocks} Blocks written\r\n");

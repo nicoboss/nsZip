@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompressFolder.cs" />
+    <Compile Include="DecompressFolder.cs" />
     <Compile Include="EncryptNCA.cs" />
     <Compile Include="LibHacExtensions\SearchDeltaMatching.cs" />
     <Compile Include="LibHacExtensions\DeltaTools.cs" />

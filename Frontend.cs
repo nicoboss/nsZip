@@ -98,6 +98,7 @@ namespace nsZip
 			}
 
 			CompressFolder.Compress(DebugOutput, "decrypted");
+			DecompressFolder.Decompress(DebugOutput, "NSZ");
 		}
 
 		private void SelectNspFileToCompressButton_Click(object sender, EventArgs e)
