@@ -12,15 +12,15 @@ namespace nsZip
 	internal class CompressFolder
 	{
 		private static readonly RNGCryptoServiceProvider secureRNG = new RNGCryptoServiceProvider();
-		private int amountOfBlocks;
 		private readonly int bs;
-		private int currentBlockID;
 		private readonly RichTextBox DebugOutput;
 		private readonly string folderPath;
+		private int amountOfBlocks;
+		private int currentBlockID;
 		private byte[] nsZipHeader;
-		private int sizeOfSize;
 		private SHA256 sha256Compressed;
 		private SHA256 sha256Header;
+		private int sizeOfSize;
 
 		private CompressFolder(RichTextBox debugOutputArg, string folderPathArg, int bsArg = 262144)
 		{
@@ -74,12 +74,12 @@ namespace nsZip
 				nsZipHeader[0x0E] = (byte) (bs >> 16);
 				nsZipHeader[0x0F] = (byte) (bs >> 8);
 				nsZipHeader[0x10] = (byte) bs;
-				nsZipHeader[0x11] = (byte)(amountOfBlocks >> 24);
-				nsZipHeader[0x12] = (byte)(amountOfBlocks >> 16);
-				nsZipHeader[0x13] = (byte)(amountOfBlocks >> 8);
-				nsZipHeader[0x14] = (byte)amountOfBlocks;
+				nsZipHeader[0x11] = (byte) (amountOfBlocks >> 24);
+				nsZipHeader[0x12] = (byte) (amountOfBlocks >> 16);
+				nsZipHeader[0x13] = (byte) (amountOfBlocks >> 8);
+				nsZipHeader[0x14] = (byte) amountOfBlocks;
 				sha256Compressed = SHA256.Create();
-				
+
 
 				while (true)
 				{
@@ -144,6 +144,7 @@ namespace nsZip
 				{
 					nsZipHeader[0x16 + offset + j] = (byte) (inputLen >> ((sizeOfSize - j - 1) * 8));
 				}
+
 				outputFile.Write(input, 0, inputLen);
 				if (lastBlock)
 				{
@@ -161,6 +162,7 @@ namespace nsZip
 				{
 					nsZipHeader[0x16 + offset + j] = (byte) (outputLen >> ((sizeOfSize - j - 1) * 8));
 				}
+
 				outputFile.Write(output, 0, outputLen);
 				if (lastBlock)
 				{
@@ -170,7 +172,6 @@ namespace nsZip
 				{
 					sha256Compressed.TransformBlock(output, 0, outputLen, output, 0);
 				}
-				
 			}
 
 			DebugOutput.AppendText($"{currentBlockID + 1}/{amountOfBlocks} Blocks written\r\n");

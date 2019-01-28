@@ -73,7 +73,7 @@ namespace nsZip
 			var lowestOffset = long.MaxValue;
 			for (var i = 0; i < 4; ++i)
 			{
-				var section = ParseSection(Header, i);
+				var section = NcaParseSection.ParseSection(Header, i);
 				if (section == null)
 				{
 					continue;
@@ -219,26 +219,6 @@ namespace nsZip
 			Input.Dispose();
 			Output.Dispose();
 			TB.AppendText("Done!");
-		}
-
-		private static NcaSection ParseSection(NcaHeader Header, int index)
-		{
-			var entry = Header.SectionEntries[index];
-			var header = Header.FsHeaders[index];
-			if (entry.MediaStartOffset == 0)
-			{
-				return null;
-			}
-
-			var sect = new NcaSection();
-
-			sect.SectionNum = index;
-			sect.Offset = Utils.MediaToReal(entry.MediaStartOffset);
-			sect.Size = Utils.MediaToReal(entry.MediaEndOffset) - sect.Offset;
-			sect.Header = header;
-			sect.Type = header.Type;
-
-			return sect;
 		}
 
 		private static void SetCtrOffset(byte[] ctr, long offset)

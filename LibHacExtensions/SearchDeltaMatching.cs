@@ -1,15 +1,14 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using LibHac.IO;
 
 namespace nsZip.LibHacExtensions
 {
 	public static class SearchDeltaMatching
 	{
-		public static string SearchMatching(string fragmentInputFilename, string newBaseFolderPath)
+		public static byte[] SearchMatching(IStorage fragmentFile, string newBaseFolderPath)
 		{
-			var fragmentFile = File.Open($"{fragmentInputFilename}", FileMode.Open).AsStorage();
-
 			if (fragmentFile.Length < 0x40)
 			{
 				throw new InvalidDataException("Delta file is too small.");
@@ -35,26 +34,25 @@ namespace nsZip.LibHacExtensions
 			var d = new DirectoryInfo(newBaseFolderPath);
 			foreach (var file in d.GetFiles("*.nca"))
 			{
-				var newBaseFile = File.Open(file.FullName, FileMode.Open);
-				if (newBaseFile.Length != Header.NewSize)
+				using (var newBaseFile = File.Open(file.FullName, FileMode.Open))
 				{
-					continue;
-				}
+					if (newBaseFile.Length != Header.NewSize)
+					{
+						continue;
+					}
 
-				if (VerifyMatching(newBaseFile, fragmentFileReader, Header))
-				{
-					return file.Name;
+					if (VerifyMatching(newBaseFile, fragmentFileReader, Header))
+					{
+						return Encoding.ASCII.GetBytes(file.Name);
+					}
 				}
-
-				newBaseFile.Dispose();
 			}
 
-			fragmentFile.Dispose();
 			return null;
 		}
 
 
-		public static bool VerifyMatching(FileStream newBaseFile, FileReader fragmentFileReader,
+		private static bool VerifyMatching(FileStream newBaseFile, FileReader fragmentFileReader,
 			DeltaFragmentHeader Header)
 		{
 			long offset = 0;

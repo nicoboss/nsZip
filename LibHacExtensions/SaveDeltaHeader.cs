@@ -5,9 +5,8 @@ namespace nsZip.LibHacExtensions
 {
 	public static class SaveDeltaHeader
 	{
-		public static void Save(string fragmentInput)
+		public static void Save(IStorage delta, FileStream writer)
 		{
-			var delta = File.Open($"{fragmentInput}", FileMode.Open).AsStorage();
 			if (delta.Length < 0x40)
 			{
 				throw new InvalidDataException("Delta file is too small.");
@@ -28,7 +27,6 @@ namespace nsZip.LibHacExtensions
 			}
 
 			var reader = new FileReader(new StorageFile(delta, OpenMode.Read));
-			var writer = File.Open("fragment_meta", FileMode.Create);
 
 			reader.Position = 0;
 			writer.Write(reader.ReadBytes((int) Header.FragmentHeaderSize), 0, (int) Header.FragmentHeaderSize);
@@ -50,9 +48,6 @@ namespace nsZip.LibHacExtensions
 
 				reader.Position += size;
 			}
-
-			delta.Dispose();
-			writer.Dispose();
 		}
 
 		private static void ReadSegmentHeader(FileReader reader, FileStream writer, out int size, out int seek)

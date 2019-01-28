@@ -34,7 +34,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>true</Optimize>
+    <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -99,11 +99,12 @@
     <Compile Include="CompressFolder.cs" />
     <Compile Include="DecompressFolder.cs" />
     <Compile Include="EncryptNCA.cs" />
+    <Compile Include="LibHacExtensions\NcaParseSection.cs" />
     <Compile Include="LibHacExtensions\SearchDeltaMatching.cs" />
     <Compile Include="LibHacExtensions\DeltaTools.cs" />
     <Compile Include="LibHacExtensions\RecreateDelta.cs" />
     <Compile Include="LibHacExtensions\SaveDeltaHeader.cs" />
-    <Compile Include="LibHacControl\ProcessDelta.cs" />
+    <Compile Include="LibHacExtensions\TrimDeltaNCA.cs" />
     <Compile Include="LibHacExtensions\MyBucketTree.cs" />
     <Compile Include="Crypto\Crypto.cs" />
     <Compile Include="Crypto\CryptoInitialisers.cs" />
