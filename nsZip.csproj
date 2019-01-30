@@ -104,6 +104,7 @@
     <Compile Include="LibHacExtensions\DeltaTools.cs" />
     <Compile Include="LibHacExtensions\RecreateDelta.cs" />
     <Compile Include="LibHacExtensions\SaveDeltaHeader.cs" />
+    <Compile Include="LibHacExtensions\UntrimDeltaNCA.cs" />
     <Compile Include="LibHacExtensions\TrimDeltaNCA.cs" />
     <Compile Include="LibHacExtensions\MyBucketTree.cs" />
     <Compile Include="Crypto\Crypto.cs" />

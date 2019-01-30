@@ -5,6 +5,7 @@ namespace nsZip.LibHacExtensions
 	public static class DeltaTools
 	{
 		public const string Ndv0Magic = "NDV0";
+		public const string Tdv0Magic = "TDV0";
 
 		public static int ReadInt(FileReader reader, int bytes)
 		{

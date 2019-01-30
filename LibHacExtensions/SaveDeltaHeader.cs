@@ -1,11 +1,12 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using LibHac.IO;
 
 namespace nsZip.LibHacExtensions
 {
 	public static class SaveDeltaHeader
 	{
-		public static void Save(IStorage delta, FileStream writer)
+		public static void Save(IStorage delta, FileStream writer, byte[] foundBaseNCA)
 		{
 			if (delta.Length < 0x40)
 			{
@@ -29,7 +30,15 @@ namespace nsZip.LibHacExtensions
 			var reader = new FileReader(new StorageFile(delta, OpenMode.Read));
 
 			reader.Position = 0;
-			writer.Write(reader.ReadBytes((int) Header.FragmentHeaderSize), 0, (int) Header.FragmentHeaderSize);
+			var headerData = reader.ReadBytes((int) Header.FragmentHeaderSize);
+			headerData[0] = 0x54; //T (NDV0 to TDV0)
+			writer.Write(headerData, 0, (int) Header.FragmentHeaderSize);
+			if (foundBaseNCA.Length > 255)
+			{
+				throw new IndexOutOfRangeException("Base NCA filename isn't allowed to be longer then 255 characters");
+			}
+			writer.WriteByte((byte) foundBaseNCA.Length);
+			writer.Write(foundBaseNCA, 0, foundBaseNCA.Length);
 
 			long offset = 0;
 
