@@ -10,23 +10,25 @@ namespace nsZip
 	internal class DecompressFolder
 	{
 		private readonly RichTextBox DebugOutput;
-		private readonly string folderPath;
+		private readonly string inFolderPath;
+		private readonly string outFolderPath;
 
-		private DecompressFolder(RichTextBox debugOutputArg, string folderPathArg)
+		private DecompressFolder(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg)
 		{
 			DebugOutput = debugOutputArg;
-			folderPath = folderPathArg;
+			inFolderPath = inFolderPathArg;
+			outFolderPath = outFolderPathArg;
 			DecompressFunct();
 		}
 
-		public static void Decompress(RichTextBox debugOutputArg, string folderPathArg)
+		public static void Decompress(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg)
 		{
-			new DecompressFolder(debugOutputArg, folderPathArg);
+			new DecompressFolder(debugOutputArg, inFolderPathArg, outFolderPathArg);
 		}
 
 		private void DecompressFunct()
 		{
-			var dirDecrypted = new DirectoryInfo(folderPath);
+			var dirDecrypted = new DirectoryInfo(inFolderPath);
 			foreach (var file in dirDecrypted.GetFiles())
 			{
 				var inputFile = File.Open(file.FullName, FileMode.Open);
@@ -79,7 +81,8 @@ namespace nsZip
 					}
 				}
 
-				var outputFile = File.Open($"NSZ/{Path.GetFileNameWithoutExtension(file.Name)}", FileMode.Create);
+				var outputFile = File.Open($"{outFolderPath}/{Path.GetFileNameWithoutExtension(file.Name)}",
+					FileMode.Create);
 				var outBuff = new byte[bs];
 				for (var currentBlockID = 0; currentBlockID < amountOfBlocks; ++currentBlockID)
 				{

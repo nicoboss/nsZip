@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using LibHac.IO;
 
 namespace nsZip.LibHacExtensions
@@ -30,7 +31,8 @@ namespace nsZip.LibHacExtensions
 			headerData[0] = 0x4E; //N (TDV0 to NDV0)
 			writer.Write(headerData, 0, (int) Header.FragmentHeaderSize);
 			var baseNcaFilenameSize = reader.ReadUInt8();
-			var filename = System.Text.Encoding.ASCII.GetString(reader.ReadBytes(Header.FragmentHeaderSize + 1, baseNcaFilenameSize, true));
+			var filename =
+				Encoding.ASCII.GetString(reader.ReadBytes(Header.FragmentHeaderSize + 1, baseNcaFilenameSize, true));
 			var newBaseFile = File.Open($"{filename}", FileMode.Open);
 
 			long offset = 0;

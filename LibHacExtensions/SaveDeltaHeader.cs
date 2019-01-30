@@ -37,6 +37,7 @@ namespace nsZip.LibHacExtensions
 			{
 				throw new IndexOutOfRangeException("Base NCA filename isn't allowed to be longer then 255 characters");
 			}
+
 			writer.WriteByte((byte) foundBaseNCA.Length);
 			writer.Write(foundBaseNCA, 0, foundBaseNCA.Length);
 

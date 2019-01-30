@@ -14,7 +14,8 @@ namespace nsZip
 		private static readonly RNGCryptoServiceProvider secureRNG = new RNGCryptoServiceProvider();
 		private readonly int bs;
 		private readonly RichTextBox DebugOutput;
-		private readonly string folderPath;
+		private readonly string inFolderPath;
+		private readonly string outFolderPath;
 		private int amountOfBlocks;
 		private int currentBlockID;
 		private byte[] nsZipHeader;
@@ -22,17 +23,20 @@ namespace nsZip
 		private SHA256 sha256Header;
 		private int sizeOfSize;
 
-		private CompressFolder(RichTextBox debugOutputArg, string folderPathArg, int bsArg = 262144)
+		private CompressFolder(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg,
+			int bsArg = 262144)
 		{
 			bs = bsArg;
 			DebugOutput = debugOutputArg;
-			folderPath = folderPathArg;
+			inFolderPath = inFolderPathArg;
+			outFolderPath = outFolderPathArg;
 			CompressFunct();
 		}
 
-		public static void Compress(RichTextBox debugOutputArg, string folderPathArg, int bsArg = 262144)
+		public static void Compress(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg,
+			int bsArg = 262144)
 		{
-			new CompressFolder(debugOutputArg, folderPathArg, bsArg);
+			new CompressFolder(debugOutputArg, inFolderPathArg, outFolderPathArg, bsArg);
 		}
 
 		private void CompressFunct()
@@ -47,11 +51,10 @@ namespace nsZip
 			var input = Utils.CreateJaggedArray<byte[][]>(threadsUsedToCompress, bs);
 			var output = new byte[threadsUsedToCompress][];
 			var task = new Task[threadsUsedToCompress];
-			var dirDecrypted = new DirectoryInfo(folderPath);
-
+			var dirDecrypted = new DirectoryInfo(inFolderPath);
 			foreach (var file in dirDecrypted.GetFiles())
 			{
-				var outputFile = File.Open($"NSZ/{file.Name}.nsz", FileMode.Create);
+				var outputFile = File.Open($"{outFolderPath}/{file.Name}.nsz", FileMode.Create);
 				var inputFile = File.Open(file.FullName, FileMode.Open);
 				amountOfBlocks = (int) Math.Ceiling((decimal) inputFile.Length / bs);
 				sizeOfSize = (int) Math.Ceiling(Math.Log(bs, 2) / 8);
@@ -79,7 +82,6 @@ namespace nsZip
 				nsZipHeader[0x13] = (byte) (amountOfBlocks >> 8);
 				nsZipHeader[0x14] = (byte) amountOfBlocks;
 				sha256Compressed = SHA256.Create();
-
 
 				while (true)
 				{

@@ -56,7 +56,7 @@ namespace nsZip
 			}
 			else
 			{
-				var TicketFile = File.Open($"extracted/{Utils.BytesToString(Header.RightsId)}.tik", FileMode.Open);
+				var TicketFile = File.Open($"decrypted/{Utils.BytesToString(Header.RightsId)}.tik", FileMode.Open);
 				TicketFile.Seek(0x180, SeekOrigin.Begin);
 				var titleKey = new byte[0x10];
 				var TitleKeyDec = new byte[0x10];
@@ -218,7 +218,6 @@ namespace nsZip
 
 			Input.Dispose();
 			Output.Dispose();
-			TB.AppendText("Done!");
 		}
 
 		private static void SetCtrOffset(byte[] ctr, long offset)

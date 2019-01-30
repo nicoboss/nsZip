@@ -35,7 +35,7 @@ namespace LibHac
             Signature1 = reader.ReadBytes(0x100);
             Signature2 = reader.ReadBytes(0x100);
             Magic = reader.ReadAscii(4);
-            if (Magic != "NCA3") throw new InvalidDataException("Not an NCA3 file");
+            if (Magic != "NCA3" && Magic != "TCA3") throw new InvalidDataException("Not an NCA3 file");
 
             reader.BaseStream.Position -= 4;
             SignatureData = reader.ReadBytes(0x200);

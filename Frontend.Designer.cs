@@ -34,7 +34,7 @@
 			this.TaskQueue = new System.Windows.Forms.ListBox();
 			this.SelectNszFileToDecompressButton = new System.Windows.Forms.Button();
 			this.RunButton = new System.Windows.Forms.Button();
-			this.SelectNszDialog = new System.Windows.Forms.OpenFileDialog();
+			this.SelectNspzDialog = new System.Windows.Forms.OpenFileDialog();
 			this.SuspendLayout();
 			// 
 			// SelectNspFileToCompressButton
@@ -92,7 +92,7 @@
 			this.SelectNszFileToDecompressButton.Name = "SelectNszFileToDecompressButton";
 			this.SelectNszFileToDecompressButton.Size = new System.Drawing.Size(393, 156);
 			this.SelectNszFileToDecompressButton.TabIndex = 36;
-			this.SelectNszFileToDecompressButton.Text = "Select NSZ files to Decompress";
+			this.SelectNszFileToDecompressButton.Text = "Select NSPZ files to Decompress";
 			this.SelectNszFileToDecompressButton.UseVisualStyleBackColor = false;
 			this.SelectNszFileToDecompressButton.Click += new System.EventHandler(this.SelectNszFileToDecompressButton_Click);
 			// 
@@ -108,11 +108,11 @@
 			this.RunButton.UseVisualStyleBackColor = false;
 			this.RunButton.Click += new System.EventHandler(this.RunButton_Click);
 			// 
-			// SelectNszDialog
+			// SelectNspzDialog
 			// 
-			this.SelectNszDialog.Filter = "Compressed Switch File (*.nsz)|*.nsz";
-			this.SelectNszDialog.Multiselect = true;
-			this.SelectNszDialog.Title = "Select input nsz fIles...";
+			this.SelectNspzDialog.Filter = "Compressed Switch File (*.nspz)|*.nspz";
+			this.SelectNspzDialog.Multiselect = true;
+			this.SelectNspzDialog.Title = "Select input nspz fIles...";
 			// 
 			// Frontend
 			// 
@@ -140,7 +140,7 @@
 		private System.Windows.Forms.ListBox TaskQueue;
 		private System.Windows.Forms.Button SelectNszFileToDecompressButton;
 		private System.Windows.Forms.Button RunButton;
-		private System.Windows.Forms.OpenFileDialog SelectNszDialog;
+		private System.Windows.Forms.OpenFileDialog SelectNspzDialog;
 	}
 }
 

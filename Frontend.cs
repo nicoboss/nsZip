@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows.Forms;
 using LibHac;
 using nsZip.LibHacControl;
+using nsZip.LibHacExtensions;
 using ProgressBar = LibHac.ProgressBar;
 
 namespace nsZip
@@ -54,51 +55,90 @@ namespace nsZip
 
 		private void RunButton_Click(object sender, EventArgs e)
 		{
-			var keyset = OpenKeyset();
-			IProgressReport logger = new ProgressBar();
+			if (TaskQueue.Items.Count == 0)
+			{
+				DebugOutput.AppendText("Nothing to do - TaskQueue empty! Please add an NSP or NSPZ!");
+				return;
+			}
 
 			cleanFolder("extracted");
 			cleanFolder("decrypted");
 			cleanFolder("encrypted");
-			cleanFolder("NSZ");
+			cleanFolder("compressed");
 			DebugOutput.Clear();
-
-			var nspFile = (string) TaskQueue.Items[0];
+			var infile = (string) TaskQueue.Items[0];
+			var infileLowerCase = infile.ToLower();
 			TaskQueue.Items.RemoveAt(0);
+			if (infileLowerCase.EndsWith("nsp"))
+			{
+				CompressNSP(infile);
+			}
+			else if (infileLowerCase.EndsWith("nspz"))
+			{
+				DecompressNSPZ(infile);
+			}
+			else
+			{
+				throw new InvalidDataException($"Invalid file type {infile}");
+			}
+		}
+
+
+		private void CompressNSP(string nspFile)
+		{
+			DebugOutput.AppendText($"Task CompressNSP {nspFile} started\r\n");
+			var keyset = OpenKeyset();
+			IProgressReport logger = new ProgressBar();
 			ProcessNsp.Process(nspFile, "extracted/", logger);
+			FolderTools.ExtractTitlekeys("extracted", keyset, DebugOutput);
 
 			var dirExtracted = new DirectoryInfo("extracted");
-			var TikFiles = dirExtracted.GetFiles("*.tik");
-			var titleKey = new byte[0x10];
-			foreach (var file in TikFiles)
-			{
-				var TicketFile = File.Open($"extracted/{file.Name}", FileMode.Open);
-				TicketFile.Seek(0x180, SeekOrigin.Begin);
-				TicketFile.Read(titleKey, 0, 0x10);
-				var ticketNameWithoutExtension = Path.GetFileNameWithoutExtension(file.Name);
-				if (!ticketNameWithoutExtension.TryToBytes(out var rightsId))
-				{
-					throw new InvalidDataException(
-						$"Invalid rights ID \"{ticketNameWithoutExtension}\" as ticket file name");
-				}
-
-				keyset.TitleKeys[rightsId] = titleKey;
-				TicketFile.Dispose();
-			}
-
-			DebugOutput.AppendText($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
-
 			foreach (var file in dirExtracted.GetFiles())
 			{
 				if (file.Name.EndsWith(".nca"))
 				{
 					ProcessNca.Process($"extracted/{file.Name}", $"decrypted/{file.Name}", keyset, logger);
-					EncryptNCA.Encrypt(file.Name, keyset, DebugOutput);
+				}
+				else
+				{
+					file.CopyTo($"decrypted/{file.Name}");
 				}
 			}
 
-			CompressFolder.Compress(DebugOutput, "decrypted");
-			DecompressFolder.Decompress(DebugOutput, "NSZ");
+			TrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
+			CompressFolder.Compress(DebugOutput, "decrypted", "compressed");
+			var newFileName = $"{Path.GetFileNameWithoutExtension(nspFile)}.nspz";
+			FolderTools.FolderToNSP("compressed", newFileName);
+			DebugOutput.AppendText($"Task CompressNSP {nspFile} completed!\r\n");
+		}
+
+
+		private void DecompressNSPZ(string nspzFile)
+		{
+			DebugOutput.AppendText($"Task DecompressNSPZ {nspzFile} started\r\n");
+			var keyset = OpenKeyset();
+			IProgressReport logger = new ProgressBar();
+			ProcessNsp.Process(nspzFile, "extracted/", logger);
+			DecompressFolder.Decompress(DebugOutput, "extracted", "decrypted");
+			UntrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
+			FolderTools.ExtractTitlekeys("decrypted", keyset, DebugOutput);
+
+			var dirExtracted = new DirectoryInfo("decrypted");
+			foreach (var file in dirExtracted.GetFiles())
+			{
+				if (file.Name.EndsWith(".nca"))
+				{
+					EncryptNCA.Encrypt(file.Name, keyset, DebugOutput);
+				}
+				else
+				{
+					file.CopyTo($"encrypted/{file.Name}");
+				}
+			}
+
+			var newFileName = $"{Path.GetFileNameWithoutExtension(nspzFile)}.nsp";
+			FolderTools.FolderToNSP("encrypted", newFileName);
+			DebugOutput.AppendText($"Task DecompressNSPZ {nspzFile} completed!\r\n");
 		}
 
 		private void SelectNspFileToCompressButton_Click(object sender, EventArgs e)
@@ -114,9 +154,9 @@ namespace nsZip
 
 		private void SelectNszFileToDecompressButton_Click(object sender, EventArgs e)
 		{
-			if (SelectNszDialog.ShowDialog() == DialogResult.OK)
+			if (SelectNspzDialog.ShowDialog() == DialogResult.OK)
 			{
-				foreach (var filename in SelectNszDialog.FileNames)
+				foreach (var filename in SelectNspzDialog.FileNames)
 				{
 					TaskQueue.Items.Add(filename);
 				}

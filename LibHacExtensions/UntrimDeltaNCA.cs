@@ -14,7 +14,7 @@ namespace nsZip.LibHacControl
 		public static void Process(string folderPath, Keyset keyset, RichTextBox DebugOutput)
 		{
 			var dirDecrypted = new DirectoryInfo(folderPath);
-			foreach (var inFile in dirDecrypted.GetFiles("*.trim"))
+			foreach (var inFile in dirDecrypted.GetFiles("*.tca"))
 			{
 				DebugOutput.AppendText($"{inFile}\r\n");
 				var ncaStorage = new StreamStorage(new FileStream(inFile.FullName, FileMode.Open, FileAccess.Read),
@@ -46,9 +46,10 @@ namespace nsZip.LibHacControl
 					var Pfs0Header = new PartitionFileSystemHeader(new BinaryReader(pfs0Storage.AsStream()));
 					var FileDict = Pfs0Header.Files.ToDictionary(x => x.Name, x => x);
 					var path = PathTools.Normalize(FragmentFileName).TrimStart('/');
-					if (FileDict.TryGetValue(path, out var fragmentFile))
+					if (Pfs0Header.NumFiles == 1 && FileDict.TryGetValue(path, out var fragmentFile))
 					{
-						var writer = File.Open("fragment_untrimmed.bin", FileMode.Create);
+						var inFileNameNoExtension = Path.GetFileNameWithoutExtension(inFile.Name);
+						var writer = File.Open($"decrypted/{inFileNameNoExtension}.utca", FileMode.Create);
 						var offsetBefore = section.Offset + section.Header.Sha256Info.DataOffset +
 						                   Pfs0Header.HeaderSize +
 						                   fragmentFile.Offset;
@@ -61,6 +62,8 @@ namespace nsZip.LibHacControl
 						IStorage fragmentStorageAfter = ncaStorage.Slice(offsetAfter,
 							ncaStorage.Length - offsetAfter, false);
 						fragmentStorageAfter.CopyToStream(writer);
+						writer.Position = 0x200;
+						writer.WriteByte(0x4E);
 						writer.Dispose();
 						fragmentTrimmed = true;
 					}
