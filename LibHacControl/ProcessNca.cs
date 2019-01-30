@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text;
+using System.Windows.Forms;
 using LibHac;
 using LibHac.IO;
 
@@ -7,7 +8,7 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessNca
 	{
-		public static void Process(string inFile, string outFile, Keyset keyset, IProgressReport logger)
+		public static void Process(string inFile, string outFile, Keyset keyset, RichTextBox DebugOutput)
 		{
 			using (var file = new StreamStorage(new FileStream(inFile, FileMode.Open, FileAccess.Read), false))
 			{
@@ -19,13 +20,12 @@ namespace nsZip.LibHacControl
 				{
 					if (nca.Sections[i] != null)
 					{
-						nca.VerifySection(i, logger);
+						nca.VerifySection(i);
 					}
 				}
 
-				nca.OpenDecryptedNca().WriteAllBytes(outFile, logger);
-
-				logger.LogMessage(nca.Print());
+				nca.OpenDecryptedNca().WriteAllBytes(outFile);
+				DebugOutput.AppendText(nca.Print());
 			}
 		}
 

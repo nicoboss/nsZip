@@ -83,6 +83,10 @@ namespace nsZip.LibHacControl
 				}
 
 				ncaStorage.Dispose();
+				if (fragmentTrimmed)
+				{
+					inFile.Delete();
+				}
 			}
 		}
 	}

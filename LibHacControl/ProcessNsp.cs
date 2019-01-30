@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Windows.Forms;
 using LibHac;
 using LibHac.IO;
 
@@ -8,12 +9,12 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessNsp
 	{
-		public static void Process(string inFile, string OutDir, IProgressReport logger)
+		public static void Process(string inFile, string OutDir, RichTextBox DebugOutput)
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
 				var pfs = new PartitionFileSystem(file.AsStorage());
-				logger.LogMessage(pfs.Print());
+				DebugOutput.AppendText(pfs.Print());
 				pfs.Extract(OutDir);
 			}
 		}

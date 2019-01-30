@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Windows.Forms;
 using LibHac;
 using nsZip.Crypto;
@@ -13,7 +14,8 @@ namespace nsZip
 	{
 		internal static readonly string[] KakNames = {"application", "ocean", "system"};
 
-		public static void Encrypt(string ncaName, Keyset keyset, RichTextBox TB)
+		public static void Encrypt(string ncaName, bool writeEncrypted, bool verifyEncrypted, Keyset keyset,
+			RichTextBox TB)
 		{
 			var DecryptedKeys = Utils.CreateJaggedArray<byte[][]>(4, 0x10);
 			var HeaderKey1 = new byte[16];
@@ -88,12 +90,31 @@ namespace nsZip
 				Sections[i] = section;
 			}
 
-			var Output = File.Open($"encrypted/{ncaName}", FileMode.Create);
+			FileStream Output = null;
+			if (writeEncrypted)
+			{
+				Output = File.Open($"encrypted/{ncaName}", FileMode.Create);
+			}
+
 			TB.AppendText("Opened NCA for writing...\r\n");
 			TB.AppendText($"HeaderKey: {Utils.BytesToString(keyset.HeaderKey)}\r\n");
 			TB.AppendText("Encrypting and writing header to NCA...\r\n");
-			Output.Write(CryptoInitialisers.AES_XTS(HeaderKey1, HeaderKey2, 0x200, DecryptedHeader, 0), 0,
-				DecryptedHeader.Length);
+			SHA256 sha256NCA = null;
+			if (verifyEncrypted)
+			{
+				sha256NCA = SHA256.Create();
+			}
+
+			var encryptedHeader = CryptoInitialisers.AES_XTS(HeaderKey1, HeaderKey2, 0x200, DecryptedHeader, 0);
+			if (writeEncrypted)
+			{
+				Output.Write(encryptedHeader, 0, DecryptedHeader.Length);
+			}
+
+			if (verifyEncrypted)
+			{
+				sha256NCA.TransformBlock(encryptedHeader, 0, DecryptedHeader.Length, encryptedHeader, 0);
+			}
 
 			var dummyHeader = new byte[0xC00];
 			ulong dummyHeaderSector = 6;
@@ -101,15 +122,25 @@ namespace nsZip
 
 			for (dummyHeaderPos = 0xC00; dummyHeaderPos < lowestOffset; dummyHeaderPos += 0xC00)
 			{
-				Input.Read(dummyHeader, 0, 0xC00);
 				var dummyHeaderWriteCount = (int) Math.Min(lowestOffset - dummyHeaderPos, DecryptedHeader.Length);
-				Output.Write(CryptoInitialisers.AES_XTS(HeaderKey1, HeaderKey2, 0x200, dummyHeader, dummyHeaderSector),
-					0, dummyHeaderWriteCount);
+				Input.Read(dummyHeader, 0, dummyHeaderWriteCount);
+				var dummyHeaderEncrypted =
+					CryptoInitialisers.AES_XTS(HeaderKey1, HeaderKey2, 0x200, dummyHeader, dummyHeaderSector);
+				if (writeEncrypted)
+				{
+					Output.Write(dummyHeaderEncrypted, 0, dummyHeaderWriteCount);
+				}
+
+				if (verifyEncrypted)
+				{
+					sha256NCA.TransformBlock(dummyHeaderEncrypted, 0, dummyHeaderWriteCount, dummyHeaderEncrypted, 0);
+				}
+
 				dummyHeaderSector += 6;
 			}
 
 			TB.AppendText("Encrypting and writing sectors to NCA...\r\n");
-			TB.AppendText("Sections:");
+			TB.AppendText("Sections:\r\n");
 			foreach (var i in SectionsByOffset.OrderBy(i => i.Key).Select(item => item.Value))
 			{
 				var sect = Sections[i];
@@ -134,8 +165,14 @@ namespace nsZip
 				}
 
 				TB.AppendText($"initialCounter: {Utils.BytesToString(initialCounter)}\r\n");
-				Input.Seek(sect.Offset, SeekOrigin.Begin);
-				Output.Seek(sect.Offset, SeekOrigin.Begin);
+
+				if (Input.Position != sect.Offset)
+				{
+					//Input.Seek(sect.Offset, SeekOrigin.Begin);
+					//Output.Seek(sect.Offset, SeekOrigin.Begin);
+					//Todo: sha256NCA Gap support
+					throw new NotImplementedException("Gaps between NCA sections aren't implemented yet!");
+				}
 
 				const int maxBS = 10485760; //10 MB
 				int bs;
@@ -149,7 +186,15 @@ namespace nsZip
 							bs = (int) Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							TB.AppendText($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
-							Output.Write(DecryptedSectionBlock, 0, bs);
+							if (writeEncrypted)
+							{
+								Output.Write(DecryptedSectionBlock, 0, bs);
+							}
+
+							if (verifyEncrypted)
+							{
+								sha256NCA.TransformBlock(DecryptedSectionBlock, 0, bs, DecryptedSectionBlock, 0);
+							}
 						}
 
 						break;
@@ -160,9 +205,17 @@ namespace nsZip
 							bs = (int) Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							TB.AppendText($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
-							Output.Write(
-								AesCTR.AesCtrTransform(DecryptedKeys[2], initialCounter, DecryptedSectionBlock, bs), 0,
-								bs);
+							var EncryptedSectionBlock = AesCTR.AesCtrTransform(DecryptedKeys[2], initialCounter,
+								DecryptedSectionBlock, bs);
+							if (writeEncrypted)
+							{
+								Output.Write(EncryptedSectionBlock, 0, bs);
+							}
+
+							if (verifyEncrypted)
+							{
+								sha256NCA.TransformBlock(EncryptedSectionBlock, 0, bs, EncryptedSectionBlock, 0);
+							}
 						}
 
 						break;
@@ -192,9 +245,17 @@ namespace nsZip
 							TB.AppendText($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							TB.AppendText($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
 							Input.Read(DecryptedSectionBlockLUL, 0, bs);
-							Output.Write(
-								AesCTR.AesCtrTransform(DecryptedKeys[2], subsectionEntryCounter,
-									DecryptedSectionBlockLUL, bs), 0, bs);
+							var EncryptedSectionBlock = AesCTR.AesCtrTransform(DecryptedKeys[2], subsectionEntryCounter,
+								DecryptedSectionBlockLUL, bs);
+							if (writeEncrypted)
+							{
+								Output.Write(EncryptedSectionBlock, 0, bs);
+							}
+
+							if (verifyEncrypted)
+							{
+								sha256NCA.TransformBlock(EncryptedSectionBlock, 0, bs, EncryptedSectionBlock, 0);
+							}
 						}
 
 						while (Input.Position < sectOffsetEnd)
@@ -204,9 +265,18 @@ namespace nsZip
 							TB.AppendText($"EncryptedAfter: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
 							TB.AppendText($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
-							Output.Write(
-								AesCTR.AesCtrTransform(DecryptedKeys[2], subsectionEntryCounter, DecryptedSectionBlock,
-									bs), 0, bs);
+							var EncryptedSectionBlock = AesCTR.AesCtrTransform(DecryptedKeys[2], subsectionEntryCounter,
+								DecryptedSectionBlock,
+								bs);
+							if (writeEncrypted)
+							{
+								Output.Write(EncryptedSectionBlock, 0, bs);
+							}
+
+							if (verifyEncrypted)
+							{
+								sha256NCA.TransformBlock(EncryptedSectionBlock, 0, bs, EncryptedSectionBlock, 0);
+							}
 						}
 
 						break;
@@ -217,7 +287,24 @@ namespace nsZip
 			}
 
 			Input.Dispose();
-			Output.Dispose();
+			if (writeEncrypted)
+			{
+				Output.Dispose();
+			}
+
+			if (verifyEncrypted)
+			{
+				sha256NCA.TransformFinalBlock(new byte[0], 0, 0);
+				var sha256NCAHashString = Utils.BytesToString(sha256NCA.Hash).ToLower();
+				if (sha256NCAHashString.StartsWith(Path.GetFileNameWithoutExtension(ncaName).Split('.')[0].ToLower()))
+				{
+					TB.AppendText($"[VERIFIED] {sha256NCAHashString}\r\n");
+				}
+				else
+				{
+					throw new Exception($"[INVALID HASH] {sha256NCAHashString}\r\n");
+				}
+			}
 		}
 
 		private static void SetCtrOffset(byte[] ctr, long offset)

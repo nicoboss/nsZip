@@ -7,12 +7,13 @@ using System.Windows.Forms;
 using LibHac;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
-using ProgressBar = LibHac.ProgressBar;
 
 namespace nsZip
 {
 	public partial class Frontend : Form
 	{
+		private readonly bool VerifWhenCompressing = true;
+
 		public Frontend()
 		{
 			InitializeComponent();
@@ -86,10 +87,10 @@ namespace nsZip
 
 		private void CompressNSP(string nspFile)
 		{
-			DebugOutput.AppendText($"Task CompressNSP {nspFile} started\r\n");
+			var nspFileNoExtension = Path.GetFileNameWithoutExtension(nspFile);
+			DebugOutput.AppendText($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
 			var keyset = OpenKeyset();
-			IProgressReport logger = new ProgressBar();
-			ProcessNsp.Process(nspFile, "extracted/", logger);
+			ProcessNsp.Process(nspFile, "extracted/", DebugOutput);
 			FolderTools.ExtractTitlekeys("extracted", keyset, DebugOutput);
 
 			var dirExtracted = new DirectoryInfo("extracted");
@@ -97,7 +98,7 @@ namespace nsZip
 			{
 				if (file.Name.EndsWith(".nca"))
 				{
-					ProcessNca.Process($"extracted/{file.Name}", $"decrypted/{file.Name}", keyset, logger);
+					ProcessNca.Process($"extracted/{file.Name}", $"decrypted/{file.Name}", keyset, DebugOutput);
 				}
 				else
 				{
@@ -108,27 +109,49 @@ namespace nsZip
 			TrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
 			CompressFolder.Compress(DebugOutput, "decrypted", "compressed");
 			var newFileName = $"{Path.GetFileNameWithoutExtension(nspFile)}.nspz";
+			if (VerifWhenCompressing)
+			{
+				cleanFolder("extracted");
+				cleanFolder("decrypted");
+				cleanFolder("encrypted");
+				DecompressFolder.Decompress(DebugOutput, "compressed", "decrypted");
+				UntrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
+
+				var dirDecrypted = new DirectoryInfo("decrypted");
+				foreach (var file in dirDecrypted.GetFiles())
+				{
+					if (file.Name.EndsWith(".nca"))
+					{
+						EncryptNCA.Encrypt(file.Name, false, true, keyset, DebugOutput);
+					}
+					else
+					{
+						file.CopyTo($"encrypted/{file.Name}");
+					}
+				}
+			}
+
 			FolderTools.FolderToNSP("compressed", newFileName);
-			DebugOutput.AppendText($"Task CompressNSP {nspFile} completed!\r\n");
+			DebugOutput.AppendText($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
 		}
 
 
 		private void DecompressNSPZ(string nspzFile)
 		{
-			DebugOutput.AppendText($"Task DecompressNSPZ {nspzFile} started\r\n");
+			var nspzFileNoExtension = Path.GetFileNameWithoutExtension(nspzFile);
+			DebugOutput.AppendText($"Task DecompressNSPZ \"{nspzFileNoExtension}\" started\r\n");
 			var keyset = OpenKeyset();
-			IProgressReport logger = new ProgressBar();
-			ProcessNsp.Process(nspzFile, "extracted/", logger);
+			ProcessNsp.Process(nspzFile, "extracted/", DebugOutput);
 			DecompressFolder.Decompress(DebugOutput, "extracted", "decrypted");
 			UntrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
 			FolderTools.ExtractTitlekeys("decrypted", keyset, DebugOutput);
 
-			var dirExtracted = new DirectoryInfo("decrypted");
-			foreach (var file in dirExtracted.GetFiles())
+			var dirDecrypted = new DirectoryInfo("decrypted");
+			foreach (var file in dirDecrypted.GetFiles())
 			{
 				if (file.Name.EndsWith(".nca"))
 				{
-					EncryptNCA.Encrypt(file.Name, keyset, DebugOutput);
+					EncryptNCA.Encrypt(file.Name, true, true, keyset, DebugOutput);
 				}
 				else
 				{
@@ -138,7 +161,7 @@ namespace nsZip
 
 			var newFileName = $"{Path.GetFileNameWithoutExtension(nspzFile)}.nsp";
 			FolderTools.FolderToNSP("encrypted", newFileName);
-			DebugOutput.AppendText($"Task DecompressNSPZ {nspzFile} completed!\r\n");
+			DebugOutput.AppendText($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
 		}
 
 		private void SelectNspFileToCompressButton_Click(object sender, EventArgs e)
