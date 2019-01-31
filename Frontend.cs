@@ -13,6 +13,7 @@ namespace nsZip
 	public partial class Frontend : Form
 	{
 		private readonly bool VerifWhenCompressing = true;
+		private string OutputFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
 		public Frontend()
 		{
@@ -33,14 +34,43 @@ namespace nsZip
 
 		private static Keyset OpenKeyset()
 		{
-			var homeKeyFile = Path.Combine("keys.txt");
+			var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+			var homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
+			var homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
+			var homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
+			string keyFile = null;
+			string titleKeyFile = null;
+			string consoleKeyFile = null;
 
-			if (!File.Exists(homeKeyFile))
+			if (File.Exists(homeKeyFile))
 			{
-				throw new ArgumentException("Keys.txt not found!", "Keys.txt missing!");
+				keyFile = homeKeyFile;
+			}
+			else
+			{
+				if (File.Exists("keys.txt"))
+				{
+					keyFile = "keys.txt";
+				}
+				else
+				{
+					Directory.CreateDirectory(Path.Combine(home, ".switch"));
+					throw new ArgumentException(
+						@"prod.keys not found! Please put prod.keys in " + homeKeyFile);
+				}
 			}
 
-			return ExternalKeys.ReadKeyFile(homeKeyFile);
+			if (File.Exists(homeTitleKeyFile))
+			{
+				titleKeyFile = homeTitleKeyFile;
+			}
+
+			if (File.Exists(homeConsoleKeyFile))
+			{
+				consoleKeyFile = homeConsoleKeyFile;
+			}
+
+			return ExternalKeys.ReadKeyFile(keyFile, titleKeyFile, consoleKeyFile);
 		}
 
 		private void cleanFolder(string folderName)
@@ -58,19 +88,13 @@ namespace nsZip
 		{
 			if (TaskQueue.Items.Count == 0)
 			{
-				CompressFolder.Compress(DebugOutput, "decrypted", "compressed");
-				DecompressFolder.Decompress(DebugOutput, "compressed", "extracted");
-				DebugOutput.AppendText("Nothing to do - TaskQueue empty! Please add an NSP or NSPZ!");
+				DebugOutput.AppendText("Nothing to do - TaskQueue empty! Please add an NSP or NSPZ!\r\n");
 				return;
 			}
 
 			do
 			{
-
-				cleanFolder("extracted");
-				cleanFolder("decrypted");
-				cleanFolder("encrypted");
-				cleanFolder("compressed");
+				cleanFolders();
 				DebugOutput.Clear();
 
 				var inFile = (string) TaskQueue.Items[0];
@@ -97,6 +121,16 @@ namespace nsZip
 				var inFileNoExtension = Path.GetFileNameWithoutExtension(inFile);
 				File.WriteAllLines($"DebugOutput_{dataString}_{inFileNoExtension}.log", DebugOutput.Text.Split('\n'));
 			} while (TaskQueue.Items.Count > 0);
+
+			cleanFolders();
+		}
+
+		private void cleanFolders()
+		{
+			cleanFolder("extracted");
+			cleanFolder("decrypted");
+			cleanFolder("encrypted");
+			cleanFolder("compressed");
 		}
 
 		private void CompressNSP(string nspFile)
@@ -106,7 +140,8 @@ namespace nsZip
 			var keyset = OpenKeyset();
 			ProcessNsp.Process(nspFile, "extracted/", DebugOutput);
 			CompressExtracted(keyset);
-			FolderTools.FolderToNSP("compressed", $"{nspFileNoExtension}.nspz");
+			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
+			FolderTools.FolderToNSP("compressed", $"{nspzOutPath}.nspz");
 			DebugOutput.AppendText($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
 		}
 
@@ -117,7 +152,8 @@ namespace nsZip
 			var keyset = OpenKeyset();
 			ProcessXci.Process(xciFile, "extracted/", keyset, DebugOutput);
 			CompressExtracted(keyset);
-			FolderTools.FolderToNSP("compressed", $"{xciFileNoExtension}.xciz");
+			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
+			FolderTools.FolderToNSP("compressed", $"{xciOutPath}.xciz");
 			DebugOutput.AppendText($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
 		}
 
@@ -164,8 +200,8 @@ namespace nsZip
 			ProcessNsp.Process(nspzFile, "extracted/", DebugOutput);
 			DecompressFolder.Decompress(DebugOutput, "extracted", "decrypted");
 			UntrimAndEncrypt(keyset);
-			var newFileName = $"{Path.GetFileNameWithoutExtension(nspzFile)}.nsp";
-			FolderTools.FolderToNSP("encrypted", newFileName);
+			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
+			FolderTools.FolderToNSP("encrypted", $"{nspOutPath}.nsp");
 			DebugOutput.AppendText($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
 		}
 
@@ -219,6 +255,15 @@ namespace nsZip
 				{
 					TaskQueue.Items.Add(filename);
 				}
+			}
+		}
+
+		private void SelectOutputDictionaryButton_Click(object sender, EventArgs e)
+		{
+			SelectOutputDictionaryDialog.SelectedPath = OutputFolderPath;
+			if (SelectOutputDictionaryDialog.ShowDialog() == DialogResult.OK)
+			{
+				OutputFolderPath = SelectOutputDictionaryDialog.SelectedPath;
 			}
 		}
 
