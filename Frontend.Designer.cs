@@ -30,7 +30,7 @@
         {
 			this.SelectNspFileToCompressButton = new System.Windows.Forms.Button();
 			this.DebugOutput = new System.Windows.Forms.RichTextBox();
-			this.SelectNspDialog = new System.Windows.Forms.OpenFileDialog();
+			this.SelectNspXciDialog = new System.Windows.Forms.OpenFileDialog();
 			this.TaskQueue = new System.Windows.Forms.ListBox();
 			this.SelectNszFileToDecompressButton = new System.Windows.Forms.Button();
 			this.RunButton = new System.Windows.Forms.Button();
@@ -45,7 +45,7 @@
 			this.SelectNspFileToCompressButton.Name = "SelectNspFileToCompressButton";
 			this.SelectNspFileToCompressButton.Size = new System.Drawing.Size(393, 156);
 			this.SelectNspFileToCompressButton.TabIndex = 31;
-			this.SelectNspFileToCompressButton.Text = "Select NSP files to Compress";
+			this.SelectNspFileToCompressButton.Text = "Select NSP/XCI files to Compress";
 			this.SelectNspFileToCompressButton.UseVisualStyleBackColor = false;
 			this.SelectNspFileToCompressButton.Click += new System.EventHandler(this.SelectNspFileToCompressButton_Click);
 			// 
@@ -62,11 +62,12 @@
 			this.DebugOutput.Text = "";
 			this.DebugOutput.TextChanged += new System.EventHandler(this.DebugOutput_TextChanged);
 			// 
-			// SelectNspDialog
+			// SelectNspXciDialog
 			// 
-			this.SelectNspDialog.Filter = "Switch Package (*.nsp)|*.nsp";
-			this.SelectNspDialog.Multiselect = true;
-			this.SelectNspDialog.Title = "Select input NSP fIles...";
+			this.SelectNspXciDialog.Filter = "Switch Games (*.nsp;*.xci)|*.nsp;*.xci|Switch Package (*.nsp)|*.ns|Switch Cartrid" +
+    "ge (*.xci)|*.xci";
+			this.SelectNspXciDialog.Multiselect = true;
+			this.SelectNspXciDialog.Title = "Select input NSP fIles...";
 			// 
 			// TaskQueue
 			// 
@@ -136,7 +137,7 @@
         #endregion
 		private System.Windows.Forms.Button SelectNspFileToCompressButton;
 		private System.Windows.Forms.RichTextBox DebugOutput;
-		private System.Windows.Forms.OpenFileDialog SelectNspDialog;
+		private System.Windows.Forms.OpenFileDialog SelectNspXciDialog;
 		private System.Windows.Forms.ListBox TaskQueue;
 		private System.Windows.Forms.Button SelectNszFileToDecompressButton;
 		private System.Windows.Forms.Button RunButton;

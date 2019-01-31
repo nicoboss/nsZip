@@ -89,13 +89,16 @@ namespace nsZip
 					switch (compressionAlgorithm[currentBlockID])
 					{
 						case 0:
-							if (bs != compressedBlockSize[currentBlockID])
+							var rawBS = compressedBlockSize[currentBlockID];
+
+							//This safety check doesn't work for the last block and so must be excluded!
+							if (rawBS != bs && currentBlockID < amountOfBlocks - 1)
 							{
 								throw new FormatException("NSZ header seems to be corrupted!");
 							}
 
-							inputFile.Read(outBuff, 0, bs);
-							outputFile.Write(outBuff, 0, bs);
+							inputFile.Read(outBuff, 0, rawBS);
+							outputFile.Write(outBuff, 0, rawBS);
 							break;
 						case 1:
 							var inBuff = new byte[compressedBlockSize[currentBlockID]];

@@ -14,7 +14,7 @@ namespace nsZip.LibHacControl
 			{
 				var nca = new Nca(keyset, file, false);
 				nca.ValidateMasterHashes();
-				nca.ParseNpdm();
+				//nca.ParseNpdm();
 
 				for (var i = 0; i < 3; ++i)
 				{

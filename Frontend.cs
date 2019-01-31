@@ -58,32 +58,46 @@ namespace nsZip
 		{
 			if (TaskQueue.Items.Count == 0)
 			{
+				CompressFolder.Compress(DebugOutput, "decrypted", "compressed");
+				DecompressFolder.Decompress(DebugOutput, "compressed", "extracted");
 				DebugOutput.AppendText("Nothing to do - TaskQueue empty! Please add an NSP or NSPZ!");
 				return;
 			}
 
-			cleanFolder("extracted");
-			cleanFolder("decrypted");
-			cleanFolder("encrypted");
-			cleanFolder("compressed");
-			DebugOutput.Clear();
-			var infile = (string) TaskQueue.Items[0];
-			var infileLowerCase = infile.ToLower();
-			TaskQueue.Items.RemoveAt(0);
-			if (infileLowerCase.EndsWith("nsp"))
+			do
 			{
-				CompressNSP(infile);
-			}
-			else if (infileLowerCase.EndsWith("nspz"))
-			{
-				DecompressNSPZ(infile);
-			}
-			else
-			{
-				throw new InvalidDataException($"Invalid file type {infile}");
-			}
-		}
 
+				cleanFolder("extracted");
+				cleanFolder("decrypted");
+				cleanFolder("encrypted");
+				cleanFolder("compressed");
+				DebugOutput.Clear();
+
+				var inFile = (string) TaskQueue.Items[0];
+				var infileLowerCase = inFile.ToLower();
+				TaskQueue.Items.RemoveAt(0);
+				if (infileLowerCase.EndsWith("nsp"))
+				{
+					CompressNSP(inFile);
+				}
+				else if (infileLowerCase.EndsWith("xci"))
+				{
+					CompressXCI(inFile);
+				}
+				else if (infileLowerCase.EndsWith("nspz"))
+				{
+					DecompressNSPZ(inFile);
+				}
+				else
+				{
+					throw new InvalidDataException($"Invalid file type {inFile}");
+				}
+
+				var dataString = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+				var inFileNoExtension = Path.GetFileNameWithoutExtension(inFile);
+				File.WriteAllLines($"DebugOutput_{dataString}_{inFileNoExtension}.log", DebugOutput.Text.Split('\n'));
+			} while (TaskQueue.Items.Count > 0);
+		}
 
 		private void CompressNSP(string nspFile)
 		{
@@ -91,6 +105,24 @@ namespace nsZip
 			DebugOutput.AppendText($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
 			var keyset = OpenKeyset();
 			ProcessNsp.Process(nspFile, "extracted/", DebugOutput);
+			CompressExtracted(keyset);
+			FolderTools.FolderToNSP("compressed", $"{nspFileNoExtension}.nspz");
+			DebugOutput.AppendText($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
+		}
+
+		private void CompressXCI(string xciFile)
+		{
+			var xciFileNoExtension = Path.GetFileNameWithoutExtension(xciFile);
+			DebugOutput.AppendText($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
+			var keyset = OpenKeyset();
+			ProcessXci.Process(xciFile, "extracted/", keyset, DebugOutput);
+			CompressExtracted(keyset);
+			FolderTools.FolderToNSP("compressed", $"{xciFileNoExtension}.xciz");
+			DebugOutput.AppendText($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
+		}
+
+		private void CompressExtracted(Keyset keyset)
+		{
 			FolderTools.ExtractTitlekeys("extracted", keyset, DebugOutput);
 
 			var dirExtracted = new DirectoryInfo("extracted");
@@ -108,7 +140,7 @@ namespace nsZip
 
 			TrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
 			CompressFolder.Compress(DebugOutput, "decrypted", "compressed");
-			var newFileName = $"{Path.GetFileNameWithoutExtension(nspFile)}.nspz";
+
 			if (VerifWhenCompressing)
 			{
 				cleanFolder("decrypted");
@@ -122,9 +154,6 @@ namespace nsZip
 					EncryptNCA.Encrypt(file.Name, false, true, keyset, DebugOutput);
 				}
 			}
-
-			FolderTools.FolderToNSP("compressed", newFileName);
-			DebugOutput.AppendText($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
 		}
 
 		private void DecompressNSPZ(string nspzFile)
@@ -173,9 +202,9 @@ namespace nsZip
 
 		private void SelectNspFileToCompressButton_Click(object sender, EventArgs e)
 		{
-			if (SelectNspDialog.ShowDialog() == DialogResult.OK)
+			if (SelectNspXciDialog.ShowDialog() == DialogResult.OK)
 			{
-				foreach (var filename in SelectNspDialog.FileNames)
+				foreach (var filename in SelectNspXciDialog.FileNames)
 				{
 					TaskQueue.Items.Add(filename);
 				}
