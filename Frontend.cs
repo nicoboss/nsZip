@@ -111,30 +111,21 @@ namespace nsZip
 			var newFileName = $"{Path.GetFileNameWithoutExtension(nspFile)}.nspz";
 			if (VerifWhenCompressing)
 			{
-				cleanFolder("extracted");
 				cleanFolder("decrypted");
 				cleanFolder("encrypted");
 				DecompressFolder.Decompress(DebugOutput, "compressed", "decrypted");
-				UntrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
+				UntrimDeltaNCA.Process("decrypted", "extracted", keyset, DebugOutput);
 
 				var dirDecrypted = new DirectoryInfo("decrypted");
-				foreach (var file in dirDecrypted.GetFiles())
+				foreach (var file in dirDecrypted.GetFiles("*.nca"))
 				{
-					if (file.Name.EndsWith(".nca"))
-					{
-						EncryptNCA.Encrypt(file.Name, false, true, keyset, DebugOutput);
-					}
-					else
-					{
-						file.CopyTo($"encrypted/{file.Name}");
-					}
+					EncryptNCA.Encrypt(file.Name, false, true, keyset, DebugOutput);
 				}
 			}
 
 			FolderTools.FolderToNSP("compressed", newFileName);
 			DebugOutput.AppendText($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
 		}
-
 
 		private void DecompressNSPZ(string nspzFile)
 		{
@@ -143,25 +134,41 @@ namespace nsZip
 			var keyset = OpenKeyset();
 			ProcessNsp.Process(nspzFile, "extracted/", DebugOutput);
 			DecompressFolder.Decompress(DebugOutput, "extracted", "decrypted");
-			UntrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
+			UntrimAndEncrypt(keyset);
+			var newFileName = $"{Path.GetFileNameWithoutExtension(nspzFile)}.nsp";
+			FolderTools.FolderToNSP("encrypted", newFileName);
+			DebugOutput.AppendText($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
+		}
+
+		public void UntrimAndEncrypt(Keyset keyset)
+		{
 			FolderTools.ExtractTitlekeys("decrypted", keyset, DebugOutput);
 
 			var dirDecrypted = new DirectoryInfo("decrypted");
 			foreach (var file in dirDecrypted.GetFiles())
 			{
+				if (file.Name.EndsWith(".tca"))
+				{
+					continue;
+				}
+
 				if (file.Name.EndsWith(".nca"))
 				{
 					EncryptNCA.Encrypt(file.Name, true, true, keyset, DebugOutput);
+					file.Delete();
 				}
 				else
 				{
-					file.CopyTo($"encrypted/{file.Name}");
+					file.MoveTo($"encrypted/{file.Name}");
 				}
 			}
 
-			var newFileName = $"{Path.GetFileNameWithoutExtension(nspzFile)}.nsp";
-			FolderTools.FolderToNSP("encrypted", newFileName);
-			DebugOutput.AppendText($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
+			UntrimDeltaNCA.Process("decrypted", "encrypted", keyset, DebugOutput);
+
+			foreach (var file in dirDecrypted.GetFiles("*.nca"))
+			{
+				EncryptNCA.Encrypt(file.Name, true, true, keyset, DebugOutput);
+			}
 		}
 
 		private void SelectNspFileToCompressButton_Click(object sender, EventArgs e)

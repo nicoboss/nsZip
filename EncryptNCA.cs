@@ -24,7 +24,7 @@ namespace nsZip
 			Buffer.BlockCopy(keyset.HeaderKey, 16, HeaderKey2, 0, 16);
 
 			var Input = File.Open($"decrypted/{ncaName}", FileMode.Open);
-			TB.AppendText($"Input: {Input}\r\n");
+			TB.AppendText($"Input: {ncaName}\r\n");
 			var DecryptedHeader = new byte[0xC00];
 			Input.Read(DecryptedHeader, 0, 0xC00);
 
@@ -58,12 +58,8 @@ namespace nsZip
 			}
 			else
 			{
-				var TicketFile = File.Open($"decrypted/{Utils.BytesToString(Header.RightsId)}.tik", FileMode.Open);
-				TicketFile.Seek(0x180, SeekOrigin.Begin);
-				var titleKey = new byte[0x10];
+				var titleKey = keyset.TitleKeys[Header.RightsId];
 				var TitleKeyDec = new byte[0x10];
-				TicketFile.Read(titleKey, 0, 0x10);
-				TicketFile.Dispose();
 				Crypto.Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
 				TB.AppendText($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
 				TB.AppendText($"TitleKeyDec: {Utils.BytesToString(TitleKeyDec)}\r\n");

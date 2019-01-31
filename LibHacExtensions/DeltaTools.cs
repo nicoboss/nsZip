@@ -6,6 +6,7 @@ namespace nsZip.LibHacExtensions
 	{
 		public const string Ndv0Magic = "NDV0";
 		public const string Tdv0Magic = "TDV0";
+		public static readonly byte[] LCA3Macic = {0x4c, 0x43, 0x41, 0x33};
 
 		public static int ReadInt(FileReader reader, int bytes)
 		{

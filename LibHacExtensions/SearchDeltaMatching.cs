@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using LibHac.IO;
 
@@ -15,35 +16,63 @@ namespace nsZip.LibHacExtensions
 			}
 
 			var Header = new DeltaFragmentHeader(new StorageFile(fragmentFile, OpenMode.Read));
-
 			if (Header.Magic != DeltaTools.Ndv0Magic)
 			{
-				throw new InvalidDataException("NDV0 magic value is missing.");
-			}
-
-			var fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
-			if (fragmentFile.Length < fragmentSize)
-			{
-				throw new InvalidDataException(
-					$"Delta file is smaller than the header indicates. (0x{fragmentSize} bytes)");
-			}
-
-			var fragmentFileReader = new FileReader(new StorageFile(fragmentFile, OpenMode.Read));
-			fragmentFileReader.Position = Header.FragmentHeaderSize;
-
-			var d = new DirectoryInfo(newBaseFolderPath);
-			foreach (var file in d.GetFiles("*.nca"))
-			{
-				using (var newBaseFile = File.Open(file.FullName, FileMode.Open))
+				//throw new InvalidDataException("NDV0 magic value is missing.");
+				var maxBS = 10485760; //10 MB
+				var fragmentFileBuffer = new byte[maxBS];
+				var fragmentHash = SHA256.Create();
+				var pos = 0;
+				while (pos < fragmentFile.Length)
 				{
-					if (newBaseFile.Length != Header.NewSize)
-					{
-						continue;
-					}
+					var bs = (int) Math.Min(fragmentFile.Length - pos, maxBS);
+					fragmentFile.Read(fragmentFileBuffer, pos, bs, 0);
+					fragmentHash.TransformBlock(fragmentFileBuffer, 0, bs, fragmentFileBuffer, 0);
+					pos += bs;
+				}
 
-					if (VerifyMatching(newBaseFile, fragmentFileReader, Header))
+				fragmentHash.TransformFinalBlock(new byte[0], 0, 0);
+
+				var fragmentHashString = Utils.BytesToString(fragmentHash.Hash).ToLower();
+
+				var d = new DirectoryInfo(newBaseFolderPath);
+				foreach (var file in d.GetFiles("*.nca"))
+				{
+					var nameWithoutExtension = Path.GetFileNameWithoutExtension(file.Name);
+					if (fragmentHashString.StartsWith(nameWithoutExtension))
 					{
 						return Encoding.ASCII.GetBytes(file.Name);
+					}
+				}
+
+				return null;
+			}
+			else
+			{
+				var fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
+				if (fragmentFile.Length < fragmentSize)
+				{
+					throw new InvalidDataException(
+						$"Delta file is smaller than the header indicates. (0x{fragmentSize} bytes)");
+				}
+
+				var fragmentFileReader = new FileReader(new StorageFile(fragmentFile, OpenMode.Read));
+				fragmentFileReader.Position = Header.FragmentHeaderSize;
+
+				var d = new DirectoryInfo(newBaseFolderPath);
+				foreach (var file in d.GetFiles("*.nca"))
+				{
+					using (var newBaseFile = File.Open(file.FullName, FileMode.Open))
+					{
+						if (newBaseFile.Length != Header.NewSize)
+						{
+							continue;
+						}
+
+						if (VerifyMatching(newBaseFile, fragmentFileReader, Header))
+						{
+							return Encoding.ASCII.GetBytes(file.Name);
+						}
 					}
 				}
 			}

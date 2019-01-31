@@ -11,7 +11,7 @@ namespace nsZip.LibHacControl
 	{
 		private const string FragmentFileName = "fragment";
 
-		public static void Process(string folderPath, Keyset keyset, RichTextBox DebugOutput)
+		public static void Process(string folderPath, string newBaseFolderPath, Keyset keyset, RichTextBox DebugOutput)
 		{
 			var dirDecrypted = new DirectoryInfo(folderPath);
 			foreach (var inFile in dirDecrypted.GetFiles("*.tca"))
@@ -49,7 +49,7 @@ namespace nsZip.LibHacControl
 					if (Pfs0Header.NumFiles == 1 && FileDict.TryGetValue(path, out var fragmentFile))
 					{
 						var inFileNameNoExtension = Path.GetFileNameWithoutExtension(inFile.Name);
-						var writer = File.Open($"decrypted/{inFileNameNoExtension}.utca", FileMode.Create);
+						var writer = File.Open($"{folderPath}/{inFileNameNoExtension}.nca", FileMode.Create);
 						var offsetBefore = section.Offset + section.Header.Sha256Info.DataOffset +
 						                   Pfs0Header.HeaderSize +
 						                   fragmentFile.Offset;
@@ -57,7 +57,7 @@ namespace nsZip.LibHacControl
 						IStorage fragmentStorageOverflow = ncaStorage.Slice(offsetBefore,
 							ncaStorage.Length - offsetBefore, false);
 						ncaStorageBeforeFragment.CopyToStream(writer);
-						var TDV0len = RecreateDelta.Recreate(fragmentStorageOverflow, writer);
+						var TDV0len = RecreateDelta.Recreate(fragmentStorageOverflow, writer, newBaseFolderPath);
 						var offsetAfter = offsetBefore + TDV0len;
 						IStorage fragmentStorageAfter = ncaStorage.Slice(offsetAfter,
 							ncaStorage.Length - offsetAfter, false);

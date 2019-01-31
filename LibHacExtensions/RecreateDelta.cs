@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using LibHac;
 using LibHac.IO;
 
 namespace nsZip.LibHacExtensions
 {
 	public static class RecreateDelta
 	{
-		public static long Recreate(IStorage fragmentMeta, FileStream writer)
+		public static long Recreate(IStorage fragmentMeta, FileStream writer, string newBaseFolderPath)
 		{
 			var Segments = new List<DeltaFragmentSegment>();
 			if (fragmentMeta.Length < 0x40)
@@ -16,15 +17,27 @@ namespace nsZip.LibHacExtensions
 				throw new InvalidDataException("Delta file is too small.");
 			}
 
-			var Header = new DeltaFragmentHeader(new StorageFile(fragmentMeta, OpenMode.Read));
+			var magic = new byte[4];
+			fragmentMeta.Read(magic, 0, 4, 0);
+			var reader = new FileReader(new StorageFile(fragmentMeta, OpenMode.Read));
 
+			if (Utils.ArraysEqual(magic, DeltaTools.LCA3Macic))
+			{
+				reader.Position = DeltaTools.LCA3Macic.Length;
+				var linkedNcaFilenameSize = reader.ReadUInt8();
+				var linkedNcafilename =
+					Encoding.ASCII.GetString(reader.ReadBytes(DeltaTools.LCA3Macic.Length + 1, linkedNcaFilenameSize,
+						true));
+				var newLinkedFile = File.Open($"{newBaseFolderPath}/{linkedNcafilename}", FileMode.Open);
+				newLinkedFile.CopyStream(writer, newLinkedFile.Length);
+				return reader.Position;
+			}
+
+			var Header = new DeltaFragmentHeader(new StorageFile(fragmentMeta, OpenMode.Read));
 			if (Header.Magic != DeltaTools.Tdv0Magic)
 			{
 				throw new InvalidDataException("TDV0 magic value is missing.");
 			}
-
-			var reader = new FileReader(new StorageFile(fragmentMeta, OpenMode.Read));
-
 
 			reader.Position = 0;
 			var headerData = reader.ReadBytes(0, (int) Header.FragmentHeaderSize, true);
@@ -33,7 +46,7 @@ namespace nsZip.LibHacExtensions
 			var baseNcaFilenameSize = reader.ReadUInt8();
 			var filename =
 				Encoding.ASCII.GetString(reader.ReadBytes(Header.FragmentHeaderSize + 1, baseNcaFilenameSize, true));
-			var newBaseFile = File.Open($"{filename}", FileMode.Open);
+			var newBaseFile = File.Open($"{newBaseFolderPath}/{filename}", FileMode.Open);
 
 			long offset = 0;
 			const int maxBS = 10485760; //10 MB

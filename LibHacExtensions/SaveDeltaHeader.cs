@@ -13,11 +13,23 @@ namespace nsZip.LibHacExtensions
 				throw new InvalidDataException("Delta file is too small.");
 			}
 
+			if (foundBaseNCA.Length > 255)
+			{
+				throw new IndexOutOfRangeException("Base NCA filename isn't allowed to be longer then 255 characters");
+			}
+
 			var Header = new DeltaFragmentHeader(new StorageFile(delta, OpenMode.Read));
+
+
+			var reader = new FileReader(new StorageFile(delta, OpenMode.Read));
+			reader.Position = 0;
 
 			if (Header.Magic != DeltaTools.Ndv0Magic)
 			{
-				throw new InvalidDataException("NDV0 magic value is missing.");
+				writer.Write(DeltaTools.LCA3Macic, 0, DeltaTools.LCA3Macic.Length);
+				writer.WriteByte((byte) foundBaseNCA.Length);
+				writer.Write(foundBaseNCA, 0, foundBaseNCA.Length);
+				return;
 			}
 
 			var fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
@@ -27,22 +39,13 @@ namespace nsZip.LibHacExtensions
 					$"Delta file is smaller than the header indicates. (0x{fragmentSize} bytes)");
 			}
 
-			var reader = new FileReader(new StorageFile(delta, OpenMode.Read));
-
-			reader.Position = 0;
 			var headerData = reader.ReadBytes((int) Header.FragmentHeaderSize);
 			headerData[0] = 0x54; //T (NDV0 to TDV0)
 			writer.Write(headerData, 0, (int) Header.FragmentHeaderSize);
-			if (foundBaseNCA.Length > 255)
-			{
-				throw new IndexOutOfRangeException("Base NCA filename isn't allowed to be longer then 255 characters");
-			}
-
 			writer.WriteByte((byte) foundBaseNCA.Length);
 			writer.Write(foundBaseNCA, 0, foundBaseNCA.Length);
 
 			long offset = 0;
-
 			while (offset < Header.NewSize)
 			{
 				ReadSegmentHeader(reader, writer, out var size, out var seek);
