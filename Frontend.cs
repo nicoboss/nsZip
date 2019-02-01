@@ -12,8 +12,8 @@ namespace nsZip
 {
 	public partial class Frontend : Form
 	{
-		private readonly bool VerifWhenCompressing = true;
 		private string OutputFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+		private bool VerifyWhenCompressing = true;
 
 		public Frontend()
 		{
@@ -22,6 +22,21 @@ namespace nsZip
 
 		private void Form1_Load(object sender, EventArgs e)
 		{
+			MaximumSize = Screen.FromControl(this).WorkingArea.Size;
+		}
+
+		//To properly fit the Form to if moved to a screen with another resolution
+		private void Frontend_Move(object sender, EventArgs e)
+		{
+			var newMaxSize = Screen.FromControl(this).WorkingArea.Size;
+			if (!MaximumSize.Equals(newMaxSize))
+			{
+				MaximumSize = newMaxSize;
+
+				//This line is so dumb but required
+				//for it to refresh it's size properly
+				Size = Size;
+			}
 		}
 
 		private void OutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
@@ -35,6 +50,7 @@ namespace nsZip
 		private static Keyset OpenKeyset()
 		{
 			var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+			var homeSwitch = Path.Combine(home, ".switch");
 			var homeKeyFile = Path.Combine(home, ".switch", "prod.keys");
 			var homeTitleKeyFile = Path.Combine(home, ".switch", "title.keys");
 			var homeConsoleKeyFile = Path.Combine(home, ".switch", "console.keys");
@@ -42,19 +58,29 @@ namespace nsZip
 			string titleKeyFile = null;
 			string consoleKeyFile = null;
 
-			if (File.Exists(homeKeyFile))
+
+			while (true)
 			{
-				keyFile = homeKeyFile;
-			}
-			else
-			{
+				if (File.Exists(homeKeyFile))
+				{
+					keyFile = homeKeyFile;
+					break;
+				}
+
 				if (File.Exists("keys.txt"))
 				{
 					keyFile = "keys.txt";
+					break;
 				}
-				else
+
+				Directory.CreateDirectory(homeSwitch);
+				Process.Start(homeSwitch);
+				var dialogResult = MessageBox.Show(
+					@"prod.keys not found! Dump them using Lockpick and put prod.keys (and title.keys if your NSP files have no ticket included) in """ +
+					homeSwitch + @""" Press OK when you're done.", @"prod.keys not found! Press OK when you're done.",
+					MessageBoxButtons.OKCancel, MessageBoxIcon.Error, MessageBoxDefaultButton.Button1);
+				if (dialogResult == DialogResult.Cancel)
 				{
-					Directory.CreateDirectory(Path.Combine(home, ".switch"));
 					throw new ArgumentException(
 						@"prod.keys not found! Please put prod.keys in " + homeKeyFile);
 				}
@@ -109,6 +135,10 @@ namespace nsZip
 					CompressXCI(inFile);
 				}
 				else if (infileLowerCase.EndsWith("nspz"))
+				{
+					DecompressNSPZ(inFile);
+				}
+				else if (infileLowerCase.EndsWith("xciz"))
 				{
 					DecompressNSPZ(inFile);
 				}
@@ -177,7 +207,7 @@ namespace nsZip
 			TrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
 			CompressFolder.Compress(DebugOutput, "decrypted", "compressed");
 
-			if (VerifWhenCompressing)
+			if (VerifyWhenCompressing)
 			{
 				cleanFolder("decrypted");
 				cleanFolder("encrypted");
@@ -289,6 +319,29 @@ namespace nsZip
 			richTextBox.SelectionStart = richTextBox.Text.Length;
 			// scroll it automatically
 			richTextBox.ScrollToCaret();
+		}
+
+		private void nsZipGitHubLinkLabel_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+		{
+			Process.Start("https://github.com/nicoboss/nsZip");
+		}
+
+		private void VerifyAfterCompressCheckBox_CheckedChanged(object sender, EventArgs e)
+		{
+			if (!VerifyAfterCompressCheckBox.Checked)
+			{
+				var dialogResult = MessageBox.Show(
+					@"Without verification corrupted unrecoverable nspz/nciz caused by bugs won't be discovered until you try to decompress them. Due to the early state of nsZip I highly recommend to leave it ON if you don't keep a backup copy of your nsp/xci. Do you really want to turn OFF verification?",
+					@"Do you really want to turn of verification after compression?", MessageBoxButtons.YesNo,
+					MessageBoxIcon.Warning,
+					MessageBoxDefaultButton.Button2);
+				if (dialogResult != DialogResult.Yes)
+				{
+					VerifyAfterCompressCheckBox.Checked = true;
+				}
+			}
+
+			VerifyWhenCompressing = VerifyAfterCompressCheckBox.Checked;
 		}
 	}
 }
