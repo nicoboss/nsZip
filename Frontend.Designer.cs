@@ -40,14 +40,16 @@
 			this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
 			this.SelectOutputDictionaryDialog = new System.Windows.Forms.FolderBrowserDialog();
 			this.nsZipSettingsGroupBox = new System.Windows.Forms.GroupBox();
-			this.VerifyAfterCompressCheckBox = new System.Windows.Forms.CheckBox();
-			this.label1 = new System.Windows.Forms.Label();
-			this.nsZipInfoGroupBox = new System.Windows.Forms.GroupBox();
+			this.BlockSizeComboBox = new System.Windows.Forms.ComboBox();
+			this.BlockSizeLabel = new System.Windows.Forms.Label();
+			this.CompressionLevelLabel = new System.Windows.Forms.Label();
+			this.CompressionLevelComboBox = new System.Windows.Forms.ComboBox();
 			this.label2 = new System.Windows.Forms.Label();
 			this.nsZipGitHubLinkLabel = new System.Windows.Forms.LinkLabel();
+			this.label1 = new System.Windows.Forms.Label();
+			this.VerifyAfterCompressCheckBox = new System.Windows.Forms.CheckBox();
 			this.flowLayoutPanel1.SuspendLayout();
 			this.nsZipSettingsGroupBox.SuspendLayout();
-			this.nsZipInfoGroupBox.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// SelectNspFileToCompressButton
@@ -165,74 +167,115 @@
 			// 
 			// nsZipSettingsGroupBox
 			// 
+			this.nsZipSettingsGroupBox.Controls.Add(this.BlockSizeComboBox);
+			this.nsZipSettingsGroupBox.Controls.Add(this.BlockSizeLabel);
+			this.nsZipSettingsGroupBox.Controls.Add(this.CompressionLevelLabel);
+			this.nsZipSettingsGroupBox.Controls.Add(this.CompressionLevelComboBox);
+			this.nsZipSettingsGroupBox.Controls.Add(this.label2);
+			this.nsZipSettingsGroupBox.Controls.Add(this.nsZipGitHubLinkLabel);
+			this.nsZipSettingsGroupBox.Controls.Add(this.label1);
 			this.nsZipSettingsGroupBox.Controls.Add(this.VerifyAfterCompressCheckBox);
 			this.nsZipSettingsGroupBox.ForeColor = System.Drawing.Color.LightCyan;
-			this.nsZipSettingsGroupBox.Location = new System.Drawing.Point(1296, 202);
+			this.nsZipSettingsGroupBox.Location = new System.Drawing.Point(1293, 202);
 			this.nsZipSettingsGroupBox.Name = "nsZipSettingsGroupBox";
-			this.nsZipSettingsGroupBox.Size = new System.Drawing.Size(396, 85);
+			this.nsZipSettingsGroupBox.Size = new System.Drawing.Size(399, 249);
 			this.nsZipSettingsGroupBox.TabIndex = 101;
 			this.nsZipSettingsGroupBox.TabStop = false;
 			this.nsZipSettingsGroupBox.Text = "nsZip Settings:";
 			// 
-			// VerifyAfterCompressCheckBox
+			// BlockSizeComboBox
 			// 
-			this.VerifyAfterCompressCheckBox.AutoSize = true;
-			this.VerifyAfterCompressCheckBox.Checked = true;
-			this.VerifyAfterCompressCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.VerifyAfterCompressCheckBox.ForeColor = System.Drawing.Color.Yellow;
-			this.VerifyAfterCompressCheckBox.Location = new System.Drawing.Point(8, 40);
-			this.VerifyAfterCompressCheckBox.Name = "VerifyAfterCompressCheckBox";
-			this.VerifyAfterCompressCheckBox.Size = new System.Drawing.Size(375, 29);
-			this.VerifyAfterCompressCheckBox.TabIndex = 0;
-			this.VerifyAfterCompressCheckBox.Text = "Verify after compress (default: ON)";
-			this.VerifyAfterCompressCheckBox.UseVisualStyleBackColor = false;
-			this.VerifyAfterCompressCheckBox.CheckedChanged += new System.EventHandler(this.VerifyAfterCompressCheckBox_CheckedChanged);
+			this.BlockSizeComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.BlockSizeComboBox.FormattingEnabled = true;
+			this.BlockSizeComboBox.Items.AddRange(new object[] {
+            "256 KB",
+            "512 KB"});
+			this.BlockSizeComboBox.Location = new System.Drawing.Point(200, 109);
+			this.BlockSizeComboBox.Name = "BlockSizeComboBox";
+			this.BlockSizeComboBox.Size = new System.Drawing.Size(181, 33);
+			this.BlockSizeComboBox.TabIndex = 11;
+			this.BlockSizeComboBox.SelectedIndexChanged += new System.EventHandler(this.BlockSizeComboBox_SelectedIndexChanged);
 			// 
-			// label1
+			// BlockSizeLabel
 			// 
-			this.label1.AutoSize = true;
-			this.label1.ForeColor = System.Drawing.Color.Yellow;
-			this.label1.Location = new System.Drawing.Point(2, 117);
-			this.label1.Name = "label1";
-			this.label1.Size = new System.Drawing.Size(393, 25);
-			this.label1.TabIndex = 2;
-			this.label1.Text = "Note: XCIZ => XCI isn\'t implemented yet";
+			this.BlockSizeLabel.AutoSize = true;
+			this.BlockSizeLabel.Location = new System.Drawing.Point(75, 117);
+			this.BlockSizeLabel.Name = "BlockSizeLabel";
+			this.BlockSizeLabel.Size = new System.Drawing.Size(119, 25);
+			this.BlockSizeLabel.TabIndex = 10;
+			this.BlockSizeLabel.Text = "Block Size:";
 			// 
-			// nsZipInfoGroupBox
+			// CompressionLevelLabel
 			// 
-			this.nsZipInfoGroupBox.Controls.Add(this.label2);
-			this.nsZipInfoGroupBox.Controls.Add(this.nsZipGitHubLinkLabel);
-			this.nsZipInfoGroupBox.Controls.Add(this.label1);
-			this.nsZipInfoGroupBox.ForeColor = System.Drawing.Color.LightCyan;
-			this.nsZipInfoGroupBox.Location = new System.Drawing.Point(1297, 293);
-			this.nsZipInfoGroupBox.Name = "nsZipInfoGroupBox";
-			this.nsZipInfoGroupBox.Size = new System.Drawing.Size(396, 158);
-			this.nsZipInfoGroupBox.TabIndex = 102;
-			this.nsZipInfoGroupBox.TabStop = false;
-			this.nsZipInfoGroupBox.Text = "nsZip Info:";
+			this.CompressionLevelLabel.AutoSize = true;
+			this.CompressionLevelLabel.Location = new System.Drawing.Point(6, 73);
+			this.CompressionLevelLabel.Name = "CompressionLevelLabel";
+			this.CompressionLevelLabel.Size = new System.Drawing.Size(191, 25);
+			this.CompressionLevelLabel.TabIndex = 9;
+			this.CompressionLevelLabel.Text = "Compresion Level:";
+			// 
+			// CompressionLevelComboBox
+			// 
+			this.CompressionLevelComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+			this.CompressionLevelComboBox.FormattingEnabled = true;
+			this.CompressionLevelComboBox.Items.AddRange(new object[] {
+            "[Lv. 08] Faster",
+            "[Lv. 12] Fast",
+            "[Lv. 14] Normal",
+            "[Lv. 18] Great",
+            "[Lv. 22] Ultra"});
+			this.CompressionLevelComboBox.Location = new System.Drawing.Point(200, 65);
+			this.CompressionLevelComboBox.Name = "CompressionLevelComboBox";
+			this.CompressionLevelComboBox.Size = new System.Drawing.Size(181, 33);
+			this.CompressionLevelComboBox.TabIndex = 8;
+			this.CompressionLevelComboBox.SelectedIndexChanged += new System.EventHandler(this.CompressionLevelComboBox_SelectedIndexChanged);
 			// 
 			// label2
 			// 
 			this.label2.AutoSize = true;
-			this.label2.ForeColor = System.Drawing.Color.GreenYellow;
-			this.label2.Location = new System.Drawing.Point(2, 36);
+			this.label2.ForeColor = System.Drawing.Color.LightCyan;
+			this.label2.Location = new System.Drawing.Point(6, 162);
 			this.label2.Name = "label2";
-			this.label2.Size = new System.Drawing.Size(332, 50);
-			this.label2.TabIndex = 4;
-			this.label2.Text = "Report bugs, follow this project or\r\npost your suggestions under:";
+			this.label2.Size = new System.Drawing.Size(387, 50);
+			this.label2.TabIndex = 7;
+			this.label2.Text = "Note: XCIZ to XCI isn\'t implemented yet\r\nReport bugs and suggestions under:";
 			// 
 			// nsZipGitHubLinkLabel
 			// 
 			this.nsZipGitHubLinkLabel.ActiveLinkColor = System.Drawing.Color.Orange;
 			this.nsZipGitHubLinkLabel.AutoSize = true;
 			this.nsZipGitHubLinkLabel.LinkColor = System.Drawing.Color.Aqua;
-			this.nsZipGitHubLinkLabel.Location = new System.Drawing.Point(2, 87);
+			this.nsZipGitHubLinkLabel.Location = new System.Drawing.Point(6, 212);
 			this.nsZipGitHubLinkLabel.Name = "nsZipGitHubLinkLabel";
 			this.nsZipGitHubLinkLabel.Size = new System.Drawing.Size(333, 25);
-			this.nsZipGitHubLinkLabel.TabIndex = 3;
+			this.nsZipGitHubLinkLabel.TabIndex = 6;
 			this.nsZipGitHubLinkLabel.TabStop = true;
 			this.nsZipGitHubLinkLabel.Text = "https://github.com/nicoboss/nsZip";
 			this.nsZipGitHubLinkLabel.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.nsZipGitHubLinkLabel_LinkClicked);
+			// 
+			// label1
+			// 
+			this.label1.AutoSize = true;
+			this.label1.ForeColor = System.Drawing.Color.LightCyan;
+			this.label1.Location = new System.Drawing.Point(6, 212);
+			this.label1.Name = "label1";
+			this.label1.Size = new System.Drawing.Size(0, 25);
+			this.label1.TabIndex = 5;
+			// 
+			// VerifyAfterCompressCheckBox
+			// 
+			this.VerifyAfterCompressCheckBox.AutoSize = true;
+			this.VerifyAfterCompressCheckBox.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
+			this.VerifyAfterCompressCheckBox.Checked = true;
+			this.VerifyAfterCompressCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.VerifyAfterCompressCheckBox.ForeColor = System.Drawing.Color.LightCyan;
+			this.VerifyAfterCompressCheckBox.Location = new System.Drawing.Point(6, 30);
+			this.VerifyAfterCompressCheckBox.Name = "VerifyAfterCompressCheckBox";
+			this.VerifyAfterCompressCheckBox.Size = new System.Drawing.Size(375, 29);
+			this.VerifyAfterCompressCheckBox.TabIndex = 0;
+			this.VerifyAfterCompressCheckBox.Text = "Verify after compress (default: ON)";
+			this.VerifyAfterCompressCheckBox.UseVisualStyleBackColor = false;
+			this.VerifyAfterCompressCheckBox.CheckedChanged += new System.EventHandler(this.VerifyAfterCompressCheckBox_CheckedChanged);
 			// 
 			// Frontend
 			// 
@@ -242,7 +285,6 @@
 			this.AutoSize = true;
 			this.BackColor = System.Drawing.Color.DimGray;
 			this.ClientSize = new System.Drawing.Size(1724, 1066);
-			this.Controls.Add(this.nsZipInfoGroupBox);
 			this.Controls.Add(this.nsZipSettingsGroupBox);
 			this.Controls.Add(this.flowLayoutPanel1);
 			this.Controls.Add(this.TaskQueue);
@@ -252,15 +294,12 @@
 			this.MaximizeBox = false;
 			this.MinimumSize = new System.Drawing.Size(1750, 1137);
 			this.Name = "Frontend";
-			this.Text = "nsZip File Manager v1.0.0";
-			this.TopMost = true;
+			this.Text = "nsZip File Manager v1.0.1";
 			this.Load += new System.EventHandler(this.Form1_Load);
 			this.Move += new System.EventHandler(this.Frontend_Move);
 			this.flowLayoutPanel1.ResumeLayout(false);
 			this.nsZipSettingsGroupBox.ResumeLayout(false);
 			this.nsZipSettingsGroupBox.PerformLayout();
-			this.nsZipInfoGroupBox.ResumeLayout(false);
-			this.nsZipInfoGroupBox.PerformLayout();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -279,10 +318,13 @@
 		private System.Windows.Forms.FolderBrowserDialog SelectOutputDictionaryDialog;
 		private System.Windows.Forms.GroupBox nsZipSettingsGroupBox;
 		private System.Windows.Forms.CheckBox VerifyAfterCompressCheckBox;
-		private System.Windows.Forms.Label label1;
-		private System.Windows.Forms.GroupBox nsZipInfoGroupBox;
+		private System.Windows.Forms.Label CompressionLevelLabel;
+		private System.Windows.Forms.ComboBox CompressionLevelComboBox;
 		private System.Windows.Forms.Label label2;
 		private System.Windows.Forms.LinkLabel nsZipGitHubLinkLabel;
+		private System.Windows.Forms.Label label1;
+		private System.Windows.Forms.ComboBox BlockSizeComboBox;
+		private System.Windows.Forms.Label BlockSizeLabel;
 	}
 }
 

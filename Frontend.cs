@@ -12,8 +12,10 @@ namespace nsZip
 {
 	public partial class Frontend : Form
 	{
+		private int BlockSize = 262144;
 		private string OutputFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 		private bool VerifyWhenCompressing = true;
+		private int ZstdLevel = 18;
 
 		public Frontend()
 		{
@@ -23,6 +25,9 @@ namespace nsZip
 		private void Form1_Load(object sender, EventArgs e)
 		{
 			MaximumSize = Screen.FromControl(this).WorkingArea.Size;
+			CompressionLevelComboBox.SelectedIndex = 3;
+			BlockSizeComboBox.SelectedIndex = 0;
+			VerifyAfterCompressCheckBox_CheckedChanged(null, null);
 		}
 
 		//To properly fit the Form to if moved to a screen with another resolution
@@ -205,7 +210,7 @@ namespace nsZip
 			}
 
 			TrimDeltaNCA.Process("decrypted", keyset, DebugOutput);
-			CompressFolder.Compress(DebugOutput, "decrypted", "compressed");
+			CompressFolder.Compress(DebugOutput, "decrypted", "compressed", BlockSize, ZstdLevel);
 
 			if (VerifyWhenCompressing)
 			{
@@ -342,6 +347,50 @@ namespace nsZip
 			}
 
 			VerifyWhenCompressing = VerifyAfterCompressCheckBox.Checked;
+			DebugOutput.AppendText($"Set VerifyWhenCompressing to {VerifyWhenCompressing}\r\n");
+		}
+
+		private void CompressionLevelComboBox_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			switch (CompressionLevelComboBox.SelectedIndex)
+			{
+				case 0:
+					ZstdLevel = 8;
+					break;
+				case 1:
+					ZstdLevel = 12;
+					break;
+				case 2:
+					ZstdLevel = 14;
+					break;
+				case 3:
+					ZstdLevel = 18;
+					break;
+				case 4:
+					ZstdLevel = 22;
+					break;
+				default:
+					throw new NotImplementedException();
+			}
+
+			DebugOutput.AppendText($"Set ZstdLevel to {ZstdLevel}\r\n");
+		}
+
+		private void BlockSizeComboBox_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			switch (BlockSizeComboBox.SelectedIndex)
+			{
+				case 0:
+					BlockSize = 262144;
+					break;
+				case 1:
+					BlockSize = 524288;
+					break;
+				default:
+					throw new NotImplementedException();
+			}
+
+			DebugOutput.AppendText($"Set BlockSize to {BlockSize} bytes\r\n");
 		}
 	}
 }

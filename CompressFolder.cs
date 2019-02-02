@@ -16,6 +16,7 @@ namespace nsZip
 		private readonly RichTextBox DebugOutput;
 		private readonly string inFolderPath;
 		private readonly string outFolderPath;
+		private readonly int ZstdLevel;
 		private int amountOfBlocks;
 		private int currentBlockID;
 		private byte[] nsZipHeader;
@@ -24,9 +25,10 @@ namespace nsZip
 		private int sizeOfSize;
 
 		private CompressFolder(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg,
-			int bsArg = 262144)
+			int bsArg, int ZstdLevelArg)
 		{
 			bs = bsArg;
+			ZstdLevel = ZstdLevelArg;
 			DebugOutput = debugOutputArg;
 			inFolderPath = inFolderPathArg;
 			outFolderPath = outFolderPathArg;
@@ -34,9 +36,9 @@ namespace nsZip
 		}
 
 		public static void Compress(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg,
-			int bsArg = 262144)
+			int bsArg, int ZstdLevel)
 		{
-			new CompressFolder(debugOutputArg, inFolderPathArg, outFolderPathArg, bsArg);
+			new CompressFolder(debugOutputArg, inFolderPathArg, outFolderPathArg, bsArg, ZstdLevel);
 		}
 
 		private void CompressFunct()
@@ -187,7 +189,7 @@ namespace nsZip
 			using (var memoryStream = new MemoryStream())
 			using (var compressionStream = new ZstandardStream(memoryStream, CompressionMode.Compress))
 			{
-				compressionStream.CompressionLevel = 19;
+				compressionStream.CompressionLevel = ZstdLevel;
 				compressionStream.Write(input, 0, input.Length);
 				compressionStream.Close();
 				output = memoryStream.ToArray();

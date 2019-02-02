@@ -2,6 +2,7 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Windows.Forms;
 using LibHac.IO;
 
 namespace nsZip.LibHacExtensions
@@ -52,6 +53,15 @@ namespace nsZip.LibHacExtensions
 				var fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
 				if (fragmentFile.Length < fragmentSize)
 				{
+					var dialogResult = MessageBox.Show(
+						"The currently processing NCA contains a yet unimplemented NDV0 file. I will add support for it in the next few days. Do you want to continue and store it uncompressed - the resulting NSPZ/XCIZ file will be significantly larger then under normal circumstances?",
+						"Unimplemented NDV0 file detcted! Store uncompressed?", MessageBoxButtons.YesNo,
+						MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
+					if (dialogResult == DialogResult.Yes)
+					{
+						return null;
+					}
+
 					throw new InvalidDataException(
 						$"Delta file is smaller than the header indicates. (0x{fragmentSize} bytes)");
 				}
