@@ -95,6 +95,7 @@
     <ApplicationIcon>nsZip.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="netstandard" />
     <Reference Include="RunProcessAsTask, Version=1.2.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\RunProcessAsTask.1.2.3\lib\net45\RunProcessAsTask.dll</HintPath>
     </Reference>
