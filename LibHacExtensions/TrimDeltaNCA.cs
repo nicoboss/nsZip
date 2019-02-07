@@ -73,7 +73,7 @@ namespace nsZip.LibHacControl
 						IStorage ncaStorageAfterFragment =
 							ncaStorage.Slice(offsetAfter, ncaStorage.Length - offsetAfter, false);
 						ncaStorageBeforeFragment.CopyToStream(writer);
-						SaveDeltaHeader.Save(fragmentStorage, writer, matching);
+						//SaveDeltaHeader.Save(fragmentStorage, writer, matching);
 						ncaStorageAfterFragment.CopyToStream(writer);
 						writer.Position = 0x200;
 						writer.WriteByte(0x54);

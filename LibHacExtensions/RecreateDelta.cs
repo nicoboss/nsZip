@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using LibHac;
@@ -43,12 +44,19 @@ namespace nsZip.LibHacExtensions
 			var headerData = reader.ReadBytes(0, (int) Header.FragmentHeaderSize, true);
 			headerData[0] = 0x4E; //N (TDV0 to NDV0)
 			writer.Write(headerData, 0, (int) Header.FragmentHeaderSize);
+
 			var baseNcaFilenameSize = reader.ReadUInt8();
-			var filename =
-				Encoding.ASCII.GetString(reader.ReadBytes(Header.FragmentHeaderSize + 1, baseNcaFilenameSize, true));
-			var newBaseFile = File.Open($"{newBaseFolderPath}/{filename}", FileMode.Open);
+			var filenameOffset =
+				Encoding.ASCII.GetString(reader.ReadBytes(Header.FragmentHeaderSize + 1, baseNcaFilenameSize, true)).Split(':');
+
+			var newBaseFile = File.Open($"{newBaseFolderPath}/{filenameOffset[0]}", FileMode.Open);
 
 			long offset = 0;
+			if (filenameOffset.Length > 1)
+			{
+				offset = long.Parse(filenameOffset[1], NumberStyles.HexNumber);
+			}
+
 			const int maxBS = 10485760; //10 MB
 			int bs;
 			var FragmentBlock = new byte[maxBS];

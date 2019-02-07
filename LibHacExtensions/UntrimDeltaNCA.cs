@@ -49,7 +49,7 @@ namespace nsZip.LibHacControl
 					if (Pfs0Header.NumFiles == 1 && FileDict.TryGetValue(path, out var fragmentFile))
 					{
 						var inFileNameNoExtension = Path.GetFileNameWithoutExtension(inFile.Name);
-						var writer = File.Open($"{folderPath}/{inFileNameNoExtension}.nca", FileMode.Create);
+						var writer = File.Open($"{folderPath}/{inFileNameNoExtension}.utrim", FileMode.Create);
 						var offsetBefore = section.Offset + section.Header.Sha256Info.DataOffset +
 						                   Pfs0Header.HeaderSize +
 						                   fragmentFile.Offset;
