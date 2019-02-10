@@ -35,36 +35,45 @@ namespace nsZip.LibHacExtensions
 			}
 
 			var Header = new DeltaFragmentHeader(new StorageFile(fragmentMeta, OpenMode.Read));
-			if (Header.Magic != DeltaTools.Tdv0Magic)
-			{
-				throw new InvalidDataException("TDV0 magic value is missing.");
-			}
 
 			reader.Position = 0;
-			var headerData = reader.ReadBytes(0, (int) Header.FragmentHeaderSize, true);
-			headerData[0] = 0x4E; //N (TDV0 to NDV0)
-			writer.Write(headerData, 0, (int) Header.FragmentHeaderSize);
+			if (Header.Magic == DeltaTools.Tdv0Magic)
+			{
+				var headerData = reader.ReadBytes(0, (int) Header.FragmentHeaderSize, true);
+				headerData[0] = 0x4E; //N (TDV0 to NDV0)
+				writer.Write(headerData, 0, (int) Header.FragmentHeaderSize);
+			}
+			else if (Header.Magic == DeltaTools.Cdv0Magic)
+			{
+				reader.Position = 4;
+			}
+			else
+			{
+				throw new InvalidDataException("TDV0/CDV0 magic value is missing.");
+			}
 
+			var pos = reader.Position;
 			var baseNcaFilenameSize = reader.ReadUInt8();
 			var filenameOffset =
-				Encoding.ASCII.GetString(reader.ReadBytes(Header.FragmentHeaderSize + 1, baseNcaFilenameSize, true)).Split(':');
+				Encoding.ASCII.GetString(reader.ReadBytes(pos + 1, baseNcaFilenameSize, true)).Split(':');
 
 			var newBaseFile = File.Open($"{newBaseFolderPath}/{filenameOffset[0]}", FileMode.Open);
 
 			long offset = 0;
-			if (filenameOffset.Length > 1)
+			var endOffset = Header.NewSize;
+			if (filenameOffset.Length > 2)
 			{
 				offset = long.Parse(filenameOffset[1], NumberStyles.HexNumber);
+				endOffset = long.Parse(filenameOffset[2], NumberStyles.HexNumber);
 			}
 
 			const int maxBS = 10485760; //10 MB
 			int bs;
 			var FragmentBlock = new byte[maxBS];
 
-			while (offset < Header.NewSize)
+			while (offset < endOffset)
 			{
 				ReadSegmentHeader(reader, writer, out var size, out var seek);
-
 				if (seek > 0)
 				{
 					var segment = new DeltaFragmentSegment

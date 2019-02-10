@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -128,21 +127,22 @@ namespace nsZip
 				foreach (var deltaApplyInfo in cnmtExtended.DeltaApplyInfos)
 				{
 					long offset = 0;
-					for (int deltaApplyInfoId = 0; deltaApplyInfoId < deltaApplyInfo.Field2C; ++deltaApplyInfoId)
+					for (var deltaApplyInfoId = 0; deltaApplyInfoId < deltaApplyInfo.Field2C; ++deltaApplyInfoId)
 					{
-						var matching = $"{Utils.BytesToString(deltaApplyInfo.NcaIdNew)}.nca";
-						long length = new FileInfo(matching).Length;
+						var matching = $"{Utils.BytesToString(deltaApplyInfo.NcaIdNew).ToLower()}.nca";
+						var length = new FileInfo(Path.Combine("decrypted", matching)).Length;
 						var hexLen = Math.Ceiling(Math.Log(length, 16.0));
-						if (offset > 0)
+						if (deltaApplyInfo.Field2C > 1)
 						{
-							matching += $":{offset:X}";
+							matching += $":{offset.ToString($"X{hexLen}")}:{0.ToString($"X{hexLen}")}";
 						}
-						
-						var lowerNcaID = Utils.BytesToString(cnmtExtended.DeltaContents[DeltaContentID].NcaId).ToLower();
+
+						var lowerNcaID = Utils.BytesToString(cnmtExtended.DeltaContents[DeltaContentID].NcaId)
+							.ToLower();
 						var ncaFileName = $"decrypted/{lowerNcaID}.nca";
 						DebugOutput.AppendText($"{ncaFileName}\r\n");
 						var ncaStorage = new StreamStorage(new FileStream(ncaFileName, FileMode.Open, FileAccess.Read),
-					false);
+							false);
 						var DecryptedHeader = new byte[0xC00];
 						ncaStorage.Read(DecryptedHeader, 0, 0xC00, 0);
 						var Header = new NcaHeader(new BinaryReader(new MemoryStream(DecryptedHeader)), keyset);
@@ -167,7 +167,8 @@ namespace nsZip
 							{
 								if (Pfs0Header.NumFiles != 1)
 								{
-									throw new InvalidDataException("A fragment Pfs0 container should only contain 1 file");
+									throw new InvalidDataException(
+										"A fragment Pfs0 container should only contain 1 file");
 									//continue;
 								}
 
@@ -178,15 +179,16 @@ namespace nsZip
 									continue;
 								}
 
-								IStorage fragmentStorage = pfs0Storage.Slice(Pfs0Header.HeaderSize + fragmentFile.Offset,
+								IStorage fragmentStorage = pfs0Storage.Slice(
+									Pfs0Header.HeaderSize + fragmentFile.Offset,
 									fragmentFile.Size, false);
 								var buffer = new byte[0xC00];
 								fragmentStorage.Read(buffer, 0, buffer.Length, 0);
 
 								var writer = File.Open($"decrypted/{lowerNcaID}.tca", FileMode.Create);
 								var offsetBefore = section.Offset + section.Header.Sha256Info.DataOffset +
-												   Pfs0Header.HeaderSize +
-												   fragmentFile.Offset;
+								                   Pfs0Header.HeaderSize +
+								                   fragmentFile.Offset;
 								var offsetAfter = offsetBefore + fragmentFile.Size;
 								IStorage ncaStorageBeforeFragment = ncaStorage.Slice(0, offsetBefore, false);
 								IStorage ncaStorageAfterFragment =
@@ -205,6 +207,7 @@ namespace nsZip
 						ncaStorage.Dispose();
 						++DeltaContentID;
 					}
+
 					DebugOutput.AppendText("----------\r\n");
 				}
 

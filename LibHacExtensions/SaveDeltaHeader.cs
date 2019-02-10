@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using LibHac.IO;
@@ -11,6 +12,8 @@ namespace nsZip.LibHacExtensions
 		public static long Save(IStorage delta, FileStream writer, string foundBaseNCA)
 		{
 			Debug.Print(foundBaseNCA);
+			var filenameOffset = foundBaseNCA.Split(':');
+
 			if (delta.Length < 0x40)
 			{
 				throw new InvalidDataException("Delta file is too small.");
@@ -26,19 +29,18 @@ namespace nsZip.LibHacExtensions
 			var reader = new FileReader(new StorageFile(delta, OpenMode.Read));
 			reader.Position = 0;
 
-
-			if (!foundBaseNCA.Contains(":") && Header.Magic != DeltaTools.Ndv0Magic)
+			if (filenameOffset.Length == 1 && Header.Magic != DeltaTools.Ndv0Magic)
 			{
 				writer.Write(DeltaTools.LCA3Macic, 0, DeltaTools.LCA3Macic.Length);
-				writer.WriteByte((byte)foundBaseNCA.Length);
-				writer.Write(ASCIIEncoding.ASCII.GetBytes(foundBaseNCA), 0, foundBaseNCA.Length);
+				writer.WriteByte((byte) foundBaseNCA.Length);
+				writer.Write(Encoding.ASCII.GetBytes(foundBaseNCA), 0, foundBaseNCA.Length);
 				return 0;
 			}
 
 			if (Header.Magic == DeltaTools.Ndv0Magic)
 			{
 				var fragmentSize = Header.FragmentHeaderSize + Header.FragmentBodySize;
-				//if (delta.Length < fragmentSize)
+				//if (!isSplitNdv0 && delta.Length < fragmentSize)
 				//{
 				//	throw new InvalidDataException(
 				//		$"Delta file is smaller than the header indicates. (0x{fragmentSize} bytes)");
@@ -55,6 +57,9 @@ namespace nsZip.LibHacExtensions
 
 			writer.WriteByte((byte) foundBaseNCA.Length);
 			writer.Write(Encoding.ASCII.GetBytes(foundBaseNCA), 0, foundBaseNCA.Length);
+			var foundBaseNCAEndOffsetPos = foundBaseNCA.LastIndexOf(':') + 1;
+			var foundBaseNCAEndOffsetLen = foundBaseNCA.Length - foundBaseNCAEndOffsetPos;
+			var SplitNdv0EndOffsetPos = writer.Position - foundBaseNCAEndOffsetLen;
 
 			long offset = 0;
 			while (reader.Position < delta.Length)
@@ -73,10 +78,23 @@ namespace nsZip.LibHacExtensions
 				reader.Position += size;
 				Debug.Print(reader.Position.ToString());
 			}
+
 			if (reader.Position == delta.Length)
 			{
+				if (filenameOffset.Length > 2)
+				{
+					var startOffset = long.Parse(filenameOffset[1], NumberStyles.HexNumber);
+					var endOffset = startOffset + offset;
+					var realEndOffset = endOffset.ToString($"X{foundBaseNCAEndOffsetLen}");
+					var posReal = writer.Position;
+					writer.Position = SplitNdv0EndOffsetPos;
+					writer.Write(Encoding.ASCII.GetBytes(realEndOffset), 0, realEndOffset.Length);
+					writer.Position = posReal;
+				}
+
 				return offset;
 			}
+
 			throw new InvalidDataException("Fragment file seems to be corrupted!");
 		}
 

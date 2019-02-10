@@ -8,7 +8,6 @@ namespace nsZip.LibHacExtensions
 {
 	public static class CnmtNca
 	{
-
 		public static CnmtExtended GetCnmtExtended(string folderPath, Keyset keyset, RichTextBox DebugOutput)
 		{
 			var dirDecrypted = new DirectoryInfo(folderPath);
@@ -46,13 +45,14 @@ namespace nsZip.LibHacExtensions
 							{
 								ncaStorage.Dispose();
 								return metadata.ExtendedData;
-							} 
+							}
 						}
 					}
 				}
 
 				ncaStorage.Dispose();
 			}
+
 			return null;
 		}
 	}
