@@ -56,10 +56,10 @@
 			// 
 			this.SelectNspFileToCompressButton.BackColor = System.Drawing.Color.Lime;
 			this.SelectNspFileToCompressButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.SelectNspFileToCompressButton.Location = new System.Drawing.Point(0, 3);
-			this.SelectNspFileToCompressButton.Margin = new System.Windows.Forms.Padding(0, 3, 10, 3);
+			this.SelectNspFileToCompressButton.Location = new System.Drawing.Point(0, 2);
+			this.SelectNspFileToCompressButton.Margin = new System.Windows.Forms.Padding(0, 2, 7, 2);
 			this.SelectNspFileToCompressButton.Name = "SelectNspFileToCompressButton";
-			this.SelectNspFileToCompressButton.Size = new System.Drawing.Size(400, 156);
+			this.SelectNspFileToCompressButton.Size = new System.Drawing.Size(267, 100);
 			this.SelectNspFileToCompressButton.TabIndex = 1;
 			this.SelectNspFileToCompressButton.Text = "Select NSP/XCI files to Compress";
 			this.SelectNspFileToCompressButton.UseVisualStyleBackColor = false;
@@ -70,10 +70,11 @@
 			this.DebugOutput.BackColor = System.Drawing.Color.Black;
 			this.DebugOutput.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.DebugOutput.ForeColor = System.Drawing.Color.White;
-			this.DebugOutput.Location = new System.Drawing.Point(33, 473);
+			this.DebugOutput.Location = new System.Drawing.Point(22, 303);
+			this.DebugOutput.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.DebugOutput.Name = "DebugOutput";
 			this.DebugOutput.ReadOnly = true;
-			this.DebugOutput.Size = new System.Drawing.Size(1660, 545);
+			this.DebugOutput.Size = new System.Drawing.Size(1108, 350);
 			this.DebugOutput.TabIndex = 100;
 			this.DebugOutput.Text = "";
 			this.DebugOutput.TextChanged += new System.EventHandler(this.DebugOutput_TextChanged);
@@ -93,12 +94,11 @@
 			this.TaskQueue.FormattingEnabled = true;
 			this.TaskQueue.HorizontalScrollbar = true;
 			this.TaskQueue.IntegralHeight = false;
-			this.TaskQueue.ItemHeight = 37;
-			this.TaskQueue.Location = new System.Drawing.Point(33, 202);
-			this.TaskQueue.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+			this.TaskQueue.ItemHeight = 25;
+			this.TaskQueue.Location = new System.Drawing.Point(22, 129);
 			this.TaskQueue.Name = "TaskQueue";
 			this.TaskQueue.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-			this.TaskQueue.Size = new System.Drawing.Size(1240, 249);
+			this.TaskQueue.Size = new System.Drawing.Size(828, 161);
 			this.TaskQueue.TabIndex = 5;
 			this.TaskQueue.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.listBox_KeyDown);
 			// 
@@ -106,10 +106,10 @@
 			// 
 			this.SelectNszFileToDecompressButton.BackColor = System.Drawing.Color.DeepSkyBlue;
 			this.SelectNszFileToDecompressButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.SelectNszFileToDecompressButton.Location = new System.Drawing.Point(420, 3);
-			this.SelectNszFileToDecompressButton.Margin = new System.Windows.Forms.Padding(10, 3, 10, 3);
+			this.SelectNszFileToDecompressButton.Location = new System.Drawing.Point(281, 2);
+			this.SelectNszFileToDecompressButton.Margin = new System.Windows.Forms.Padding(7, 2, 7, 2);
 			this.SelectNszFileToDecompressButton.Name = "SelectNszFileToDecompressButton";
-			this.SelectNszFileToDecompressButton.Size = new System.Drawing.Size(400, 156);
+			this.SelectNszFileToDecompressButton.Size = new System.Drawing.Size(267, 100);
 			this.SelectNszFileToDecompressButton.TabIndex = 2;
 			this.SelectNszFileToDecompressButton.Text = "Select NSPZ files to Decompress";
 			this.SelectNszFileToDecompressButton.UseVisualStyleBackColor = false;
@@ -119,10 +119,10 @@
 			// 
 			this.RunButton.BackColor = System.Drawing.Color.DarkOrange;
 			this.RunButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.RunButton.Location = new System.Drawing.Point(1260, 3);
-			this.RunButton.Margin = new System.Windows.Forms.Padding(10, 3, 0, 3);
+			this.RunButton.Location = new System.Drawing.Point(843, 2);
+			this.RunButton.Margin = new System.Windows.Forms.Padding(7, 2, 0, 2);
 			this.RunButton.Name = "RunButton";
-			this.RunButton.Size = new System.Drawing.Size(400, 156);
+			this.RunButton.Size = new System.Drawing.Size(267, 100);
 			this.RunButton.TabIndex = 4;
 			this.RunButton.Text = "RUN!";
 			this.RunButton.UseVisualStyleBackColor = false;
@@ -139,10 +139,10 @@
 			// 
 			this.SelectOutputDictionaryButton.BackColor = System.Drawing.Color.Gold;
 			this.SelectOutputDictionaryButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-			this.SelectOutputDictionaryButton.Location = new System.Drawing.Point(840, 3);
-			this.SelectOutputDictionaryButton.Margin = new System.Windows.Forms.Padding(10, 3, 10, 3);
+			this.SelectOutputDictionaryButton.Location = new System.Drawing.Point(562, 2);
+			this.SelectOutputDictionaryButton.Margin = new System.Windows.Forms.Padding(7, 2, 7, 2);
 			this.SelectOutputDictionaryButton.Name = "SelectOutputDictionaryButton";
-			this.SelectOutputDictionaryButton.Size = new System.Drawing.Size(400, 156);
+			this.SelectOutputDictionaryButton.Size = new System.Drawing.Size(267, 100);
 			this.SelectOutputDictionaryButton.TabIndex = 3;
 			this.SelectOutputDictionaryButton.Text = "Select Output Dictionary";
 			this.SelectOutputDictionaryButton.UseVisualStyleBackColor = false;
@@ -155,10 +155,10 @@
 			this.flowLayoutPanel1.Controls.Add(this.SelectNszFileToDecompressButton);
 			this.flowLayoutPanel1.Controls.Add(this.SelectOutputDictionaryButton);
 			this.flowLayoutPanel1.Controls.Add(this.RunButton);
-			this.flowLayoutPanel1.Location = new System.Drawing.Point(33, 24);
+			this.flowLayoutPanel1.Location = new System.Drawing.Point(22, 15);
 			this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
 			this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-			this.flowLayoutPanel1.Size = new System.Drawing.Size(1660, 173);
+			this.flowLayoutPanel1.Size = new System.Drawing.Size(1110, 111);
 			this.flowLayoutPanel1.TabIndex = 39;
 			// 
 			// SelectOutputDictionaryDialog
@@ -176,9 +176,11 @@
 			this.nsZipSettingsGroupBox.Controls.Add(this.label1);
 			this.nsZipSettingsGroupBox.Controls.Add(this.VerifyAfterCompressCheckBox);
 			this.nsZipSettingsGroupBox.ForeColor = System.Drawing.Color.LightCyan;
-			this.nsZipSettingsGroupBox.Location = new System.Drawing.Point(1293, 202);
+			this.nsZipSettingsGroupBox.Location = new System.Drawing.Point(862, 129);
+			this.nsZipSettingsGroupBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.nsZipSettingsGroupBox.Name = "nsZipSettingsGroupBox";
-			this.nsZipSettingsGroupBox.Size = new System.Drawing.Size(399, 249);
+			this.nsZipSettingsGroupBox.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+			this.nsZipSettingsGroupBox.Size = new System.Drawing.Size(266, 159);
 			this.nsZipSettingsGroupBox.TabIndex = 101;
 			this.nsZipSettingsGroupBox.TabStop = false;
 			this.nsZipSettingsGroupBox.Text = "nsZip Settings:";
@@ -190,27 +192,30 @@
 			this.BlockSizeComboBox.Items.AddRange(new object[] {
             "256 KB",
             "512 KB"});
-			this.BlockSizeComboBox.Location = new System.Drawing.Point(200, 109);
+			this.BlockSizeComboBox.Location = new System.Drawing.Point(133, 70);
+			this.BlockSizeComboBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.BlockSizeComboBox.Name = "BlockSizeComboBox";
-			this.BlockSizeComboBox.Size = new System.Drawing.Size(181, 33);
+			this.BlockSizeComboBox.Size = new System.Drawing.Size(122, 24);
 			this.BlockSizeComboBox.TabIndex = 11;
 			this.BlockSizeComboBox.SelectedIndexChanged += new System.EventHandler(this.BlockSizeComboBox_SelectedIndexChanged);
 			// 
 			// BlockSizeLabel
 			// 
 			this.BlockSizeLabel.AutoSize = true;
-			this.BlockSizeLabel.Location = new System.Drawing.Point(75, 117);
+			this.BlockSizeLabel.Location = new System.Drawing.Point(50, 75);
+			this.BlockSizeLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
 			this.BlockSizeLabel.Name = "BlockSizeLabel";
-			this.BlockSizeLabel.Size = new System.Drawing.Size(119, 25);
+			this.BlockSizeLabel.Size = new System.Drawing.Size(77, 17);
 			this.BlockSizeLabel.TabIndex = 10;
 			this.BlockSizeLabel.Text = "Block Size:";
 			// 
 			// CompressionLevelLabel
 			// 
 			this.CompressionLevelLabel.AutoSize = true;
-			this.CompressionLevelLabel.Location = new System.Drawing.Point(6, 73);
+			this.CompressionLevelLabel.Location = new System.Drawing.Point(4, 47);
+			this.CompressionLevelLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
 			this.CompressionLevelLabel.Name = "CompressionLevelLabel";
-			this.CompressionLevelLabel.Size = new System.Drawing.Size(191, 25);
+			this.CompressionLevelLabel.Size = new System.Drawing.Size(125, 17);
 			this.CompressionLevelLabel.TabIndex = 9;
 			this.CompressionLevelLabel.Text = "Compresion Level:";
 			// 
@@ -224,9 +229,10 @@
             "[Lv. 14] Normal",
             "[Lv. 18] Great",
             "[Lv. 22] Ultra"});
-			this.CompressionLevelComboBox.Location = new System.Drawing.Point(200, 65);
+			this.CompressionLevelComboBox.Location = new System.Drawing.Point(133, 42);
+			this.CompressionLevelComboBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.CompressionLevelComboBox.Name = "CompressionLevelComboBox";
-			this.CompressionLevelComboBox.Size = new System.Drawing.Size(181, 33);
+			this.CompressionLevelComboBox.Size = new System.Drawing.Size(122, 24);
 			this.CompressionLevelComboBox.TabIndex = 8;
 			this.CompressionLevelComboBox.SelectedIndexChanged += new System.EventHandler(this.CompressionLevelComboBox_SelectedIndexChanged);
 			// 
@@ -234,9 +240,10 @@
 			// 
 			this.label2.AutoSize = true;
 			this.label2.ForeColor = System.Drawing.Color.LightCyan;
-			this.label2.Location = new System.Drawing.Point(6, 162);
+			this.label2.Location = new System.Drawing.Point(4, 104);
+			this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
 			this.label2.Name = "label2";
-			this.label2.Size = new System.Drawing.Size(387, 50);
+			this.label2.Size = new System.Drawing.Size(253, 34);
 			this.label2.TabIndex = 7;
 			this.label2.Text = "Note: XCIZ to XCI isn\'t implemented yet\r\nReport bugs and suggestions under:";
 			// 
@@ -245,9 +252,10 @@
 			this.nsZipGitHubLinkLabel.ActiveLinkColor = System.Drawing.Color.Orange;
 			this.nsZipGitHubLinkLabel.AutoSize = true;
 			this.nsZipGitHubLinkLabel.LinkColor = System.Drawing.Color.Aqua;
-			this.nsZipGitHubLinkLabel.Location = new System.Drawing.Point(6, 212);
+			this.nsZipGitHubLinkLabel.Location = new System.Drawing.Point(4, 136);
+			this.nsZipGitHubLinkLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
 			this.nsZipGitHubLinkLabel.Name = "nsZipGitHubLinkLabel";
-			this.nsZipGitHubLinkLabel.Size = new System.Drawing.Size(333, 25);
+			this.nsZipGitHubLinkLabel.Size = new System.Drawing.Size(219, 17);
 			this.nsZipGitHubLinkLabel.TabIndex = 6;
 			this.nsZipGitHubLinkLabel.TabStop = true;
 			this.nsZipGitHubLinkLabel.Text = "https://github.com/nicoboss/nsZip";
@@ -257,9 +265,10 @@
 			// 
 			this.label1.AutoSize = true;
 			this.label1.ForeColor = System.Drawing.Color.LightCyan;
-			this.label1.Location = new System.Drawing.Point(6, 212);
+			this.label1.Location = new System.Drawing.Point(4, 136);
+			this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
 			this.label1.Name = "label1";
-			this.label1.Size = new System.Drawing.Size(0, 25);
+			this.label1.Size = new System.Drawing.Size(0, 17);
 			this.label1.TabIndex = 5;
 			// 
 			// VerifyAfterCompressCheckBox
@@ -269,9 +278,10 @@
 			this.VerifyAfterCompressCheckBox.Checked = true;
 			this.VerifyAfterCompressCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
 			this.VerifyAfterCompressCheckBox.ForeColor = System.Drawing.Color.LightCyan;
-			this.VerifyAfterCompressCheckBox.Location = new System.Drawing.Point(6, 30);
+			this.VerifyAfterCompressCheckBox.Location = new System.Drawing.Point(4, 19);
+			this.VerifyAfterCompressCheckBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.VerifyAfterCompressCheckBox.Name = "VerifyAfterCompressCheckBox";
-			this.VerifyAfterCompressCheckBox.Size = new System.Drawing.Size(375, 29);
+			this.VerifyAfterCompressCheckBox.Size = new System.Drawing.Size(250, 21);
 			this.VerifyAfterCompressCheckBox.TabIndex = 0;
 			this.VerifyAfterCompressCheckBox.Text = "Verify after compress (default: ON)";
 			this.VerifyAfterCompressCheckBox.UseVisualStyleBackColor = false;
@@ -279,22 +289,23 @@
 			// 
 			// Frontend
 			// 
-			this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
+			this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.AutoScroll = true;
 			this.AutoSize = true;
 			this.BackColor = System.Drawing.Color.DimGray;
-			this.ClientSize = new System.Drawing.Size(1724, 1066);
+			this.ClientSize = new System.Drawing.Size(1155, 675);
 			this.Controls.Add(this.nsZipSettingsGroupBox);
 			this.Controls.Add(this.flowLayoutPanel1);
 			this.Controls.Add(this.TaskQueue);
 			this.Controls.Add(this.DebugOutput);
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+			this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.MaximizeBox = false;
-			this.MinimumSize = new System.Drawing.Size(1750, 1137);
+			this.MinimumSize = new System.Drawing.Size(1173, 675);
 			this.Name = "Frontend";
-			this.Text = "nsZip File Manager v1.0.1";
+			this.Text = "nsZip File Manager v1.1.0";
 			this.Load += new System.EventHandler(this.Form1_Load);
 			this.Move += new System.EventHandler(this.Frontend_Move);
 			this.flowLayoutPanel1.ResumeLayout(false);
