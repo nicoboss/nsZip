@@ -92,6 +92,7 @@ namespace nsZip.LibHacExtensions
 					writer.Position = posReal;
 				}
 
+				//Size of data untimmed in this function call
 				return offset;
 			}
 

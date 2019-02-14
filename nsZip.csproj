@@ -131,7 +131,6 @@
     <Compile Include="LibHacExtensions\FolderTools.cs" />
     <Compile Include="LibHacExtensions\CnmtNca.cs" />
     <Compile Include="LibHacExtensions\NcaParseSection.cs" />
-    <Compile Include="LibHacExtensions\SearchDeltaMatching.cs" />
     <Compile Include="LibHacExtensions\DeltaTools.cs" />
     <Compile Include="LibHacExtensions\RecreateDelta.cs" />
     <Compile Include="LibHacExtensions\SaveDeltaHeader.cs" />
