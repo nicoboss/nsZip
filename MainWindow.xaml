@@ -50,7 +50,7 @@
 	</Window.Resources>
 	<Viewbox>
 		<Grid>
-			<TabControl HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783">
+			<TabControl HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783" Background="#FF525252">
 				<TabItem Header="Tasks" FontSize="20" Margin="-2,-2,-1.667,3.667">
 					<Grid Background="#FFE5E5E5">
 						<WrapPanel HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top">
@@ -106,9 +106,6 @@
 					</Grid>
 				</TabItem>
 				<TabItem Header="Advanced" FontSize="20">
-				</TabItem>
-				<TabItem Header="Log" FontSize="20" Height="33" Margin="-2,-2,-2.333,-0.333" VerticalAlignment="Bottom">
-					<TextBlock x:Name="DebugOutput" TextWrapping="Wrap" Margin="10,10,14.667,16" Background="#FF333333" Foreground="White"/>
 				</TabItem>
 
 			</TabControl>

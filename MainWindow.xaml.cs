@@ -26,7 +26,7 @@ namespace nsZip
 		public MainWindow()
 		{
 			InitializeComponent();
-			Out = new Output(DebugOutput);
+			Out = new Output();
 
 			SelectNspzDialog.Filter = "Compressed Switch File (*.nspz)|*.nspz|XCIZ to not-installable NSP (*.xciz)|*.xciz";
 			SelectNspzDialog.Multiselect = true;
@@ -41,6 +41,7 @@ namespace nsZip
 			//CompressionLevelComboBox.SelectedIndex = 3;
 			//BlockSizeComboBox.SelectedIndex = 0;
 			//VerifyAfterCompressCheckBox_CheckedChanged(null, null);
+			Console.WriteLine("nsZip initialized");
 		}
 
 		private void cleanFolder(string folderName)
@@ -198,7 +199,6 @@ namespace nsZip
 			do
 			{
 				cleanFolders();
-				DebugOutput.Text = "";
 
 				var inFile = (string)TaskQueue.Items[0];
 				var infileLowerCase = inFile.ToLower();
@@ -224,9 +224,6 @@ namespace nsZip
 					throw new InvalidDataException($"Invalid file type {inFile}");
 				}
 
-				var dataString = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-				var inFileNoExtension = Path.GetFileNameWithoutExtension(inFile);
-				File.WriteAllLines($"Out_{dataString}_{inFileNoExtension}.log", DebugOutput.Text.Split('\n'));
 			} while (TaskQueue.Items.Count > 0);
 
 			cleanFolders();

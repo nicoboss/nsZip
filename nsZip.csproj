@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{56B6D80D-05D1-4A7D-9BBB-16EF69894837}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>nsZip</RootNamespace>
     <AssemblyName>nsZip</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
@@ -94,7 +94,13 @@
   <PropertyGroup>
     <ApplicationIcon>nsZip.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CommandLine, Version=2.3.0.0, Culture=neutral, PublicKeyToken=de6f01bd326f8c32, processorArchitecture=MSIL">
+      <HintPath>packages\CommandLineParser.2.3.0\lib\net45\CommandLine.dll</HintPath>
+    </Reference>
     <Reference Include="netstandard" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -129,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App.xaml.cs" />
+    <Compile Include="CommandLineArguments.cs" />
     <Compile Include="CompressFolder.cs" />
     <Compile Include="DecompressFolder.cs" />
     <Compile Include="EncryptNCA.cs" />

@@ -9,15 +9,13 @@ namespace nsZip
 {
 	public class Output
     {
-		public TextBlock TB;
-		public Output(TextBlock TB_arg)
+		public Output()
 		{
-			TB = TB_arg;
 		}
 		
-		public void Print(String text)
+		public void Print(string text)
 		{
-			TB.Text += text;
+			Console.Write(text);
 		}
 
 	}
