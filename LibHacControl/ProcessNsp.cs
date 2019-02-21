@@ -9,12 +9,12 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessNsp
 	{
-		public static void Process(string inFile, string OutDir, RichTextBox DebugOutput)
+		public static void Process(string inFile, string OutDir, Output Out)
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
 				var pfs = new PartitionFileSystem(file.AsStorage());
-				DebugOutput.AppendText(pfs.Print());
+				Out.Print(pfs.Print());
 				pfs.Extract(OutDir);
 			}
 		}

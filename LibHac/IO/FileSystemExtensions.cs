@@ -3,10 +3,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 
-#if !NETFRAMEWORK
-using System.IO.Enumeration;
-#endif
-
 namespace LibHac.IO
 {
     public static class FileSystemExtensions
@@ -151,8 +147,7 @@ namespace LibHac.IO
             return Compatibility.FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
                 name.AsSpan(), ignoreCase);
 #else
-            return FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
-                name.AsSpan(), ignoreCase);
+            return FileSystemName.MatchesSimpleExpression(searchPattern, name, ignoreCase);
 #endif
         }
     }

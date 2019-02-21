@@ -11,12 +11,12 @@ namespace nsZip.LibHacControl
 	{
 		private const string FragmentFileName = "fragment";
 
-		public static void Process(string folderPath, string newBaseFolderPath, Keyset keyset, RichTextBox DebugOutput)
+		public static void Process(string folderPath, string newBaseFolderPath, Keyset keyset, Output Out)
 		{
 			var dirDecrypted = new DirectoryInfo(folderPath);
 			foreach (var inFile in dirDecrypted.GetFiles("*.tca"))
 			{
-				DebugOutput.AppendText($"{inFile}\r\n");
+				Out.Print($"{inFile}\r\n");
 				var ncaStorage = new StreamStorage(new FileStream(inFile.FullName, FileMode.Open, FileAccess.Read),
 					false);
 				var DecryptedHeader = new byte[0xC00];
@@ -35,7 +35,7 @@ namespace nsZip.LibHacControl
 
 					if (fragmentTrimmed)
 					{
-						DebugOutput.AppendText(
+						Out.Print(
 							"Warning: Multiple fragments in NCA found! Skip trimming this fragment.\r\n");
 						continue;
 					}

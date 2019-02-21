@@ -8,7 +8,7 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessXci
 	{
-		public static void Process(string inFile, string outDirPath, Keyset keyset, RichTextBox DebugOutput)
+		public static void Process(string inFile, string outDirPath, Keyset keyset, Output Out)
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
@@ -21,14 +21,14 @@ namespace nsZip.LibHacControl
 				file.Read(xciHeaderData, 0, 0x400);
 				outputFile.Write(xciHeaderData, 0, 0x400);
 
-				DebugOutput.AppendText(Print.PrintXci(xci));
+				Out.Print(Print.PrintXci(xci));
 
 				if (xci.RootPartition != null)
 				{
 					var root = xci.RootPartition;
 					if (root == null)
 					{
-						DebugOutput.AppendText("Could not find root partition");
+						Out.Print("Could not find root partition");
 						return;
 					}
 

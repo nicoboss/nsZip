@@ -30,7 +30,7 @@ namespace nsZip.LibHacExtensions
 			outfile.Dispose();
 		}
 
-		public static void ExtractTitlekeys(string inFolder, Keyset keyset, RichTextBox DebugOutput)
+		public static void ExtractTitlekeys(string inFolder, Keyset keyset, Output Out)
 		{
 			var dirExtracted = new DirectoryInfo(inFolder);
 			var TikFiles = dirExtracted.GetFiles("*.tik");
@@ -48,7 +48,7 @@ namespace nsZip.LibHacExtensions
 				}
 
 				keyset.TitleKeys[rightsId] = titleKey;
-				DebugOutput.AppendText($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
+				Out.Print($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
 				TicketFile.Dispose();
 			}
 		}

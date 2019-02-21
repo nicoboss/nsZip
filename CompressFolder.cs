@@ -13,7 +13,7 @@ namespace nsZip
 	{
 		private static readonly RNGCryptoServiceProvider secureRNG = new RNGCryptoServiceProvider();
 		private readonly int bs;
-		private readonly RichTextBox DebugOutput;
+		private readonly Output Out;
 		private readonly string inFolderPath;
 		private readonly string outFolderPath;
 		private readonly int ZstdLevel;
@@ -24,21 +24,21 @@ namespace nsZip
 		private SHA256 sha256Header;
 		private int sizeOfSize;
 
-		private CompressFolder(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg,
+		private CompressFolder(Output OutArg, string inFolderPathArg, string outFolderPathArg,
 			int bsArg, int ZstdLevelArg)
 		{
 			bs = bsArg;
 			ZstdLevel = ZstdLevelArg;
-			DebugOutput = debugOutputArg;
+			Out = OutArg;
 			inFolderPath = inFolderPathArg;
 			outFolderPath = outFolderPathArg;
 			CompressFunct();
 		}
 
-		public static void Compress(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg,
+		public static void Compress(Output OutArg, string inFolderPathArg, string outFolderPathArg,
 			int bsArg, int ZstdLevel)
 		{
-			new CompressFolder(debugOutputArg, inFolderPathArg, outFolderPathArg, bsArg, ZstdLevel);
+			new CompressFolder(OutArg, inFolderPathArg, outFolderPathArg, bsArg, ZstdLevel);
 		}
 
 		private void CompressFunct()
@@ -178,7 +178,7 @@ namespace nsZip
 				}
 			}
 
-			DebugOutput.AppendText($"{currentBlockID + 1}/{amountOfBlocks} Blocks written\r\n");
+			Out.Print($"{currentBlockID + 1}/{amountOfBlocks} Blocks written\r\n");
 			++currentBlockID;
 		}
 

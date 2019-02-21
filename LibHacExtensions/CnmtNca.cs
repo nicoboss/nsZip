@@ -8,12 +8,12 @@ namespace nsZip.LibHacExtensions
 {
 	public static class CnmtNca
 	{
-		public static CnmtExtended GetCnmtExtended(string folderPath, Keyset keyset, RichTextBox DebugOutput)
+		public static CnmtExtended GetCnmtExtended(string folderPath, Keyset keyset, Output Out)
 		{
 			var dirDecrypted = new DirectoryInfo(folderPath);
 			foreach (var inFile in dirDecrypted.GetFiles("*.cnmt.nca"))
 			{
-				DebugOutput.AppendText($"{inFile}\r\n");
+				Out.Print($"{inFile}\r\n");
 				var ncaStorage = new StreamStorage(new FileStream(inFile.FullName, FileMode.Open, FileAccess.Read),
 					false);
 				var DecryptedHeader = new byte[0xC00];

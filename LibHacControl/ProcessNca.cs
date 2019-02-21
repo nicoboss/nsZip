@@ -8,7 +8,7 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessNca
 	{
-		public static void Process(string inFile, string outFile, Keyset keyset, RichTextBox DebugOutput)
+		public static void Process(string inFile, string outFile, Keyset keyset, Output Out)
 		{
 			using (var file = new StreamStorage(new FileStream(inFile, FileMode.Open, FileAccess.Read), false))
 			{
@@ -25,7 +25,7 @@ namespace nsZip.LibHacControl
 				}
 
 				nca.OpenDecryptedNca().WriteAllBytes(outFile);
-				DebugOutput.AppendText(nca.Print());
+				Out.Print(nca.Print());
 			}
 		}
 

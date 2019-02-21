@@ -9,21 +9,21 @@ namespace nsZip
 {
 	internal class DecompressFolder
 	{
-		private readonly RichTextBox DebugOutput;
+		private readonly Output Out;
 		private readonly string inFolderPath;
 		private readonly string outFolderPath;
 
-		private DecompressFolder(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg)
+		private DecompressFolder(Output OutArg, string inFolderPathArg, string outFolderPathArg)
 		{
-			DebugOutput = debugOutputArg;
+			Out = OutArg;
 			inFolderPath = inFolderPathArg;
 			outFolderPath = outFolderPathArg;
 			DecompressFunct();
 		}
 
-		public static void Decompress(RichTextBox debugOutputArg, string inFolderPathArg, string outFolderPathArg)
+		public static void Decompress(Output OutArg, string inFolderPathArg, string outFolderPathArg)
 		{
-			new DecompressFolder(debugOutputArg, inFolderPathArg, outFolderPathArg);
+			new DecompressFolder(OutArg, inFolderPathArg, outFolderPathArg);
 		}
 
 		private void DecompressFunct()
@@ -41,7 +41,7 @@ namespace nsZip
 				Util.XorArrays(nsZipMagicEncrypted, nsZipMagicRandomKey);
 				if (!Util.ArraysEqual(nsZipMagicEncrypted, nsZipMagic))
 				{
-					DebugOutput.AppendText($"Invalid magic: Skipping {file}\r\n");
+					Out.Print($"Invalid magic: Skipping {file}\r\n");
 					continue;
 				}
 
