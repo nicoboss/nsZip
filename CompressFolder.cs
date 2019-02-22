@@ -3,7 +3,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using LibHac;
 using Zstandard.Net;
 
@@ -13,8 +12,8 @@ namespace nsZip
 	{
 		private static readonly RNGCryptoServiceProvider secureRNG = new RNGCryptoServiceProvider();
 		private readonly int bs;
-		private readonly Output Out;
 		private readonly string inFolderPath;
+		private readonly Output Out;
 		private readonly string outFolderPath;
 		private readonly int ZstdLevel;
 		private int amountOfBlocks;

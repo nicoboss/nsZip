@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
-using System.Windows.Forms;
 using LibHac;
 using Zstandard.Net;
 
@@ -9,8 +8,8 @@ namespace nsZip
 {
 	internal class DecompressFolder
 	{
-		private readonly Output Out;
 		private readonly string inFolderPath;
+		private readonly Output Out;
 		private readonly string outFolderPath;
 
 		private DecompressFolder(Output OutArg, string inFolderPathArg, string outFolderPathArg)

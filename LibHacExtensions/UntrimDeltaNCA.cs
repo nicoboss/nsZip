@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Linq;
-using System.Windows.Forms;
 using LibHac;
 using LibHac.IO;
 using nsZip.LibHacExtensions;

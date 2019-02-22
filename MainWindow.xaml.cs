@@ -1,42 +1,44 @@
-﻿using LibHac;
-using nsZip.LibHacControl;
-using nsZip.LibHacExtensions;
-using System;
+﻿using System;
 using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Forms;
+using LibHac;
+using nsZip.LibHacControl;
+using nsZip.LibHacExtensions;
 
 namespace nsZip
 {
 	/// <summary>
-	/// Interaction logic for MainWindow.xaml
+	///     Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private Output Out;
-		private int BlockSize = 262144;
-		private string OutputFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-		private bool VerifyWhenCompressing = true;
-		private int ZstdLevel = 18;
-		private OpenFileDialog SelectNspXciDialog = new OpenFileDialog();
-		private OpenFileDialog SelectNspzDialog = new OpenFileDialog();
-		private FolderBrowserDialog SelectOutputDictionaryDialog = new FolderBrowserDialog();
+		private readonly int BlockSize = 262144;
+		private readonly Output Out;
+		private readonly string OutputFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+		private readonly OpenFileDialog SelectNspXciDialog = new OpenFileDialog();
+		private readonly OpenFileDialog SelectNspzDialog = new OpenFileDialog();
+		private readonly FolderBrowserDialog SelectOutputDictionaryDialog = new FolderBrowserDialog();
+		private readonly bool VerifyWhenCompressing = true;
+		private readonly int ZstdLevel = 18;
 
 		public MainWindow()
 		{
 			InitializeComponent();
 			Out = new Output();
 
-			SelectNspzDialog.Filter = "Compressed Switch File (*.nspz)|*.nspz|XCIZ to not-installable NSP (*.xciz)|*.xciz";
+			SelectNspzDialog.Filter =
+				"Compressed Switch File (*.nspz)|*.nspz|XCIZ to not-installable NSP (*.xciz)|*.xciz";
 			SelectNspzDialog.Multiselect = true;
 			SelectNspzDialog.Title = "Select input nspz fIles...";
 
-			SelectNspXciDialog.Filter = "Switch Games (*.nsp;*.xci)|*.nsp;*.xci|Switch Package (*.nsp)|*.ns|Switch Cartridge (*.xci)|*.xci";
+			SelectNspXciDialog.Filter =
+				"Switch Games (*.nsp;*.xci)|*.nsp;*.xci|Switch Package (*.nsp)|*.ns|Switch Cartridge (*.xci)|*.xci";
 			SelectNspXciDialog.Multiselect = true;
 			SelectNspXciDialog.Title = "Select input NSP fIles...";
 
-			SelectOutputDictionaryDialog.RootFolder = System.Environment.SpecialFolder.MyComputer;
+			SelectOutputDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
 
 			//CompressionLevelComboBox.SelectedIndex = 3;
 			//BlockSizeComboBox.SelectedIndex = 0;
@@ -190,7 +192,7 @@ namespace nsZip
 
 		private void RunButton_Click(object sender, RoutedEventArgs e)
 		{
-				if (TaskQueue.Items.Count == 0)
+			if (TaskQueue.Items.Count == 0)
 			{
 				Out.Print("Nothing to do - TaskQueue empty! Please add an NSP or NSPZ!\r\n");
 				return;
@@ -200,7 +202,7 @@ namespace nsZip
 			{
 				cleanFolders();
 
-				var inFile = (string)TaskQueue.Items[0];
+				var inFile = (string) TaskQueue.Items[0];
 				var infileLowerCase = inFile.ToLower();
 				TaskQueue.Items.RemoveAt(0);
 				if (infileLowerCase.EndsWith("nsp"))
@@ -223,7 +225,6 @@ namespace nsZip
 				{
 					throw new InvalidDataException($"Invalid file type {inFile}");
 				}
-
 			} while (TaskQueue.Items.Count > 0);
 
 			cleanFolders();

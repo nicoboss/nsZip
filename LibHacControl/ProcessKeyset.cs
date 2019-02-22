@@ -1,13 +1,13 @@
-﻿using LibHac;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using LibHac;
 
 namespace nsZip.LibHacControl
 {
-    static class ProcessKeyset
-    {
+	internal static class ProcessKeyset
+	{
 		public static Keyset OpenKeyset()
 		{
 			var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);

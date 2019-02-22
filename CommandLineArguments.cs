@@ -1,9 +1,8 @@
-﻿using System;
-using CommandLine;
+﻿using CommandLine;
 
 namespace nsZip
 {
-	class CommandLineArguments
+	internal class CommandLineArguments
 	{
 		[Option('i', "input", Required = false, HelpText = "NSP, XCI, NSPZ, XCIZ input file to compress/decompress")]
 		public bool InputFile { get; set; }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Windows.Forms;
 using LibHac;
 using LibHac.IO;
 using nsZip.LibHacExtensions;
@@ -21,12 +20,14 @@ namespace nsZip.LibHacControl
 					"Skiped fragemt trimming as no patch Cnmt was found!\r\n=> probably no dlc/update over v65536");
 				return;
 			}
+
 			if (cnmtExtended.DeltaApplyInfos.Length == 0)
 			{
 				Out.Print(
 					"Skiped fragemt trimming as no DeltaApplyInfos in the patch Cnmt were found!");
 				return;
 			}
+
 			var DeltaContentID = 0;
 			foreach (var deltaApplyInfo in cnmtExtended.DeltaApplyInfos)
 			{
@@ -90,8 +91,8 @@ namespace nsZip.LibHacControl
 							var writerPath = Path.Combine(folderPath, $"{lowerNcaID}.tca");
 							var writer = File.Open(writerPath, FileMode.Create);
 							var offsetBefore = section.Offset + section.Header.Sha256Info.DataOffset +
-											   Pfs0Header.HeaderSize +
-											   fragmentFile.Offset;
+							                   Pfs0Header.HeaderSize +
+							                   fragmentFile.Offset;
 							var offsetAfter = offsetBefore + fragmentFile.Size;
 							IStorage ncaStorageBeforeFragment = ncaStorage.Slice(0, offsetBefore, false);
 							IStorage ncaStorageAfterFragment =
