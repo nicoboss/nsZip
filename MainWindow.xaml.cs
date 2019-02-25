@@ -14,14 +14,15 @@ namespace nsZip
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private readonly int BlockSize = 262144;
+		private bool CheckForUpdates;
+		private int BlockSize = 262144;
 		private readonly Output Out;
-		private readonly string OutputFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+		private string OutputFolderPath;
 		private readonly OpenFileDialog SelectNspXciDialog = new OpenFileDialog();
 		private readonly OpenFileDialog SelectNspzDialog = new OpenFileDialog();
 		private readonly FolderBrowserDialog SelectOutputDictionaryDialog = new FolderBrowserDialog();
-		private readonly bool VerifyWhenCompressing = true;
-		private readonly int ZstdLevel = 18;
+		private bool VerifyWhenCompressing = true;
+		private int ZstdLevel = 18;
 
 		public MainWindow()
 		{
@@ -39,11 +40,17 @@ namespace nsZip
 			SelectNspXciDialog.Title = "Select input NSP fIles...";
 
 			SelectOutputDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+			OutputFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+			VerificationComboBox.SelectedIndex = 0;
+			CheckForUpdatesComboBox.SelectedIndex = 0;
+			CompressionLevelComboBox.SelectedIndex = 0;
+			BlockSizeComboBox.SelectedIndex = 0;
 
 			//CompressionLevelComboBox.SelectedIndex = 3;
 			//BlockSizeComboBox.SelectedIndex = 0;
 			//VerifyAfterCompressCheckBox_CheckedChanged(null, null);
-			Console.WriteLine("nsZip initialized");
+			Out.Print("nsZip initialized\r\n");
 		}
 
 		private void cleanFolder(string folderName)
@@ -228,6 +235,94 @@ namespace nsZip
 			} while (TaskQueue.Items.Count > 0);
 
 			cleanFolders();
+		}
+
+		private void VerificationComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		{
+			switch (VerificationComboBox.SelectedIndex)
+			{
+				case 0:
+					VerifyWhenCompressing = true;
+					break;
+				case 1:
+					VerifyWhenCompressing = false;
+					break;
+				default:
+					throw new NotImplementedException();
+			}
+			Out.Print($"Set VerifyWhenCompressing to {VerifyWhenCompressing}\r\n");
+		}
+
+		private void CheckForUpdatesComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		{
+			switch (CheckForUpdatesComboBox.SelectedIndex)
+			{
+				case 0:
+					CheckForUpdates = true;
+					break;
+				case 1:
+					CheckForUpdates = false;
+					break;
+				default:
+					throw new NotImplementedException();
+			}
+			Out.Print($"Set CheckForUpdates to {CheckForUpdates}\r\n");
+		}
+
+		private void CompressionLevelComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		{
+			switch (CompressionLevelComboBox.SelectedIndex)
+			{
+				case 0:
+					ZstdLevel = 08;
+					break;
+				case 1:
+					ZstdLevel = 12;
+					break;
+				case 2:
+					ZstdLevel = 14;
+					break;
+				case 3:
+					ZstdLevel = 18;
+					break;
+				case 4:
+					ZstdLevel = 22;
+					break;
+				default:
+					throw new NotImplementedException();
+			}
+			Out.Print($"Set ZstdLevel to {ZstdLevel}\r\n");
+		}
+
+		private void BlockSizeComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		{
+			switch(BlockSizeComboBox.SelectedIndex)
+			{
+				case 0:
+					BlockSize = 262144;
+					break;
+				case 1:
+					BlockSize = 524288;
+					break;
+				default:
+					throw new NotImplementedException();
+			}
+			Out.Print($"Set BlockSize to {BlockSize} bytes\r\n");
+		}
+
+		private void OutputFolderTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+		{
+			OutputFolderPath = OutputFolderTextBox.Text;
+		}
+
+		private void OutputFolderButton_Click(object sender, RoutedEventArgs e)
+		{
+			SelectOutputDictionaryDialog.SelectedPath = OutputFolderPath;
+			if (SelectOutputDictionaryDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK
+				 && !string.IsNullOrWhiteSpace(SelectOutputDictionaryDialog.SelectedPath))
+			{
+				OutputFolderTextBox.Text = SelectOutputDictionaryDialog.SelectedPath;
+			}
 		}
 	}
 }

@@ -53,7 +53,7 @@
 	<Viewbox>
 		<Grid>
 			<TabControl HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783" Background="#FF525252">
-				<TabItem Header="Tasks" FontSize="20" Margin="-2,-2,-1.667,3.667">
+				<TabItem x:Name="TasksTab" Header="Tasks" FontSize="20" Margin="-2,-2,-1.667,3.667">
 					<Grid Background="#FFE5E5E5">
 						<WrapPanel HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top">
 							<Button x:Name="SelectFileToCompressButton" FontSize="36" Height="99" Width="298" Margin="0,0,10,0"
@@ -81,44 +81,74 @@
 						         Width="756" />
 					</Grid>
 				</TabItem>
-				<TabItem Header="Settings" FontSize="20" Height="35" Margin="-2.333,-2,-2.333,-0.333" VerticalAlignment="Bottom">
+				<TabItem x:Name="SettingsTab" Header="Settings" FontSize="20" Height="35" Margin="-2.333,-2,-2.333,-0.333" VerticalAlignment="Bottom">
 					<Grid Background="#FFE5E5E5">
 						<WrapPanel HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" />
-						<GroupBox Header="ZStandard Settings:" HorizontalAlignment="Left" Height="288" Margin="10,10,0,0"
-						          VerticalAlignment="Top" Width="724">
+						<GroupBox x:Name="nsZipSettingsGroupBox" Header="nsZip Settings:" HorizontalAlignment="Left"  Margin="10,10,0,0"
+						          VerticalAlignment="Top">
 							<Grid HorizontalAlignment="Left">
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="200" />
-									<ColumnDefinition Width="200" />
+									<ColumnDefinition Width="240" />
 								</Grid.ColumnDefinitions>
 								<Grid.RowDefinitions>
 									<RowDefinition Height="40" />
 									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
 								</Grid.RowDefinitions>
-								<TextBlock Grid.Column="0" Grid.Row="0" Text="Compression Level:"
+								<TextBlock x:Name="OutputFolderTextBlock" Grid.Column="0" Grid.Row="0" Text="Output Folder:"
 								           VerticalAlignment="Center"
 								           FontWeight="Bold" />
-								<ComboBox Grid.Column="1" Grid.Row="0"
-								          VerticalAlignment="Center" Margin="0,2,0,1.333">
+								<WrapPanel x:Name="OutputFolderWrapPanel" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Center">
+									<TextBox x:Name="OutputFolderTextBox" HorizontalAlignment="Left" Height="32" Margin="0,0,0,0" Text=""
+										 VerticalAlignment="Top" Width="190" TextChanged="OutputFolderTextBox_TextChanged"/>
+									<Button x:Name="OutputFolderButton" Content="..." HorizontalAlignment="Left" Margin="10,0,0,0"
+										VerticalAlignment="Top" Height="32" Width="40" Click="OutputFolderButton_Click"/>
+								</WrapPanel>
+								<TextBlock x:Name="VerificationTextBlock" Grid.Column="0" Grid.Row="1" Text="Verification:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<ComboBox x:Name="VerificationComboBox" Grid.Column="1" Grid.Row="1"
+								          VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="VerificationComboBox_SelectionChanged">
+									<ComboBoxItem Content="Yes" />
+									<ComboBoxItem Content="No" />
+								</ComboBox>
+								<TextBlock Grid.Column="0" Grid.Row="2"
+								           VerticalAlignment="Bottom"
+								           FontWeight="Bold" Margin="0,0,0,7" ><Run x:Name="CheckForUpdatesTextBlock" Text="Check for Updates"/><Run Text=":"/></TextBlock>
+								<ComboBox x:Name="CheckForUpdatesComboBox" Grid.Column="1" Grid.Row="2"
+								          VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="CheckForUpdatesComboBox_SelectionChanged">
+									<ComboBoxItem Content="Yes (nsZip Protable)" />
+									<ComboBoxItem Content="Installed version only" />
+								</ComboBox>
+								<TextBlock x:Name="CompressionLevelTextBlock" Grid.Column="0" Grid.Row="3" Text="Compression Level:"
+				  VerticalAlignment="Center"
+				  FontWeight="Bold" />
+								<ComboBox x:Name="CompressionLevelComboBox" Grid.Column="1" Grid.Row="3"
+				  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="CompressionLevelComboBox_SelectionChanged">
 									<ComboBoxItem Content="[Lv. 08] Faster" />
 									<ComboBoxItem Content="[Lv. 12] Fast" />
 									<ComboBoxItem Content="[Lv. 14] Normal" />
 									<ComboBoxItem Content="[Lv. 18] Great" />
 									<ComboBoxItem Content="[Lv. 22] Ultra" />
 								</ComboBox>
-								<TextBlock Grid.Column="0" Grid.Row="1" Text="Block Size:"
-								           VerticalAlignment="Center"
-								           FontWeight="Bold" />
-								<ComboBox Grid.Column="1" Grid.Row="1"
-								          VerticalAlignment="Center" Margin="0,2,0,1.333">
+								<TextBlock x:Name="BlockSizeTextBlock" Grid.Column="0" Grid.Row="4" Text="Block Size:"
+				  VerticalAlignment="Center"
+				  FontWeight="Bold" />
+								<ComboBox x:Name="BlockSizeComboBox" Grid.Column="1" Grid.Row="4"
+				  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="BlockSizeComboBox_SelectionChanged">
 									<ComboBoxItem Content="256 KB" />
 									<ComboBoxItem Content="512 KB" />
 								</ComboBox>
 							</Grid>
 						</GroupBox>
+						<TextBlock HorizontalAlignment="Left" Margin="477,28,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="330" Width="290"><Run FontWeight="Bold" Text="Verifications"/><Run Text=":"/><Run Text=" "/><Run Text="W"/><Run Text="ill ensure that the compressed file can be decompressed to the exact same NCA files"/><Run Text=". In no case a"/><Run Text=" corrupted output file should be possible if enabled."/><LineBreak/><Run/><LineBreak/><Run FontWeight="Bold" Text="Check for update"/><Run Text=":"/><Run Text=" "/><Run Text="W"/><Run Text="ill notify nsZip portable"/><Run Text=" users"/><Run Text=" "/><Run Text="when"/><Run Text=" there is an update available"/><Run Text=" "/><Run Text="as replacement of the system"/><Run Text=" used by the installed version."/></TextBlock>
+						<TextBlock HorizontalAlignment="Left" Margin="10,248,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="110" Width="442"><Run FontWeight="Bold" Text="Compression Level"/><Run Text=": Trade-off between compression speed and compression ratio."/><LineBreak/><Run FontWeight="Bold" Text="Block Size"/><Run Text=": Trade-off between random access speed "/><Run Text="to compressed data "/><Run Text="and compression ratio."/></TextBlock>
 					</Grid>
 				</TabItem>
-				<TabItem Header="Advanced" FontSize="20" />
+				<TabItem x:Name="AdvancedTab" Header="Advanced" FontSize="20" />
 
 			</TabControl>
 
