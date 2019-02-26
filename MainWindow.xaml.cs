@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Navigation;
 using LibHac;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
@@ -18,9 +20,11 @@ namespace nsZip
 		private int BlockSize = 262144;
 		private readonly Output Out;
 		private string OutputFolderPath;
+		private string TempFolderPath;
 		private readonly OpenFileDialog SelectNspXciDialog = new OpenFileDialog();
 		private readonly OpenFileDialog SelectNspzDialog = new OpenFileDialog();
 		private readonly FolderBrowserDialog SelectOutputDictionaryDialog = new FolderBrowserDialog();
+		private readonly FolderBrowserDialog SelectTempDictionaryDialog = new FolderBrowserDialog();
 		private bool VerifyWhenCompressing = true;
 		private int ZstdLevel = 18;
 
@@ -42,15 +46,33 @@ namespace nsZip
 			SelectOutputDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
 			OutputFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
+			SelectTempDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
+			TempFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
 			VerificationComboBox.SelectedIndex = 0;
 			CheckForUpdatesComboBox.SelectedIndex = 0;
 			CompressionLevelComboBox.SelectedIndex = 0;
 			BlockSizeComboBox.SelectedIndex = 0;
 
+			try
+			{
+				LicenseTextBox.Text = File.ReadAllText(@"LICENSE");
+			} catch(Exception ex)
+			{
+				Out.Print("LICENSE file not found!\r\n");
+			}
+
+			//System.Windows.Forms.Application.SetSuspendState(PowerState.Suspend, false, false);
+			
 			//CompressionLevelComboBox.SelectedIndex = 3;
 			//BlockSizeComboBox.SelectedIndex = 0;
 			//VerifyAfterCompressCheckBox_CheckedChanged(null, null);
 			Out.Print("nsZip initialized\r\n");
+		}
+
+		private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+		{
+			System.Diagnostics.Process.Start(e.Uri.ToString());
 		}
 
 		private void cleanFolder(string folderName)
@@ -199,6 +221,13 @@ namespace nsZip
 
 		private void RunButton_Click(object sender, RoutedEventArgs e)
 		{
+			var t = Task.Run(() => {
+				RunTask();
+			});
+		}
+
+		private void RunTask()
+		{
 			if (TaskQueue.Items.Count == 0)
 			{
 				Out.Print("Nothing to do - TaskQueue empty! Please add an NSP or NSPZ!\r\n");
@@ -211,7 +240,11 @@ namespace nsZip
 
 				var inFile = (string) TaskQueue.Items[0];
 				var infileLowerCase = inFile.ToLower();
-				TaskQueue.Items.RemoveAt(0);
+				Dispatcher.Invoke(() =>
+				{
+					TaskQueue.Items.RemoveAt(0);
+				});
+
 				if (infileLowerCase.EndsWith("nsp"))
 				{
 					CompressNSP(inFile);
@@ -324,5 +357,31 @@ namespace nsZip
 				OutputFolderTextBox.Text = SelectOutputDictionaryDialog.SelectedPath;
 			}
 		}
+
+		private void TempFolderTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+		{
+			TempFolderPath = TempFolderTextBox.Text;
+		}
+
+		private void TempFolderButton_Click(object sender, RoutedEventArgs e)
+		{
+			SelectTempDictionaryDialog.SelectedPath = TempFolderPath;
+			if (SelectTempDictionaryDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK
+				 && !string.IsNullOrWhiteSpace(SelectTempDictionaryDialog.SelectedPath))
+			{
+				TempFolderTextBox.Text = SelectTempDictionaryDialog.SelectedPath;
+			}
+		}
+
+		private void SaveSettings()
+		{
+
+		}
+
+		private void LoadSettings()
+		{
+
+		}
+
 	}
 }
