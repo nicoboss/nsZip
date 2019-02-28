@@ -33,6 +33,9 @@ namespace nsZip
 			InitializeComponent();
 			Out = new Output();
 
+			MainGrid.Visibility = Visibility.Visible;
+			MainGridBusy.Visibility = Visibility.Hidden;
+
 			SelectNspzDialog.Filter =
 				"Compressed Switch File (*.nspz)|*.nspz|XCIZ to not-installable NSP (*.xciz)|*.xciz";
 			SelectNspzDialog.Multiselect = true;
@@ -44,15 +47,30 @@ namespace nsZip
 			SelectNspXciDialog.Title = "Select input NSP fIles...";
 
 			SelectOutputDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
-			OutputFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+			if (Properties.Settings.Default.OutputFolder != "")
+			{
+				OutputFolderTextBox.Text = Properties.Settings.Default.OutputFolder;
+			}
+			else
+			{
+				OutputFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+			}		
+			VerificationComboBox.SelectedIndex = Properties.Settings.Default.Verification ? 0 : 1;
+			CheckForUpdatesComboBox.SelectedIndex = Properties.Settings.Default.CheckForUpdates ? 0 : 1;
+			CompressionLevelComboBox.SelectedIndex = 0; //Properties.Settings.Default.CompressionLevel;
+			BlockSizeComboBox.SelectedIndex = 0; //Properties.Settings.Default.BlockSize;
 
 			SelectTempDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
-			TempFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
-			VerificationComboBox.SelectedIndex = 0;
-			CheckForUpdatesComboBox.SelectedIndex = 0;
-			CompressionLevelComboBox.SelectedIndex = 0;
-			BlockSizeComboBox.SelectedIndex = 0;
+			if (Properties.Settings.Default.TempFolder != "")
+			{
+				TempFolderTextBox.Text = Properties.Settings.Default.TempFolder;
+			}
+			else
+			{
+				TempFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+			}
+			KeepTempFilesAfterTaskComboBox.SelectedIndex = Properties.Settings.Default.KeepTempFiles ? 0: 1;
+			StandByWhenTaskDoneComboBox.SelectedIndex = Properties.Settings.Default.StandbyWhenDone;
 
 			try
 			{
@@ -234,40 +252,62 @@ namespace nsZip
 				return;
 			}
 
-			do
+			Dispatcher.Invoke(() =>
 			{
-				cleanFolders();
+				BusyTextBlock.Text = "Working...";
+				  MainGrid.Visibility = Visibility.Hidden;
+				MainGridBusy.Visibility = Visibility.Visible;
+			});
+			
+			try
+			{
+				do
+				{
+					cleanFolders();
 
-				var inFile = (string) TaskQueue.Items[0];
-				var infileLowerCase = inFile.ToLower();
-				Dispatcher.Invoke(() =>
-				{
-					TaskQueue.Items.RemoveAt(0);
-				});
+					var inFile = (string) TaskQueue.Items[0];
+					var infileLowerCase = inFile.ToLower();
+					Dispatcher.Invoke(() =>
+					{
+						BusyTextBlock.Text = $"Task \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...\r\nThis might take quite some time.\r\nPlease take a look at the Console Window for more Information.";
+						TaskQueue.Items.RemoveAt(0);
+					});
 
-				if (infileLowerCase.EndsWith("nsp"))
-				{
-					CompressNSP(inFile);
-				}
-				else if (infileLowerCase.EndsWith("xci"))
-				{
-					CompressXCI(inFile);
-				}
-				else if (infileLowerCase.EndsWith("nspz"))
-				{
-					DecompressNSPZ(inFile);
-				}
-				else if (infileLowerCase.EndsWith("xciz"))
-				{
-					DecompressNSPZ(inFile);
-				}
-				else
-				{
-					throw new InvalidDataException($"Invalid file type {inFile}");
-				}
-			} while (TaskQueue.Items.Count > 0);
+					if (infileLowerCase.EndsWith("nsp"))
+					{
+						CompressNSP(inFile);
+					}
+					else if (infileLowerCase.EndsWith("xci"))
+					{
+						CompressXCI(inFile);
+					}
+					else if (infileLowerCase.EndsWith("nspz"))
+					{
+						DecompressNSPZ(inFile);
+					}
+					else if (infileLowerCase.EndsWith("xciz"))
+					{
+						DecompressNSPZ(inFile);
+					}
+					else
+					{
+						throw new InvalidDataException($"Invalid file type {inFile}");
+					}
+				} while (TaskQueue.Items.Count > 0);
+			} catch(Exception ex)
+			{
+				Out.Print(ex.StackTrace);
+				Out.Print(ex.Message);
+			}
 
 			cleanFolders();
+
+			Dispatcher.Invoke(() =>
+			{
+				MainGrid.Visibility = Visibility.Visible;
+				MainGridBusy.Visibility = Visibility.Hidden;
+			});
+
 		}
 
 		private void VerificationComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
