@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:nsZip"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
         Title="nsZip File Manager v1.2.0" Height="450" Width="800">
 	<Window.Resources>
@@ -51,9 +52,9 @@
 		</Style>
 	</Window.Resources>
 	<Grid>
-		<Viewbox x:Name="MainGrid" Visibility="Hidden">
+		<Viewbox x:Name="MainGrid">
 			<TabControl x:Name="MainTabControl" HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783" Background="#FF525252">
-					<TabItem x:Name="TasksTab" Header="Tasks" FontSize="20" Margin="-2,-2,-1.667,3.667">
+					<TabItem x:Name="TasksTab" Header="Tasks" FontSize="20" RenderTransformOrigin="0.153,1.656">
 						<Grid x:Name="TasksGrid" Background="#FFE5E5E5">
 							<WrapPanel HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top">
 								<Button x:Name="SelectFileToCompressButton" FontSize="36" Height="99" Width="298" Margin="0,0,10,0"
@@ -81,7 +82,7 @@
 									 Width="756" Background="#FFCCCCCC" />
 						</Grid>
 					</TabItem>
-					<TabItem x:Name="SettingsTab" Header="Settings" FontSize="20" Height="35" Margin="-2.333,-2,-2.333,-0.333" VerticalAlignment="Bottom">
+					<TabItem x:Name="SettingsTab" Header="Settings" FontSize="20" Height="35" VerticalAlignment="Bottom">
 						<Grid Background="#FFE5E5E5">
 							<GroupBox x:Name="nsZipSettingsGroupBox" Header="nsZip Settings:" HorizontalAlignment="Left"  Margin="10,10,0,0"
 									  VerticalAlignment="Top">
@@ -127,20 +128,48 @@
 					  FontWeight="Bold" />
 									<ComboBox x:Name="CompressionLevelComboBox" Grid.Column="1" Grid.Row="3"
 					  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="CompressionLevelComboBox_SelectionChanged">
-										<ComboBoxItem Content="[Lv. 08] Faster" />
-										<ComboBoxItem Content="[Lv. 12] Fast" />
-										<ComboBoxItem Content="[Lv. 14] Normal" />
-										<ComboBoxItem Content="[Lv. 18] Great" />
-										<ComboBoxItem Content="[Lv. 22] Ultra" />
+										<ComboBoxItem Content="[Lv. 08] Faster">
+											<ComboBoxItem.Tag>
+											<system:Int32>8</system:Int32>
+											</ComboBoxItem.Tag>
+										</ComboBoxItem>
+										<ComboBoxItem Content="[Lv. 12] Fast">
+											<ComboBoxItem.Tag>
+											<system:Int32>12</system:Int32>
+											</ComboBoxItem.Tag>
+										</ComboBoxItem>
+										<ComboBoxItem Content="[Lv. 14] Normal">
+											<ComboBoxItem.Tag>
+												<system:Int32>14</system:Int32>
+											</ComboBoxItem.Tag>
+										</ComboBoxItem>
+										<ComboBoxItem Content="[Lv. 18] Great">
+											<ComboBoxItem.Tag>
+												<system:Int32>18</system:Int32>
+											</ComboBoxItem.Tag>
+										</ComboBoxItem>
+										<ComboBoxItem Content="[Lv. 22] Ultra">
+											<ComboBoxItem.Tag>
+												<system:Int32>22</system:Int32>
+											</ComboBoxItem.Tag>
+										</ComboBoxItem>
 									</ComboBox>
 									<TextBlock x:Name="BlockSizeTextBlock" Grid.Column="0" Grid.Row="4" Text="Block Size:"
 					  VerticalAlignment="Center"
 					  FontWeight="Bold" />
-									<ComboBox x:Name="BlockSizeComboBox" Grid.Column="1" Grid.Row="4"
+								<ComboBox x:Name="BlockSizeComboBox" Grid.Column="1" Grid.Row="4"
 					  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="BlockSizeComboBox_SelectionChanged">
-										<ComboBoxItem Content="256 KB" />
-										<ComboBoxItem Content="512 KB" />
-									</ComboBox>
+									<ComboBoxItem Content="256 KB">
+											<ComboBoxItem.Tag>
+											<system:Int32>262144</system:Int32>
+											</ComboBoxItem.Tag>
+										</ComboBoxItem>
+										<ComboBoxItem Content="512 KB">
+											<ComboBoxItem.Tag>
+											<system:Int32>524288</system:Int32>
+											</ComboBoxItem.Tag>
+										</ComboBoxItem>
+								</ComboBox>
 								</Grid>
 							</GroupBox>
 							<TextBlock HorizontalAlignment="Left" Margin="477,28,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="330" Width="290"><Run FontWeight="Bold" Text="Verifications"/><Run Text=":"/><Run Text=" "/><Run Text="W"/><Run Text="ill ensure that the compressed file can be decompressed to the exact same NCA files"/><Run Text=". In no case a"/><Run Text=" corrupted output file should be possible if enabled."/><LineBreak/><Run/><LineBreak/><Run FontWeight="Bold" Text="Check for update"/><Run Text=":"/><Run Text=" "/><Run Text="W"/><Run Text="ill notify nsZip portable"/><Run Text=" users"/><Run Text=" "/><Run Text="when"/><Run Text=" there is an update available"/><Run Text=" "/><Run Text="as replacement of the system"/><Run Text=" used by the installed version."/></TextBlock>
@@ -173,7 +202,7 @@
 											   VerticalAlignment="Center"
 											   FontWeight="Bold" />
 									<ComboBox x:Name="KeepTempFilesAfterTaskComboBox" Grid.Column="1" Grid.Row="1"
-											  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="VerificationComboBox_SelectionChanged">
+											  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="KeepTempFilesAfterTaskComboBox_SelectionChanged">
 										<ComboBoxItem Content="Yes" />
 										<ComboBoxItem Content="No" />
 									</ComboBox>
@@ -181,7 +210,7 @@
 											   VerticalAlignment="Center"
 											   FontWeight="Bold" />
 									<ComboBox x:Name="StandByWhenTaskDoneComboBox" Grid.Column="1" Grid.Row="2"
-											  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="VerificationComboBox_SelectionChanged">
+											  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="StandByWhenTaskDoneComboBox_SelectionChanged">
 										<ComboBoxItem Content="No" />
 										<ComboBoxItem Content="Standby" />
 										<ComboBoxItem Content="Hibrinate" />
@@ -273,7 +302,7 @@
 					</TabItem>
 				</TabControl>
 		</Viewbox>
-		<Viewbox x:Name="MainGridBusy">
+		<Viewbox x:Name="MainGridBusy" Visibility="Hidden">
 			<TabControl x:Name="MainTabControl1" HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783" Background="#FF525252">
 				<TabItem x:Name="TasksTab1" Header="Tasks" FontSize="20" Margin="-2,-2,-1.667,3.667">
 					<Grid>

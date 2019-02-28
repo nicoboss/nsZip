@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Navigation;
 using LibHac;
@@ -27,6 +29,8 @@ namespace nsZip
 		private readonly FolderBrowserDialog SelectTempDictionaryDialog = new FolderBrowserDialog();
 		private bool VerifyWhenCompressing = true;
 		private int ZstdLevel = 18;
+		private bool KeepTempFilesAfterTask = false;
+		private int StandByWhenTaskDone = 0;
 
 		public MainWindow()
 		{
@@ -47,18 +51,29 @@ namespace nsZip
 			SelectNspXciDialog.Title = "Select input NSP fIles...";
 
 			SelectOutputDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
-			if (Properties.Settings.Default.OutputFolder != "")
-			{
-				OutputFolderTextBox.Text = Properties.Settings.Default.OutputFolder;
-			}
-			else
-			{
-				OutputFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-			}		
+			OutputFolderTextBox.Text = Properties.Settings.Default.OutputFolder != ""
+				? Properties.Settings.Default.OutputFolder
+				: Environment.GetFolderPath(Environment.SpecialFolder.Desktop);		
 			VerificationComboBox.SelectedIndex = Properties.Settings.Default.Verification ? 0 : 1;
 			CheckForUpdatesComboBox.SelectedIndex = Properties.Settings.Default.CheckForUpdates ? 0 : 1;
-			CompressionLevelComboBox.SelectedIndex = 0; //Properties.Settings.Default.CompressionLevel;
-			BlockSizeComboBox.SelectedIndex = 0; //Properties.Settings.Default.BlockSize;
+
+			foreach (var item in CompressionLevelComboBox.Items.Cast<ComboBoxItem>())
+			{
+				if ((int)item.Tag == Properties.Settings.Default.CompressionLevel)
+				{
+					CompressionLevelComboBox.SelectedItem = item;
+					break;
+				}
+			}
+
+			foreach (var item in BlockSizeComboBox.Items.Cast<ComboBoxItem>())
+			{
+				if ((int)item.Tag == Properties.Settings.Default.BlockSize)
+				{
+					BlockSizeComboBox.SelectedItem = item;
+					break;
+				}
+			}
 
 			SelectTempDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
 			if (Properties.Settings.Default.TempFolder != "")
@@ -310,82 +325,44 @@ namespace nsZip
 
 		}
 
-		private void VerificationComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		private void VerificationComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			switch (VerificationComboBox.SelectedIndex)
-			{
-				case 0:
-					VerifyWhenCompressing = true;
-					break;
-				case 1:
-					VerifyWhenCompressing = false;
-					break;
-				default:
-					throw new NotImplementedException();
-			}
+			VerifyWhenCompressing = VerificationComboBox.SelectedIndex != 1;
+			Properties.Settings.Default.Verification = VerifyWhenCompressing;
+			Properties.Settings.Default.Save();
 			Out.Print($"Set VerifyWhenCompressing to {VerifyWhenCompressing}\r\n");
 		}
 
-		private void CheckForUpdatesComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		private void CheckForUpdatesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			switch (CheckForUpdatesComboBox.SelectedIndex)
-			{
-				case 0:
-					CheckForUpdates = true;
-					break;
-				case 1:
-					CheckForUpdates = false;
-					break;
-				default:
-					throw new NotImplementedException();
-			}
+			CheckForUpdates = CheckForUpdatesComboBox.SelectedIndex != 1;
+			Properties.Settings.Default.CheckForUpdates = CheckForUpdates;
+			Properties.Settings.Default.Save();
 			Out.Print($"Set CheckForUpdates to {CheckForUpdates}\r\n");
 		}
 
-		private void CompressionLevelComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		private void CompressionLevelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			switch (CompressionLevelComboBox.SelectedIndex)
-			{
-				case 0:
-					ZstdLevel = 08;
-					break;
-				case 1:
-					ZstdLevel = 12;
-					break;
-				case 2:
-					ZstdLevel = 14;
-					break;
-				case 3:
-					ZstdLevel = 18;
-					break;
-				case 4:
-					ZstdLevel = 22;
-					break;
-				default:
-					throw new NotImplementedException();
-			}
+			ZstdLevel = (int)((ComboBoxItem) CompressionLevelComboBox.SelectedItem).Tag;
+			Properties.Settings.Default.CompressionLevel = ZstdLevel;
+			Properties.Settings.Default.Save();
 			Out.Print($"Set ZstdLevel to {ZstdLevel}\r\n");
 		}
 
-		private void BlockSizeComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		private void BlockSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			switch(BlockSizeComboBox.SelectedIndex)
-			{
-				case 0:
-					BlockSize = 262144;
-					break;
-				case 1:
-					BlockSize = 524288;
-					break;
-				default:
-					throw new NotImplementedException();
-			}
+			BlockSize = (int)((ComboBoxItem)BlockSizeComboBox.SelectedItem).Tag;
+			Properties.Settings.Default.BlockSize = BlockSize;
+			Properties.Settings.Default.Save();
 			Out.Print($"Set BlockSize to {BlockSize} bytes\r\n");
 		}
 
-		private void OutputFolderTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+		private void OutputFolderTextBox_TextChanged(object sender, TextChangedEventArgs e)
 		{
 			OutputFolderPath = OutputFolderTextBox.Text;
+			Properties.Settings.Default.OutputFolder = OutputFolderPath;
+			Properties.Settings.Default.Save();
+			Out.Print($"Set OutputFolderPath to {OutputFolderPath}\r\n");
 		}
 
 		private void OutputFolderButton_Click(object sender, RoutedEventArgs e)
@@ -398,9 +375,12 @@ namespace nsZip
 			}
 		}
 
-		private void TempFolderTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+		private void TempFolderTextBox_TextChanged(object sender, TextChangedEventArgs e)
 		{
 			TempFolderPath = TempFolderTextBox.Text;
+			Properties.Settings.Default.TempFolder = TempFolderPath;
+			Properties.Settings.Default.Save();
+			Out.Print($"Set TempFolderPath to {TempFolderPath}\r\n");
 		}
 
 		private void TempFolderButton_Click(object sender, RoutedEventArgs e)
@@ -412,15 +392,20 @@ namespace nsZip
 				TempFolderTextBox.Text = SelectTempDictionaryDialog.SelectedPath;
 			}
 		}
-
-		private void SaveSettings()
+		private void KeepTempFilesAfterTaskComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-
+			KeepTempFilesAfterTask = KeepTempFilesAfterTaskComboBox.SelectedIndex != 1;
+			Properties.Settings.Default.KeepTempFiles = KeepTempFilesAfterTask;
+			Properties.Settings.Default.Save();
+			Out.Print($"Set KeepTempFilesAfterTask to {KeepTempFilesAfterTask}\r\n");
 		}
 
-		private void LoadSettings()
+		private void StandByWhenTaskDoneComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-
+			StandByWhenTaskDone = StandByWhenTaskDoneComboBox.SelectedIndex;
+			Properties.Settings.Default.StandbyWhenDone = StandByWhenTaskDone;
+			Properties.Settings.Default.Save();
+			Out.Print($"Set StandByWhenTaskDone to {StandByWhenTaskDone}\r\n");
 		}
 
 	}
