@@ -53,257 +53,315 @@
 	</Window.Resources>
 	<Grid>
 		<Viewbox x:Name="MainGrid">
-			<TabControl x:Name="MainTabControl" HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783" Background="#FF525252">
-					<TabItem x:Name="TasksTab" Header="Tasks" FontSize="20" RenderTransformOrigin="0.153,1.656">
-						<Grid x:Name="TasksGrid" Background="#FFE5E5E5">
-							<WrapPanel HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top">
-								<Button x:Name="SelectFileToCompressButton" FontSize="36" Height="99" Width="298" Margin="0,0,10,0"
-										Style="{StaticResource Button_SelectInputToCompress_OnMouseOverStyle}"
-										Click="SelectFileToCompressButton_Click">
-									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center">
-										<Run Text="Select NSP/XCI files to Compress" />
-									</TextBlock>
-								</Button>
-								<Button x:Name="SelectNspFileToDecompressButton" FontSize="36" Height="99" Width="298" Margin="10,0"
-										Style="{StaticResource Button_SelectInputToDecompress_OnMouseOverStyle}"
-										Click="SelectNspFileToDecompressButton_Click">
-									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center">
-										<Run Text="Select NSPZ files to Decompress" />
-									</TextBlock>
-								</Button>
-								<Button x:Name="RunButton" FontSize="36" Height="99" Width="120" Margin="10,0,0,0"
-										Style="{StaticResource Button_Run_OnMouseOverStyle}" Click="RunButton_Click">
-									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center">
-										<Run Text="RUN!" />
-									</TextBlock>
-								</Button>
-							</WrapPanel>
-							<ListBox x:Name="TaskQueue" HorizontalAlignment="Left" Height="236" Margin="10,126,0,0" VerticalAlignment="Top"
-									 Width="756" Background="#FFCCCCCC" />
-						</Grid>
-					</TabItem>
-					<TabItem x:Name="SettingsTab" Header="Settings" FontSize="20" Height="35" VerticalAlignment="Bottom">
-						<Grid Background="#FFE5E5E5">
-							<GroupBox x:Name="nsZipSettingsGroupBox" Header="nsZip Settings:" HorizontalAlignment="Left"  Margin="10,10,0,0"
-									  VerticalAlignment="Top">
-								<Grid HorizontalAlignment="Left">
-									<Grid.ColumnDefinitions>
-										<ColumnDefinition Width="200" />
-										<ColumnDefinition Width="240" />
-									</Grid.ColumnDefinitions>
-									<Grid.RowDefinitions>
-										<RowDefinition Height="40" />
-										<RowDefinition Height="40" />
-										<RowDefinition Height="40" />
-										<RowDefinition Height="40" />
-										<RowDefinition Height="40" />
-									</Grid.RowDefinitions>
-									<TextBlock x:Name="OutputFolderTextBlock" Grid.Column="0" Grid.Row="0" Text="Output Folder:"
-											   VerticalAlignment="Center"
-											   FontWeight="Bold" />
-									<WrapPanel x:Name="OutputFolderWrapPanel" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Center">
-										<TextBox x:Name="OutputFolderTextBox" HorizontalAlignment="Left" Height="32" Margin="0,0,0,0" Text=""
-											 VerticalAlignment="Top" Width="190" TextChanged="OutputFolderTextBox_TextChanged"/>
-										<Button x:Name="OutputFolderButton" Content="..." HorizontalAlignment="Left" Margin="10,0,0,0"
-											VerticalAlignment="Top" Height="32" Width="40" Click="OutputFolderButton_Click"/>
-									</WrapPanel>
-									<TextBlock x:Name="VerificationTextBlock" Grid.Column="0" Grid.Row="1" Text="Verification:"
-											   VerticalAlignment="Center"
-											   FontWeight="Bold" />
-									<ComboBox x:Name="VerificationComboBox" Grid.Column="1" Grid.Row="1"
-											  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="VerificationComboBox_SelectionChanged">
-										<ComboBoxItem Content="Yes" />
-										<ComboBoxItem Content="No" />
-									</ComboBox>
-									<TextBlock x:Name="CheckForUpdatesTextBlock" Grid.Column="0" Grid.Row="2" Text="Check for Updates:"
-											   VerticalAlignment="Center"
-											   FontWeight="Bold" />
-									<ComboBox x:Name="CheckForUpdatesComboBox" Grid.Column="1" Grid.Row="2"
-											  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="CheckForUpdatesComboBox_SelectionChanged">
-										<ComboBoxItem Content="Yes (nsZip Protable)" />
-										<ComboBoxItem Content="Installed version only" />
-									</ComboBox>
-									<TextBlock x:Name="CompressionLevelTextBlock" Grid.Column="0" Grid.Row="3" Text="Compression Level:"
-					  VerticalAlignment="Center"
-					  FontWeight="Bold" />
-									<ComboBox x:Name="CompressionLevelComboBox" Grid.Column="1" Grid.Row="3"
-					  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="CompressionLevelComboBox_SelectionChanged">
-										<ComboBoxItem Content="[Lv. 08] Faster">
-											<ComboBoxItem.Tag>
-											<system:Int32>8</system:Int32>
-											</ComboBoxItem.Tag>
-										</ComboBoxItem>
-										<ComboBoxItem Content="[Lv. 12] Fast">
-											<ComboBoxItem.Tag>
-											<system:Int32>12</system:Int32>
-											</ComboBoxItem.Tag>
-										</ComboBoxItem>
-										<ComboBoxItem Content="[Lv. 14] Normal">
-											<ComboBoxItem.Tag>
-												<system:Int32>14</system:Int32>
-											</ComboBoxItem.Tag>
-										</ComboBoxItem>
-										<ComboBoxItem Content="[Lv. 18] Great">
-											<ComboBoxItem.Tag>
-												<system:Int32>18</system:Int32>
-											</ComboBoxItem.Tag>
-										</ComboBoxItem>
-										<ComboBoxItem Content="[Lv. 22] Ultra">
-											<ComboBoxItem.Tag>
-												<system:Int32>22</system:Int32>
-											</ComboBoxItem.Tag>
-										</ComboBoxItem>
-									</ComboBox>
-									<TextBlock x:Name="BlockSizeTextBlock" Grid.Column="0" Grid.Row="4" Text="Block Size:"
-					  VerticalAlignment="Center"
-					  FontWeight="Bold" />
-								<ComboBox x:Name="BlockSizeComboBox" Grid.Column="1" Grid.Row="4"
-					  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="BlockSizeComboBox_SelectionChanged">
-									<ComboBoxItem Content="256 KB">
-											<ComboBoxItem.Tag>
-											<system:Int32>262144</system:Int32>
-											</ComboBoxItem.Tag>
-										</ComboBoxItem>
-										<ComboBoxItem Content="512 KB">
-											<ComboBoxItem.Tag>
-											<system:Int32>524288</system:Int32>
-											</ComboBoxItem.Tag>
-										</ComboBoxItem>
+			<TabControl x:Name="MainTabControl" HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783"
+			            Background="#FF525252">
+				<TabItem x:Name="TasksTab" Header="Tasks" FontSize="20" RenderTransformOrigin="0.153,1.656">
+					<Grid x:Name="TasksGrid" Background="#FFE5E5E5">
+						<WrapPanel HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top">
+							<Button x:Name="SelectFileToCompressButton" FontSize="36" Height="99" Width="298" Margin="0,0,10,0"
+							        Style="{StaticResource Button_SelectInputToCompress_OnMouseOverStyle}"
+							        Click="SelectFileToCompressButton_Click">
+								<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center">
+									<Run Text="Select NSP/XCI files to Compress" />
+								</TextBlock>
+							</Button>
+							<Button x:Name="SelectNspFileToDecompressButton" FontSize="36" Height="99" Width="298" Margin="10,0"
+							        Style="{StaticResource Button_SelectInputToDecompress_OnMouseOverStyle}"
+							        Click="SelectNspFileToDecompressButton_Click">
+								<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center">
+									<Run Text="Select NSPZ files to Decompress" />
+								</TextBlock>
+							</Button>
+							<Button x:Name="RunButton" FontSize="36" Height="99" Width="120" Margin="10,0,0,0"
+							        Style="{StaticResource Button_Run_OnMouseOverStyle}" Click="RunButton_Click">
+								<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center">
+									<Run Text="RUN!" />
+								</TextBlock>
+							</Button>
+						</WrapPanel>
+						<ListBox x:Name="TaskQueue" HorizontalAlignment="Left" Height="236" Margin="10,126,0,0" VerticalAlignment="Top"
+						         Width="756" Background="#FFCCCCCC" />
+					</Grid>
+				</TabItem>
+				<TabItem x:Name="SettingsTab" Header="Settings" FontSize="20" Height="35" VerticalAlignment="Bottom">
+					<Grid Background="#FFE5E5E5">
+						<GroupBox x:Name="nsZipSettingsGroupBox" Header="nsZip Settings:" HorizontalAlignment="Left" Margin="10,10,0,0"
+						          VerticalAlignment="Top">
+							<Grid HorizontalAlignment="Left">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="200" />
+									<ColumnDefinition Width="240" />
+								</Grid.ColumnDefinitions>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
+								</Grid.RowDefinitions>
+								<TextBlock x:Name="OutputFolderTextBlock" Grid.Column="0" Grid.Row="0" Text="Output Folder:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<WrapPanel x:Name="OutputFolderWrapPanel" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left"
+								           Margin="0,0,0,0" VerticalAlignment="Center">
+									<TextBox x:Name="OutputFolderTextBox" HorizontalAlignment="Left" Height="32" Margin="0,0,0,0" Text=""
+									         VerticalAlignment="Top" Width="190" TextChanged="OutputFolderTextBox_TextChanged" />
+									<Button x:Name="OutputFolderButton" Content="..." HorizontalAlignment="Left" Margin="10,0,0,0"
+									        VerticalAlignment="Top" Height="32" Width="40" Click="OutputFolderButton_Click" />
+								</WrapPanel>
+								<TextBlock x:Name="VerificationTextBlock" Grid.Column="0" Grid.Row="1" Text="Verification:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<ComboBox x:Name="VerificationComboBox" Grid.Column="1" Grid.Row="1"
+								          VerticalAlignment="Center" Margin="0,2,0,1.333"
+								          SelectionChanged="VerificationComboBox_SelectionChanged">
+									<ComboBoxItem Content="Yes" />
+									<ComboBoxItem Content="No" />
 								</ComboBox>
-								</Grid>
-							</GroupBox>
-							<TextBlock HorizontalAlignment="Left" Margin="477,28,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="330" Width="290"><Run FontWeight="Bold" Text="Verifications"/><Run Text=":"/><Run Text=" "/><Run Text="W"/><Run Text="ill ensure that the compressed file can be decompressed to the exact same NCA files"/><Run Text=". In no case a"/><Run Text=" corrupted output file should be possible if enabled."/><LineBreak/><Run/><LineBreak/><Run FontWeight="Bold" Text="Check for update"/><Run Text=":"/><Run Text=" "/><Run Text="W"/><Run Text="ill notify nsZip portable"/><Run Text=" users"/><Run Text=" "/><Run Text="when"/><Run Text=" there is an update available"/><Run Text=" "/><Run Text="as replacement of the system"/><Run Text=" used by the installed version."/></TextBlock>
-							<TextBlock HorizontalAlignment="Left" Margin="10,248,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="110" Width="442"><Run FontWeight="Bold" Text="Compression Level"/><Run Text=": Trade-off between compression speed and compression ratio."/><LineBreak/><Run FontWeight="Bold" Text="Block Size"/><Run Text=": Trade-off between random access speed "/><Run Text="to compressed data "/><Run Text="and compression ratio."/></TextBlock>
-						</Grid>
-					</TabItem>
-					<TabItem x:Name="AdvancedTab" Header="Advanced" FontSize="20">
-						<Grid Background="#FFE5E5E5">
-							<GroupBox Header="Advanced nsZip Settings" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0">
-								<Grid HorizontalAlignment="Left">
-									<Grid.ColumnDefinitions>
-										<ColumnDefinition Width="220" />
-										<ColumnDefinition Width="240" />
-									</Grid.ColumnDefinitions>
-									<Grid.RowDefinitions>
-										<RowDefinition Height="40" />
-										<RowDefinition Height="40" />
-										<RowDefinition Height="40" />
-									</Grid.RowDefinitions>
-									<TextBlock x:Name="TempFolderTextBlock" Grid.Column="0" Grid.Row="0" Text="Temp folder:"
-											   VerticalAlignment="Center"
-											   FontWeight="Bold" />
-									<WrapPanel x:Name="TempFolderWrapPanel" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Center">
-										<TextBox x:Name="TempFolderTextBox" HorizontalAlignment="Left" Height="32" Margin="0,0,0,0" Text=""
-											 VerticalAlignment="Top" Width="190" TextChanged="TempFolderTextBox_TextChanged"/>
-										<Button x:Name="TempFolderButton" Content="..." HorizontalAlignment="Left" Margin="10,0,0,0"
-											VerticalAlignment="Top" Height="32" Width="40" Click="TempFolderButton_Click"/>
-									</WrapPanel>
-									<TextBlock x:Name="KeepTempFilesAfterTaskTextBlock" Grid.Column="0" Grid.Row="1" Text="Keep temporary files:"
-											   VerticalAlignment="Center"
-											   FontWeight="Bold" />
-									<ComboBox x:Name="KeepTempFilesAfterTaskComboBox" Grid.Column="1" Grid.Row="1"
-											  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="KeepTempFilesAfterTaskComboBox_SelectionChanged">
-										<ComboBoxItem Content="Yes" />
-										<ComboBoxItem Content="No" />
-									</ComboBox>
-									<TextBlock x:Name="StandbyWhenTaskDoneTextBlock" Grid.Column="0" Grid.Row="2" Text="Standby when done:"
-											   VerticalAlignment="Center"
-											   FontWeight="Bold" />
-									<ComboBox x:Name="StandByWhenTaskDoneComboBox" Grid.Column="1" Grid.Row="2"
-											  VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="StandByWhenTaskDoneComboBox_SelectionChanged">
-										<ComboBoxItem Content="No" />
-										<ComboBoxItem Content="Standby" />
-										<ComboBoxItem Content="Hibrinate" />
-									</ComboBox>
-								</Grid>
-							</GroupBox>
-							<TextBlock HorizontalAlignment="Left" Margin="487,27,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="331" Width="280"><Span Foreground="Black" FontWeight="Bold"><Run Text="Temp folder:"/></Span><Span Foreground="Black"><Run Text=" Location of temporarily files. Requires around largest input * 5 free space. SSD/RAMdisk will result in faster speed."/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><LineBreak/></Span><Span Foreground="Black" FontWeight="Bold"><Run Text="Keep temporary files:"/></Span><Span Foreground="Black"><Run Text=" Only delete temporary files when a task starts but not when it's completed."/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><LineBreak/></Span><Span Foreground="Black" FontWeight="Bold"><Run Text="Standby when done:"/></Span><Span Foreground="Black"><Run Text=" Puts your PC into standby when all tasks are completed."/></Span><LineBreak/></TextBlock>
-							<TextBlock HorizontalAlignment="Left" Margin="10,169,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="189" Width="472">
-								<Run Text="More futures will be added in the future. Feel free to post your suggestion on"></Run>
-								<Hyperlink 
-									NavigateUri="https://github.com/nicoboss/nsZip"
-									ToolTip="https://github.com/nicoboss/nsZip"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									GitHub
-								</Hyperlink>
-								<Run Text="and"></Run>
-								<Hyperlink 
-									NavigateUri="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
-									ToolTip="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									GBAtemp
-								</Hyperlink>
-								<LineBreak/><Run/><LineBreak/><Run FontWeight="Bold" Text="Command Line Arguments:"/><LineBreak/><Run Text="-i = "/><Run Text="Input "/><Run Text="file to compress/decompress"/><LineBreak/><Run Text="-l = Compression level [1-"/><Run Text="22"/><Run Text="] (default: 18)"/><LineBreak/><Run Text="-b = Block Size in bytes (default: 262144)"/><LineBreak/>
-							</TextBlock>
-						</Grid>
-					</TabItem>
-					<TabItem x:Name="AboutTab" Header="About" FontSize="20">
-						<Grid Background="#FFE5E5E5">
-							<TextBlock TextWrapping="Wrap" Margin="10,10,9.667,243" LineHeight="16">
-								<Run FontWeight="Bold" FontSize="24" Text="nsZip v1.2.0 - (c) 2019 Nico Bosshard" />
+								<TextBlock x:Name="CheckForUpdatesTextBlock" Grid.Column="0" Grid.Row="2" Text="Check for Updates:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<ComboBox x:Name="CheckForUpdatesComboBox" Grid.Column="1" Grid.Row="2"
+								          VerticalAlignment="Center" Margin="0,2,0,1.333"
+								          SelectionChanged="CheckForUpdatesComboBox_SelectionChanged">
+									<ComboBoxItem Content="Yes (nsZip Protable)" />
+									<ComboBoxItem Content="Installed version only" />
+								</ComboBox>
+								<TextBlock x:Name="CompressionLevelTextBlock" Grid.Column="0" Grid.Row="3" Text="Compression Level:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<ComboBox x:Name="CompressionLevelComboBox" Grid.Column="1" Grid.Row="3"
+								          VerticalAlignment="Center" Margin="0,2,0,1.333"
+								          SelectionChanged="CompressionLevelComboBox_SelectionChanged">
+									<ComboBoxItem Content="[Lv. 08] Faster">
+										<ComboBoxItem.Tag>
+											<system:Int32>8</system:Int32>
+										</ComboBoxItem.Tag>
+									</ComboBoxItem>
+									<ComboBoxItem Content="[Lv. 12] Fast">
+										<ComboBoxItem.Tag>
+											<system:Int32>12</system:Int32>
+										</ComboBoxItem.Tag>
+									</ComboBoxItem>
+									<ComboBoxItem Content="[Lv. 14] Normal">
+										<ComboBoxItem.Tag>
+											<system:Int32>14</system:Int32>
+										</ComboBoxItem.Tag>
+									</ComboBoxItem>
+									<ComboBoxItem Content="[Lv. 18] Great">
+										<ComboBoxItem.Tag>
+											<system:Int32>18</system:Int32>
+										</ComboBoxItem.Tag>
+									</ComboBoxItem>
+									<ComboBoxItem Content="[Lv. 22] Ultra">
+										<ComboBoxItem.Tag>
+											<system:Int32>22</system:Int32>
+										</ComboBoxItem.Tag>
+									</ComboBoxItem>
+								</ComboBox>
+								<TextBlock x:Name="BlockSizeTextBlock" Grid.Column="0" Grid.Row="4" Text="Block Size:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<ComboBox x:Name="BlockSizeComboBox" Grid.Column="1" Grid.Row="4"
+								          VerticalAlignment="Center" Margin="0,2,0,1.333" SelectionChanged="BlockSizeComboBox_SelectionChanged">
+									<ComboBoxItem Content="256 KB">
+										<ComboBoxItem.Tag>
+											<system:Int32>262144</system:Int32>
+										</ComboBoxItem.Tag>
+									</ComboBoxItem>
+									<ComboBoxItem Content="512 KB">
+										<ComboBoxItem.Tag>
+											<system:Int32>524288</system:Int32>
+										</ComboBoxItem.Tag>
+									</ComboBoxItem>
+								</ComboBox>
+							</Grid>
+						</GroupBox>
+						<TextBlock HorizontalAlignment="Left" Margin="477,28,0,0" TextWrapping="Wrap" VerticalAlignment="Top"
+						           Height="330" Width="290">
+							<Run FontWeight="Bold" Text="Verifications" /><Run Text=":" /><Run Text=" " /><Run Text="W" />
+							<Run Text="ill ensure that the compressed file can be decompressed to the exact same NCA files" />
+							<Run Text=". In no case a" /><Run Text=" corrupted output file should be possible if enabled." /><LineBreak />
+							<Run /><LineBreak /><Run FontWeight="Bold" Text="Check for update" /><Run Text=":" /><Run Text=" " />
+							<Run Text="W" /><Run Text="ill notify nsZip portable" /><Run Text=" users" /><Run Text=" " /><Run Text="when" />
+							<Run Text=" there is an update available" /><Run Text=" " /><Run Text="as replacement of the system" />
+							<Run Text=" used by the installed version." />
+						</TextBlock>
+						<TextBlock HorizontalAlignment="Left" Margin="10,248,0,0" TextWrapping="Wrap" VerticalAlignment="Top"
+						           Height="110" Width="442">
+							<Run FontWeight="Bold" Text="Compression Level" />
+							<Run Text=": Trade-off between compression speed and compression ratio." /><LineBreak />
+							<Run FontWeight="Bold" Text="Block Size" /><Run Text=": Trade-off between random access speed " />
+							<Run Text="to compressed data " /><Run Text="and compression ratio." />
+						</TextBlock>
+					</Grid>
+				</TabItem>
+				<TabItem x:Name="AdvancedTab" Header="Advanced" FontSize="20">
+					<Grid Background="#FFE5E5E5">
+						<GroupBox Header="Advanced nsZip Settings" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0">
+							<Grid HorizontalAlignment="Left">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="220" />
+									<ColumnDefinition Width="240" />
+								</Grid.ColumnDefinitions>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
+									<RowDefinition Height="40" />
+								</Grid.RowDefinitions>
+								<TextBlock x:Name="TempFolderTextBlock" Grid.Column="0" Grid.Row="0" Text="Temp folder:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<WrapPanel x:Name="TempFolderWrapPanel" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left"
+								           Margin="0,0,0,0" VerticalAlignment="Center">
+									<TextBox x:Name="TempFolderTextBox" HorizontalAlignment="Left" Height="32" Margin="0,0,0,0" Text=""
+									         VerticalAlignment="Top" Width="190" TextChanged="TempFolderTextBox_TextChanged" />
+									<Button x:Name="TempFolderButton" Content="..." HorizontalAlignment="Left" Margin="10,0,0,0"
+									        VerticalAlignment="Top" Height="32" Width="40" Click="TempFolderButton_Click" />
+								</WrapPanel>
+								<TextBlock x:Name="KeepTempFilesAfterTaskTextBlock" Grid.Column="0" Grid.Row="1" Text="Keep temporary files:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<ComboBox x:Name="KeepTempFilesAfterTaskComboBox" Grid.Column="1" Grid.Row="1"
+								          VerticalAlignment="Center" Margin="0,2,0,1.333"
+								          SelectionChanged="KeepTempFilesAfterTaskComboBox_SelectionChanged">
+									<ComboBoxItem Content="Yes" />
+									<ComboBoxItem Content="No" />
+								</ComboBox>
+								<TextBlock x:Name="StandbyWhenTaskDoneTextBlock" Grid.Column="0" Grid.Row="2" Text="Standby when done:"
+								           VerticalAlignment="Center"
+								           FontWeight="Bold" />
+								<ComboBox x:Name="StandByWhenTaskDoneComboBox" Grid.Column="1" Grid.Row="2"
+								          VerticalAlignment="Center" Margin="0,2,0,1.333"
+								          SelectionChanged="StandByWhenTaskDoneComboBox_SelectionChanged">
+									<ComboBoxItem Content="No" />
+									<ComboBoxItem Content="Standby" />
+									<ComboBoxItem Content="Hibernate" />
+								</ComboBox>
+							</Grid>
+						</GroupBox>
+						<TextBlock HorizontalAlignment="Left" Margin="487,27,0,0" TextWrapping="Wrap" VerticalAlignment="Top"
+						           Height="331" Width="280">
+							<Span Foreground="Black" FontWeight="Bold">
+								<Run Text="Temp folder:" />
+							</Span>
+							<Span Foreground="Black">
+								<Run
+									Text=" Location of temporarily files. Requires around largest input * 5 free space. SSD/RAMdisk will result in faster speed." />
+							</Span>
+							<Span Foreground="Black" FontSize="20" FontFamily="Segoe UI">
 								<LineBreak />
-								<Run Text="A tool to compress/decompress Switch games using the NSP compression format." />
+							</Span>
+							<Span Foreground="Black" FontWeight="Bold">
+								<Run Text="Keep temporary files:" />
+							</Span>
+							<Span Foreground="Black">
+								<Run Text=" Only delete temporary files when a task starts but not when it's completed." />
+							</Span>
+							<Span Foreground="Black" FontSize="20" FontFamily="Segoe UI">
 								<LineBreak />
-								<Run FontWeight="Bold" Text="GitHub:" />
-								<Run Text=" " />
-								<Hyperlink 
-									NavigateUri="https://github.com/nicoboss/nsZip"
-									ToolTip="https://github.com/nicoboss/nsZip"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									<Run Text="https://github.com/nicoboss/nsZip" />
-								</Hyperlink>
-								<LineBreak />
-								<Hyperlink 
-									NavigateUri="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
-									ToolTip="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									<Run Text="GBAtemp" />
-								</Hyperlink>
-								<Hyperlink 
-									NavigateUri="https://github.com/nicoboss/nsZip/releases"
-									ToolTip="https://github.com/nicoboss/nsZip/releases"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									<Run Text="Releases" />
-								</Hyperlink>
-								<Hyperlink 
-									NavigateUri="https://github.com/nicoboss/nsZip/issues"
-									ToolTip="https://github.com/nicoboss/nsZip/issues"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									<Run Text="Issues" />
-								</Hyperlink>
-								<Hyperlink 
-									NavigateUri="https://github.com/nicoboss/nsZip/commits/master"
-									ToolTip="https://github.com/nicoboss/nsZip/commits/master"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									<Run Text="Commits" />
-								</Hyperlink>
-								<Hyperlink 
-									NavigateUri="https://github.com/nicoboss/nsZip/pulls"
-									ToolTip="https://github.com/nicoboss/nsZip/pulls"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									<Run Text="Pull Requests" />
-								</Hyperlink>
-								<Hyperlink 
-									NavigateUri="https://github.com/nicoboss/nsZip/blob/master/LICENSE"
-									ToolTip="https://github.com/nicoboss/nsZip/blob/master/LICENSE"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									<Run Text="License" />
-								</Hyperlink>
-								<Hyperlink 
-									NavigateUri="https://github.com/nicoboss/nsZip/wiki"
-									ToolTip="https://github.com/nicoboss/nsZip/wiki"
-									RequestNavigate="Hyperlink_RequestNavigate">
-									<Run Text="Wiki" />
-								</Hyperlink>
-								<LineBreak />
-							</TextBlock>
-							<TextBox x:Name="LicenseTextBox" HorizontalAlignment="Left" Height="228" Margin="10,130,0,0" TextWrapping="Wrap" Text="License: MIT (load from file)" VerticalAlignment="Top" Width="757" IsReadOnly="True" VerticalScrollBarVisibility="Visible" FontSize="16" Background="#FFCCCCCC"/>
-						</Grid>
-					</TabItem>
-				</TabControl>
+							</Span>
+							<Span Foreground="Black" FontWeight="Bold">
+								<Run Text="Standby when done:" />
+							</Span>
+							<Span Foreground="Black">
+								<Run Text=" Puts your PC into standby when all tasks are completed." />
+							</Span>
+							<LineBreak />
+						</TextBlock>
+						<TextBlock HorizontalAlignment="Left" Margin="10,169,0,0" TextWrapping="Wrap" VerticalAlignment="Top"
+						           Height="189" Width="472">
+							<Run Text="More futures will be added in the future. Feel free to post your suggestion on" />
+							<Hyperlink
+								NavigateUri="https://github.com/nicoboss/nsZip"
+								ToolTip="https://github.com/nicoboss/nsZip"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								GitHub
+							</Hyperlink>
+							<Run Text="and" />
+							<Hyperlink
+								NavigateUri="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
+								ToolTip="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								GBAtemp
+							</Hyperlink>
+							<LineBreak /><Run /><LineBreak /><Run FontWeight="Bold" Text="Command Line Arguments:" /><LineBreak />
+							<Run Text="-i = " /><Run Text="Input " /><Run Text="file to compress/decompress" /><LineBreak />
+							<Run Text="-l = Compression level [1-" /><Run Text="22" /><Run Text="] (default: 18)" /><LineBreak />
+							<Run Text="-b = Block Size in bytes (default: 262144)" /><LineBreak />
+						</TextBlock>
+					</Grid>
+				</TabItem>
+				<TabItem x:Name="AboutTab" Header="About" FontSize="20">
+					<Grid Background="#FFE5E5E5">
+						<TextBlock TextWrapping="Wrap" Margin="10,10,9.667,243" LineHeight="16">
+							<Run FontWeight="Bold" FontSize="24" Text="nsZip v1.2.0 - (c) 2019 Nico Bosshard" />
+							<LineBreak />
+							<Run Text="A tool to compress/decompress Switch games using the NSP compression format." />
+							<LineBreak />
+							<Run FontWeight="Bold" Text="GitHub:" />
+							<Run Text=" " />
+							<Hyperlink
+								NavigateUri="https://github.com/nicoboss/nsZip"
+								ToolTip="https://github.com/nicoboss/nsZip"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								<Run Text="https://github.com/nicoboss/nsZip" />
+							</Hyperlink>
+							<LineBreak />
+							<Hyperlink
+								NavigateUri="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
+								ToolTip="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								<Run Text="GBAtemp" />
+							</Hyperlink>
+							<Hyperlink
+								NavigateUri="https://github.com/nicoboss/nsZip/releases"
+								ToolTip="https://github.com/nicoboss/nsZip/releases"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								<Run Text="Releases" />
+							</Hyperlink>
+							<Hyperlink
+								NavigateUri="https://github.com/nicoboss/nsZip/issues"
+								ToolTip="https://github.com/nicoboss/nsZip/issues"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								<Run Text="Issues" />
+							</Hyperlink>
+							<Hyperlink
+								NavigateUri="https://github.com/nicoboss/nsZip/commits/master"
+								ToolTip="https://github.com/nicoboss/nsZip/commits/master"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								<Run Text="Commits" />
+							</Hyperlink>
+							<Hyperlink
+								NavigateUri="https://github.com/nicoboss/nsZip/pulls"
+								ToolTip="https://github.com/nicoboss/nsZip/pulls"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								<Run Text="Pull Requests" />
+							</Hyperlink>
+							<Hyperlink
+								NavigateUri="https://github.com/nicoboss/nsZip/blob/master/LICENSE"
+								ToolTip="https://github.com/nicoboss/nsZip/blob/master/LICENSE"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								<Run Text="License" />
+							</Hyperlink>
+							<Hyperlink
+								NavigateUri="https://github.com/nicoboss/nsZip/wiki"
+								ToolTip="https://github.com/nicoboss/nsZip/wiki"
+								RequestNavigate="Hyperlink_RequestNavigate">
+								<Run Text="Wiki" />
+							</Hyperlink>
+							<LineBreak />
+						</TextBlock>
+						<TextBox x:Name="LicenseTextBox" HorizontalAlignment="Left" Height="228" Margin="10,130,0,0" TextWrapping="Wrap"
+						         Text="License: MIT (load from file)" VerticalAlignment="Top" Width="757" IsReadOnly="True"
+						         VerticalScrollBarVisibility="Visible" FontSize="16" Background="#FFCCCCCC" />
+					</Grid>
+				</TabItem>
+			</TabControl>
 		</Viewbox>
 		<Viewbox x:Name="MainGridBusy" Visibility="Hidden">
-			<TabControl x:Name="MainTabControl1" HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783" Background="#FF525252">
+			<TabControl x:Name="MainTabControl1" HorizontalAlignment="Left" Height="411" VerticalAlignment="Top" Width="783"
+			            Background="#FF525252">
 				<TabItem x:Name="TasksTab1" Header="Tasks" FontSize="20" Margin="-2,-2,-1.667,3.667">
 					<Grid>
 						<Rectangle>
@@ -319,7 +377,8 @@
 							</Rectangle.Fill>
 						</Rectangle>
 						<Border BorderThickness="2" BorderBrush="#FF404040" Margin="10">
-							<TextBlock x:Name="BusyTextBlock" Text="Working..." Background="#CCCCCCCC" Padding="15,10" TextWrapping="Wrap" FontSize="36"/>
+							<TextBlock x:Name="BusyTextBlock" Text="Working..." Background="#CCCCCCCC" Padding="15,10" TextWrapping="Wrap"
+							           FontSize="36" />
 						</Border>
 					</Grid>
 				</TabItem>

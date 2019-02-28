@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -10,6 +11,7 @@ using System.Windows.Navigation;
 using LibHac;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
+using nsZip.Properties;
 
 namespace nsZip
 {
@@ -18,19 +20,19 @@ namespace nsZip
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private bool CheckForUpdates;
-		private int BlockSize = 262144;
 		private readonly Output Out;
-		private string OutputFolderPath;
-		private string TempFolderPath;
 		private readonly OpenFileDialog SelectNspXciDialog = new OpenFileDialog();
 		private readonly OpenFileDialog SelectNspzDialog = new OpenFileDialog();
 		private readonly FolderBrowserDialog SelectOutputDictionaryDialog = new FolderBrowserDialog();
 		private readonly FolderBrowserDialog SelectTempDictionaryDialog = new FolderBrowserDialog();
+		private int BlockSize = 262144;
+		private bool CheckForUpdates;
+		private bool KeepTempFilesAfterTask;
+		private string OutputFolderPath;
+		private int StandByWhenTaskDone;
+		private string TempFolderPath;
 		private bool VerifyWhenCompressing = true;
 		private int ZstdLevel = 18;
-		private bool KeepTempFilesAfterTask = false;
-		private int StandByWhenTaskDone = 0;
 
 		public MainWindow()
 		{
@@ -51,15 +53,15 @@ namespace nsZip
 			SelectNspXciDialog.Title = "Select input NSP fIles...";
 
 			SelectOutputDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
-			OutputFolderTextBox.Text = Properties.Settings.Default.OutputFolder != ""
-				? Properties.Settings.Default.OutputFolder
-				: Environment.GetFolderPath(Environment.SpecialFolder.Desktop);		
-			VerificationComboBox.SelectedIndex = Properties.Settings.Default.Verification ? 0 : 1;
-			CheckForUpdatesComboBox.SelectedIndex = Properties.Settings.Default.CheckForUpdates ? 0 : 1;
+			OutputFolderTextBox.Text = Settings.Default.OutputFolder != ""
+				? Settings.Default.OutputFolder
+				: Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+			VerificationComboBox.SelectedIndex = Settings.Default.Verification ? 0 : 1;
+			CheckForUpdatesComboBox.SelectedIndex = Settings.Default.CheckForUpdates ? 0 : 1;
 
 			foreach (var item in CompressionLevelComboBox.Items.Cast<ComboBoxItem>())
 			{
-				if ((int)item.Tag == Properties.Settings.Default.CompressionLevel)
+				if ((int) item.Tag == Settings.Default.CompressionLevel)
 				{
 					CompressionLevelComboBox.SelectedItem = item;
 					break;
@@ -68,7 +70,7 @@ namespace nsZip
 
 			foreach (var item in BlockSizeComboBox.Items.Cast<ComboBoxItem>())
 			{
-				if ((int)item.Tag == Properties.Settings.Default.BlockSize)
+				if ((int) item.Tag == Settings.Default.BlockSize)
 				{
 					BlockSizeComboBox.SelectedItem = item;
 					break;
@@ -76,27 +78,29 @@ namespace nsZip
 			}
 
 			SelectTempDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
-			if (Properties.Settings.Default.TempFolder != "")
+			if (Settings.Default.TempFolder != "")
 			{
-				TempFolderTextBox.Text = Properties.Settings.Default.TempFolder;
+				TempFolderTextBox.Text = Settings.Default.TempFolder;
 			}
 			else
 			{
 				TempFolderTextBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 			}
-			KeepTempFilesAfterTaskComboBox.SelectedIndex = Properties.Settings.Default.KeepTempFiles ? 0: 1;
-			StandByWhenTaskDoneComboBox.SelectedIndex = Properties.Settings.Default.StandbyWhenDone;
+
+			KeepTempFilesAfterTaskComboBox.SelectedIndex = Settings.Default.KeepTempFiles ? 0 : 1;
+			StandByWhenTaskDoneComboBox.SelectedIndex = Settings.Default.StandbyWhenDone;
 
 			try
 			{
 				LicenseTextBox.Text = File.ReadAllText(@"LICENSE");
-			} catch(Exception ex)
+			}
+			catch (Exception ex)
 			{
 				Out.Print("LICENSE file not found!\r\n");
 			}
 
 			//System.Windows.Forms.Application.SetSuspendState(PowerState.Suspend, false, false);
-			
+
 			//CompressionLevelComboBox.SelectedIndex = 3;
 			//BlockSizeComboBox.SelectedIndex = 0;
 			//VerifyAfterCompressCheckBox_CheckedChanged(null, null);
@@ -105,7 +109,7 @@ namespace nsZip
 
 		private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
 		{
-			System.Diagnostics.Process.Start(e.Uri.ToString());
+			Process.Start(e.Uri.ToString());
 		}
 
 		private void cleanFolder(string folderName)
@@ -254,9 +258,7 @@ namespace nsZip
 
 		private void RunButton_Click(object sender, RoutedEventArgs e)
 		{
-			var t = Task.Run(() => {
-				RunTask();
-			});
+			var t = Task.Run(() => { RunTask(); });
 		}
 
 		private void RunTask()
@@ -270,10 +272,10 @@ namespace nsZip
 			Dispatcher.Invoke(() =>
 			{
 				BusyTextBlock.Text = "Working...";
-				  MainGrid.Visibility = Visibility.Hidden;
+				MainGrid.Visibility = Visibility.Hidden;
 				MainGridBusy.Visibility = Visibility.Visible;
 			});
-			
+
 			try
 			{
 				do
@@ -284,7 +286,8 @@ namespace nsZip
 					var infileLowerCase = inFile.ToLower();
 					Dispatcher.Invoke(() =>
 					{
-						BusyTextBlock.Text = $"Task \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...\r\nThis might take quite some time.\r\nPlease take a look at the Console Window for more Information.";
+						BusyTextBlock.Text =
+							$"Task \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...\r\nThis might take quite some time.\r\nPlease take a look at the console window for more information.";
 						TaskQueue.Items.RemoveAt(0);
 					});
 
@@ -309,7 +312,8 @@ namespace nsZip
 						throw new InvalidDataException($"Invalid file type {inFile}");
 					}
 				} while (TaskQueue.Items.Count > 0);
-			} catch(Exception ex)
+			}
+			catch (Exception ex)
 			{
 				Out.Print(ex.StackTrace);
 				Out.Print(ex.Message);
@@ -322,46 +326,45 @@ namespace nsZip
 				MainGrid.Visibility = Visibility.Visible;
 				MainGridBusy.Visibility = Visibility.Hidden;
 			});
-
 		}
 
 		private void VerificationComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			VerifyWhenCompressing = VerificationComboBox.SelectedIndex != 1;
-			Properties.Settings.Default.Verification = VerifyWhenCompressing;
-			Properties.Settings.Default.Save();
+			Settings.Default.Verification = VerifyWhenCompressing;
+			Settings.Default.Save();
 			Out.Print($"Set VerifyWhenCompressing to {VerifyWhenCompressing}\r\n");
 		}
 
 		private void CheckForUpdatesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			CheckForUpdates = CheckForUpdatesComboBox.SelectedIndex != 1;
-			Properties.Settings.Default.CheckForUpdates = CheckForUpdates;
-			Properties.Settings.Default.Save();
+			Settings.Default.CheckForUpdates = CheckForUpdates;
+			Settings.Default.Save();
 			Out.Print($"Set CheckForUpdates to {CheckForUpdates}\r\n");
 		}
 
 		private void CompressionLevelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			ZstdLevel = (int)((ComboBoxItem) CompressionLevelComboBox.SelectedItem).Tag;
-			Properties.Settings.Default.CompressionLevel = ZstdLevel;
-			Properties.Settings.Default.Save();
+			ZstdLevel = (int) ((ComboBoxItem) CompressionLevelComboBox.SelectedItem).Tag;
+			Settings.Default.CompressionLevel = ZstdLevel;
+			Settings.Default.Save();
 			Out.Print($"Set ZstdLevel to {ZstdLevel}\r\n");
 		}
 
 		private void BlockSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			BlockSize = (int)((ComboBoxItem)BlockSizeComboBox.SelectedItem).Tag;
-			Properties.Settings.Default.BlockSize = BlockSize;
-			Properties.Settings.Default.Save();
+			BlockSize = (int) ((ComboBoxItem) BlockSizeComboBox.SelectedItem).Tag;
+			Settings.Default.BlockSize = BlockSize;
+			Settings.Default.Save();
 			Out.Print($"Set BlockSize to {BlockSize} bytes\r\n");
 		}
 
 		private void OutputFolderTextBox_TextChanged(object sender, TextChangedEventArgs e)
 		{
 			OutputFolderPath = OutputFolderTextBox.Text;
-			Properties.Settings.Default.OutputFolder = OutputFolderPath;
-			Properties.Settings.Default.Save();
+			Settings.Default.OutputFolder = OutputFolderPath;
+			Settings.Default.Save();
 			Out.Print($"Set OutputFolderPath to {OutputFolderPath}\r\n");
 		}
 
@@ -369,7 +372,7 @@ namespace nsZip
 		{
 			SelectOutputDictionaryDialog.SelectedPath = OutputFolderPath;
 			if (SelectOutputDictionaryDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK
-				 && !string.IsNullOrWhiteSpace(SelectOutputDictionaryDialog.SelectedPath))
+			    && !string.IsNullOrWhiteSpace(SelectOutputDictionaryDialog.SelectedPath))
 			{
 				OutputFolderTextBox.Text = SelectOutputDictionaryDialog.SelectedPath;
 			}
@@ -378,8 +381,8 @@ namespace nsZip
 		private void TempFolderTextBox_TextChanged(object sender, TextChangedEventArgs e)
 		{
 			TempFolderPath = TempFolderTextBox.Text;
-			Properties.Settings.Default.TempFolder = TempFolderPath;
-			Properties.Settings.Default.Save();
+			Settings.Default.TempFolder = TempFolderPath;
+			Settings.Default.Save();
 			Out.Print($"Set TempFolderPath to {TempFolderPath}\r\n");
 		}
 
@@ -387,26 +390,26 @@ namespace nsZip
 		{
 			SelectTempDictionaryDialog.SelectedPath = TempFolderPath;
 			if (SelectTempDictionaryDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK
-				 && !string.IsNullOrWhiteSpace(SelectTempDictionaryDialog.SelectedPath))
+			    && !string.IsNullOrWhiteSpace(SelectTempDictionaryDialog.SelectedPath))
 			{
 				TempFolderTextBox.Text = SelectTempDictionaryDialog.SelectedPath;
 			}
 		}
+
 		private void KeepTempFilesAfterTaskComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			KeepTempFilesAfterTask = KeepTempFilesAfterTaskComboBox.SelectedIndex != 1;
-			Properties.Settings.Default.KeepTempFiles = KeepTempFilesAfterTask;
-			Properties.Settings.Default.Save();
+			Settings.Default.KeepTempFiles = KeepTempFilesAfterTask;
+			Settings.Default.Save();
 			Out.Print($"Set KeepTempFilesAfterTask to {KeepTempFilesAfterTask}\r\n");
 		}
 
 		private void StandByWhenTaskDoneComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			StandByWhenTaskDone = StandByWhenTaskDoneComboBox.SelectedIndex;
-			Properties.Settings.Default.StandbyWhenDone = StandByWhenTaskDone;
-			Properties.Settings.Default.Save();
+			Settings.Default.StandbyWhenDone = StandByWhenTaskDone;
+			Settings.Default.Save();
 			Out.Print($"Set StandByWhenTaskDone to {StandByWhenTaskDone}\r\n");
 		}
-
 	}
 }
