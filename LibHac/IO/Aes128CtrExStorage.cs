@@ -36,7 +36,7 @@ namespace LibHac.IO
                 lock (_locker)
                 {
                     UpdateCounterSubsection(entry.Counter);
-	                Console.WriteLine(inPos + ": " + ByteArrayToString(Counter));
+	                //Console.WriteLine(inPos + ": " + ByteArrayToString(Counter));
 					base.ReadImpl(destination.Slice(outPos, bytesToRead), inPos);
                 }
 

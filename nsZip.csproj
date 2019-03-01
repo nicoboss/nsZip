@@ -89,7 +89,7 @@
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>nsZip.ico</ApplicationIcon>
@@ -137,7 +137,7 @@
     <Compile Include="App.xaml.cs" />
     <Compile Include="CommandLineArguments.cs" />
     <Compile Include="CompressFolder.cs" />
-    <Compile Include="DecompressFolder.cs" />
+    <Compile Include="DecompressFs.cs" />
     <Compile Include="EncryptNCA.cs" />
     <Compile Include="LibHacControl\ProcessKeyset.cs" />
     <Compile Include="LibHacControl\ProcessXci.cs" />

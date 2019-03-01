@@ -11,6 +11,10 @@ namespace nsZip.LibHacControl
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
+				var OutDirFs = new LocalFileSystem(outDirPath);
+				IDirectory destRoot = OutDirFs.OpenDirectory("/", OpenDirectoryMode.All);
+				IFileSystem destFs = destRoot.ParentFileSystem;
+
 				var outputFile = File.Open($"{outDirPath}/xciMeta.dat", FileMode.Create);
 				var header = new byte[] {0x6e, 0x73, 0x5a, 0x69, 0x70, 0x4d, 0x65, 0x74, 0x61, 0x58, 0x43, 0x49, 0x00};
 				outputFile.Write(header, 0, header.Length);
@@ -44,9 +48,21 @@ namespace nsZip.LibHacControl
 							outputFile.WriteByte(0x0A);
 							var subPfsFileName = Encoding.ASCII.GetBytes(subPfsFile.Name);
 							outputFile.Write(subPfsFileName, 0, subPfsFileName.Length);
-						}
 
-						subPfs.Extract(outDirPath);
+							destFs.CreateFile(subPfsFile.Name, subPfsFile.Size, CreateFileOptions.None);
+							using (IFile srcFile = subPfs.OpenFile(subPfsFile.Name, OpenMode.Read))
+							using (IFile dstFile = destFs.OpenFile(subPfsFile.Name, OpenMode.Write))
+							{
+								if (subPfsFile.Name.EndsWith(".nca"))
+								{
+									ProcessNca.Process(srcFile, dstFile, keyset, Out);
+								}
+								else
+								{
+									srcFile.CopyTo(dstFile);
+								}
+							}
+						}
 					}
 
 					outputFile.WriteByte(0x0A);

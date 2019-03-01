@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Navigation;
 using LibHac;
+using LibHac.IO;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
 using nsZip.Properties;
@@ -125,7 +126,6 @@ namespace nsZip
 
 		private void cleanFolders()
 		{
-			cleanFolder("extracted");
 			cleanFolder("decrypted");
 			cleanFolder("encrypted");
 			cleanFolder("compressed");
@@ -136,8 +136,8 @@ namespace nsZip
 			var nspFileNoExtension = Path.GetFileNameWithoutExtension(nspFile);
 			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessNsp.Process(nspFile, "extracted/", Out);
-			CompressExtracted(keyset);
+			ProcessNsp.Decrypt(nspFile, "decrypted", keyset, Out);
+			CompressDecrypted(keyset);
 			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
 			FolderTools.FolderToNSP("compressed", $"{nspzOutPath}.nspz");
 			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
@@ -148,39 +148,25 @@ namespace nsZip
 			var xciFileNoExtension = Path.GetFileNameWithoutExtension(xciFile);
 			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessXci.Process(xciFile, "extracted/", keyset, Out);
-			CompressExtracted(keyset);
+			ProcessXci.Process(xciFile, "decrypted/", keyset, Out);
+			CompressDecrypted(keyset);
 			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
 			FolderTools.FolderToNSP("compressed", $"{xciOutPath}.xciz");
 			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
 		}
 
-		private void CompressExtracted(Keyset keyset)
+		private void CompressDecrypted(Keyset keyset)
 		{
-			FolderTools.ExtractTitlekeys("extracted", keyset, Out);
-
-			var dirExtracted = new DirectoryInfo("extracted");
-			foreach (var file in dirExtracted.GetFiles())
-			{
-				if (file.Name.EndsWith(".nca"))
-				{
-					ProcessNca.Process($"extracted/{file.Name}", $"decrypted/{file.Name}", keyset, Out);
-				}
-				else
-				{
-					file.CopyTo($"decrypted/{file.Name}");
-				}
-			}
-
 			TrimDeltaNCA.Process("decrypted", keyset, Out);
 			CompressFolder.Compress(Out, "decrypted", "compressed", BlockSize, ZstdLevel);
 
 			if (VerifyWhenCompressing)
 			{
+				cleanFolder("compressed");
 				cleanFolder("decrypted");
-				cleanFolder("encrypted");
-				DecompressFolder.Decompress(Out, "compressed", "decrypted");
-				UntrimDeltaNCA.Process("decrypted", "extracted", keyset, Out);
+				var compressedFs = new LocalFileSystem("compressed");
+				DecompressFs.ProcessFs(compressedFs, "decrypted", Out);
+				UntrimDeltaNCA.Process("decrypted", "decrypted", keyset, Out);
 
 				var dirDecrypted = new DirectoryInfo("decrypted");
 				foreach (var file in dirDecrypted.GetFiles("*.nca"))
@@ -195,8 +181,7 @@ namespace nsZip
 			var nspzFileNoExtension = Path.GetFileNameWithoutExtension(nspzFile);
 			Out.Print($"Task DecompressNSPZ \"{nspzFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessNsp.Process(nspzFile, "extracted/", Out);
-			DecompressFolder.Decompress(Out, "extracted", "decrypted");
+			ProcessNsp.Decompress(nspzFile, "decrypted", Out);
 			UntrimAndEncrypt(keyset);
 			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
 			FolderTools.FolderToNSP("encrypted", $"{nspOutPath}.nsp");
@@ -313,19 +298,25 @@ namespace nsZip
 					}
 				} while (TaskQueue.Items.Count > 0);
 			}
-			catch (Exception ex)
+			catch (ArgumentNullException ex)
 			{
-				Out.Print(ex.StackTrace);
+				Out.Print(ex.StackTrace+"\r\n");
 				Out.Print(ex.Message);
+				throw ex;
 			}
-
-			cleanFolders();
-
-			Dispatcher.Invoke(() =>
+			finally
 			{
-				MainGrid.Visibility = Visibility.Visible;
-				MainGridBusy.Visibility = Visibility.Hidden;
-			});
+				if (!KeepTempFilesAfterTask)
+				{
+					cleanFolders();
+				}
+
+				Dispatcher.Invoke(() =>
+				{
+					MainGrid.Visibility = Visibility.Visible;
+					MainGridBusy.Visibility = Visibility.Hidden;
+				});
+			}
 		}
 
 		private void VerificationComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
