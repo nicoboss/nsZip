@@ -7,22 +7,24 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessNca
 	{
-		public static void Process(IFile inFile, IFile outFile, Keyset keyset, Output Out)
+		public static void Process(IFile inFile, IFile outFile, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
 			using (var file = new StreamStorage(inFile.AsStream(), false))
 			{
 				var nca = new Nca(keyset, file, false);
 				Out.Print(nca.Print());
-				Out.Print($"ValidateMasterHashes...\r\n");
-				
-				nca.ValidateMasterHashes();
-				//nca.ParseNpdm();
-				for (var i = 0; i < 3; ++i)
+				if (verifyBeforeDecrypting)
 				{
-					if (nca.Sections[i] != null)
+					Out.Print($"ValidateMasterHashes...\r\n");
+					nca.ValidateMasterHashes();
+					//nca.ParseNpdm();
+					for (var i = 0; i < 3; ++i)
 					{
-						Out.Print($"VerifySection {i}...\r\n");
-						nca.VerifySection(i);
+						if (nca.Sections[i] != null)
+						{
+							Out.Print($"VerifySection {i}...\r\n");
+							nca.VerifySection(i);
+						}
 					}
 				}
 				Out.Print($"Decripting...\r\n");

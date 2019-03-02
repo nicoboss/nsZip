@@ -30,7 +30,7 @@ namespace nsZip.LibHacControl
 			}
 		}
 
-		public static void Decrypt(string inFile, string outDirPath, Keyset keyset, Output Out)
+		public static void Decrypt(string inFile, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
@@ -81,7 +81,7 @@ namespace nsZip.LibHacControl
 						using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
 						using (IFile dstFile = destFs.OpenFile(entry.Name, OpenMode.Write))
 						{
-							ProcessNca.Process(srcFile, dstFile, keyset, Out);
+							ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
 						}
 						
 					}

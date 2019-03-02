@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using LibHac;
+using LibHac.IO;
 using nsZip.Crypto;
 using nsZip.LibHacExtensions;
+using AesSubsectionEntry = nsZip.LibHacExtensions.AesSubsectionEntry;
 
 namespace nsZip
 {
@@ -98,6 +100,7 @@ namespace nsZip
 			if (verifyEncrypted)
 			{
 				sha256NCA = SHA256.Create();
+				sha256NCA.Initialize();
 			}
 
 			var encryptedHeader = CryptoInitialisers.AES_XTS(HeaderKey1, HeaderKey2, 0x200, DecryptedHeader, 0);
@@ -108,7 +111,7 @@ namespace nsZip
 
 			if (verifyEncrypted)
 			{
-				sha256NCA.TransformBlock(encryptedHeader, 0, DecryptedHeader.Length, encryptedHeader, 0);
+				sha256NCA.TransformBlock(encryptedHeader, 0, DecryptedHeader.Length, null, 0);
 			}
 
 			var dummyHeader = new byte[0xC00];
@@ -128,7 +131,7 @@ namespace nsZip
 
 				if (verifyEncrypted)
 				{
-					sha256NCA.TransformBlock(dummyHeaderEncrypted, 0, dummyHeaderWriteCount, dummyHeaderEncrypted, 0);
+					sha256NCA.TransformBlock(dummyHeaderEncrypted, 0, dummyHeaderWriteCount, null, 0);
 				}
 
 				dummyHeaderSector += 6;
@@ -173,6 +176,7 @@ namespace nsZip
 				int bs;
 				var DecryptedSectionBlock = new byte[maxBS];
 				var sectOffsetEnd = sect.Offset + sect.Size;
+				var AesCtrEncrypter = new Aes128CtrTransform(DecryptedKeys[2], initialCounter);
 				switch (sect.Header.EncryptionType)
 				{
 					case NcaEncryptionType.None:
@@ -188,34 +192,35 @@ namespace nsZip
 
 							if (verifyEncrypted)
 							{
-								sha256NCA.TransformBlock(DecryptedSectionBlock, 0, bs, DecryptedSectionBlock, 0);
+								sha256NCA.TransformBlock(DecryptedSectionBlock, 0, bs, null, 0);
 							}
 						}
 
 						break;
 					case NcaEncryptionType.AesCtr:
+						
 						while (Input.Position < sectOffsetEnd)
 						{
 							SetCtrOffset(initialCounter, Input.Position);
 							bs = (int) Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
-							var EncryptedSectionBlock = AesCTR.AesCtrTransform(DecryptedKeys[2], initialCounter,
-								DecryptedSectionBlock, bs);
+							AesCtrEncrypter.Counter = initialCounter;
+							AesCtrEncrypter.TransformBlock(DecryptedSectionBlock);
+
 							if (writeEncrypted)
 							{
-								Output.Write(EncryptedSectionBlock, 0, bs);
+								Output.Write(DecryptedSectionBlock, 0, bs);
 							}
 
 							if (verifyEncrypted)
 							{
-								sha256NCA.TransformBlock(EncryptedSectionBlock, 0, bs, EncryptedSectionBlock, 0);
+								sha256NCA.TransformBlock(DecryptedSectionBlock, 0, bs, null, 0);
 							}
 						}
 
 						break;
 					case NcaEncryptionType.AesCtrEx:
-
 						var info = sect.Header.BktrInfo;
 						var MyBucketTree = new MyBucketTree<AesSubsectionEntry>(
 							new MemoryStream(sect.Header.BktrInfo.EncryptionHeader.Header), Input,
@@ -240,16 +245,16 @@ namespace nsZip
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Out.Print($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
 							Input.Read(DecryptedSectionBlockLUL, 0, bs);
-							var EncryptedSectionBlock = AesCTR.AesCtrTransform(DecryptedKeys[2], subsectionEntryCounter,
-								DecryptedSectionBlockLUL, bs);
+							AesCtrEncrypter.Counter = subsectionEntryCounter;
+							AesCtrEncrypter.TransformBlock(DecryptedSectionBlockLUL);
 							if (writeEncrypted)
 							{
-								Output.Write(EncryptedSectionBlock, 0, bs);
+								Output.Write(DecryptedSectionBlockLUL, 0, bs);
 							}
 
 							if (verifyEncrypted)
 							{
-								sha256NCA.TransformBlock(EncryptedSectionBlock, 0, bs, EncryptedSectionBlock, 0);
+								sha256NCA.TransformBlock(DecryptedSectionBlockLUL, 0, bs, null, 0);
 							}
 						}
 
@@ -260,17 +265,16 @@ namespace nsZip
 							Out.Print($"EncryptedAfter: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
 							Out.Print($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
-							var EncryptedSectionBlock = AesCTR.AesCtrTransform(DecryptedKeys[2], subsectionEntryCounter,
-								DecryptedSectionBlock,
-								bs);
+							AesCtrEncrypter.Counter = subsectionEntryCounter;
+							AesCtrEncrypter.TransformBlock(DecryptedSectionBlock);
 							if (writeEncrypted)
 							{
-								Output.Write(EncryptedSectionBlock, 0, bs);
+								Output.Write(DecryptedSectionBlock, 0, bs);
 							}
 
 							if (verifyEncrypted)
 							{
-								sha256NCA.TransformBlock(EncryptedSectionBlock, 0, bs, EncryptedSectionBlock, 0);
+								sha256NCA.TransformBlock(DecryptedSectionBlock, 0, bs, null, 0);
 							}
 						}
 

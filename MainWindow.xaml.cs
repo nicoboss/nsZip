@@ -32,7 +32,7 @@ namespace nsZip
 		private string OutputFolderPath;
 		private int StandByWhenTaskDone;
 		private string TempFolderPath;
-		private bool VerifyWhenCompressing = true;
+		private bool VerifyHashes = true;
 		private int ZstdLevel = 18;
 
 		public MainWindow()
@@ -136,7 +136,7 @@ namespace nsZip
 			var nspFileNoExtension = Path.GetFileNameWithoutExtension(nspFile);
 			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessNsp.Decrypt(nspFile, "decrypted", keyset, Out);
+			ProcessNsp.Decrypt(nspFile, "decrypted", VerifyHashes, keyset, Out);
 			CompressDecrypted(keyset);
 			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
 			FolderTools.FolderToNSP("compressed", $"{nspzOutPath}.nspz");
@@ -148,7 +148,7 @@ namespace nsZip
 			var xciFileNoExtension = Path.GetFileNameWithoutExtension(xciFile);
 			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessXci.Process(xciFile, "decrypted/", keyset, Out);
+			ProcessXci.Process(xciFile, "decrypted/", VerifyHashes, keyset, Out);
 			CompressDecrypted(keyset);
 			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
 			FolderTools.FolderToNSP("compressed", $"{xciOutPath}.xciz");
@@ -160,9 +160,8 @@ namespace nsZip
 			TrimDeltaNCA.Process("decrypted", keyset, Out);
 			CompressFolder.Compress(Out, "decrypted", "compressed", BlockSize, ZstdLevel);
 
-			if (VerifyWhenCompressing)
+			if (VerifyHashes)
 			{
-				cleanFolder("compressed");
 				cleanFolder("decrypted");
 				var compressedFs = new LocalFileSystem("compressed");
 				DecompressFs.ProcessFs(compressedFs, "decrypted", Out);
@@ -202,7 +201,7 @@ namespace nsZip
 
 				if (file.Name.EndsWith(".nca"))
 				{
-					EncryptNCA.Encrypt(file.Name, true, true, keyset, Out);
+					EncryptNCA.Encrypt(file.Name, true, VerifyHashes, keyset, Out);
 					file.Delete();
 				}
 				else
@@ -215,7 +214,7 @@ namespace nsZip
 
 			foreach (var file in dirDecrypted.GetFiles("*.nca"))
 			{
-				EncryptNCA.Encrypt(file.Name, true, true, keyset, Out);
+				EncryptNCA.Encrypt(file.Name, true, VerifyHashes, keyset, Out);
 			}
 		}
 
@@ -321,10 +320,10 @@ namespace nsZip
 
 		private void VerificationComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			VerifyWhenCompressing = VerificationComboBox.SelectedIndex != 1;
-			Settings.Default.Verification = VerifyWhenCompressing;
+			VerifyHashes = VerificationComboBox.SelectedIndex != 1;
+			Settings.Default.Verification = VerifyHashes;
 			Settings.Default.Save();
-			Out.Print($"Set VerifyWhenCompressing to {VerifyWhenCompressing}\r\n");
+			Out.Print($"Set VerifyHashes to {VerifyHashes}\r\n");
 		}
 
 		private void CheckForUpdatesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

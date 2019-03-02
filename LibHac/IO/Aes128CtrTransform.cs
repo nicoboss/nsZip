@@ -11,7 +11,7 @@ namespace LibHac.IO
         private const int BlockSize = 128;
         private const int BlockSizeBytes = BlockSize / 8;
 
-        public readonly byte[] Counter = new byte[BlockSizeBytes];
+        public byte[] Counter = new byte[BlockSizeBytes];
 
         private readonly ICryptoTransform _encryptor;
 

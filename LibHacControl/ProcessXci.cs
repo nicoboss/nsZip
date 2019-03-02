@@ -7,7 +7,7 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessXci
 	{
-		public static void Process(string inFile, string outDirPath, Keyset keyset, Output Out)
+		public static void Process(string inFile, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
@@ -55,7 +55,7 @@ namespace nsZip.LibHacControl
 							{
 								if (subPfsFile.Name.EndsWith(".nca"))
 								{
-									ProcessNca.Process(srcFile, dstFile, keyset, Out);
+									ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
 								}
 								else
 								{
