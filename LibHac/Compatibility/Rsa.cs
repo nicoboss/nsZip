@@ -17,7 +17,7 @@ namespace LibHac.Compatibility
             const int saltOffset = hashOffset - digestLen;
             const int padEnd = saltOffset - 1;
 
-            SHA256 sha = SHA256.Create();
+			SHA256Cng sha = new SHA256Cng();
             var message = new byte[rsaLen];
 
             BigInteger decInt = BigInteger.ModPow(Crypto.GetBigInteger(signature), new BigInteger(65537), Crypto.GetBigInteger(modulus));

@@ -14,7 +14,7 @@ namespace LibHac
         public static Validity CheckMemoryHashTable(byte[] data, byte[] hash, int offset, int count)
         {
             Validity comp;
-            using (SHA256 sha = SHA256.Create())
+            using (SHA256Cng sha = new SHA256Cng())
             {
                 comp = Util.ArraysEqual(hash, sha.ComputeHash(data, offset, count)) ? Validity.Valid : Validity.Invalid;
             }
@@ -23,7 +23,7 @@ namespace LibHac
 
         public static byte[] ComputeSha256(byte[] data, int offset, int count)
         {
-            using (SHA256 sha = SHA256.Create())
+            using (SHA256Cng sha = new SHA256Cng())
             {
                 return sha.ComputeHash(data, offset, count);
             }

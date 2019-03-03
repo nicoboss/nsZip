@@ -51,7 +51,7 @@ namespace nsZip
 					$"key_area_key_{KakNames[Header.KaekInd]}_{CryptoType:x2}: {Utils.BytesToString(keyset.KeyAreaKeys[CryptoType][Header.KaekInd])}\r\n");
 				for (var i = 0; i < 4; ++i)
 				{
-					Crypto.Crypto.DecryptEcb(keyset.KeyAreaKeys[CryptoType][Header.KaekInd], Header.EncryptedKeys[i],
+					LibHac.Crypto.DecryptEcb(keyset.KeyAreaKeys[CryptoType][Header.KaekInd], Header.EncryptedKeys[i],
 						DecryptedKeys[i], 0x10);
 					Out.Print($"Key {i} (Encrypted): {Utils.BytesToString(Header.EncryptedKeys[i])}\r\n");
 					Out.Print($"Key {i} (Decrypted): {Utils.BytesToString(DecryptedKeys[i])}\r\n");
@@ -61,7 +61,7 @@ namespace nsZip
 			{
 				var titleKey = keyset.TitleKeys[Header.RightsId];
 				var TitleKeyDec = new byte[0x10];
-				Crypto.Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
+				LibHac.Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
 				Out.Print($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
 				Out.Print($"TitleKeyDec: {Utils.BytesToString(TitleKeyDec)}\r\n");
 				DecryptedKeys[2] = TitleKeyDec;
@@ -96,10 +96,10 @@ namespace nsZip
 			Out.Print("Opened NCA for writing...\r\n");
 			Out.Print($"HeaderKey: {Utils.BytesToString(keyset.HeaderKey)}\r\n");
 			Out.Print("Encrypting and writing header to NCA...\r\n");
-			SHA256 sha256NCA = null;
+			SHA256Cng sha256NCA = null;
 			if (verifyEncrypted)
 			{
-				sha256NCA = SHA256.Create();
+				sha256NCA = new SHA256Cng();
 				sha256NCA.Initialize();
 			}
 

@@ -16,13 +16,13 @@ namespace nsZip.Crypto
 
 		public static byte[] GenSHA256Hash(byte[] Data)
 		{
-			var SHA = SHA256.Create();
+			var SHA = new SHA256Cng();
 			return SHA.ComputeHash(Data);
 		}
 
 		public static byte[] GenSHA256StrmHash(Stream Data)
 		{
-			var SHA = SHA256.Create();
+			var SHA = new SHA256Cng();
 			return SHA.ComputeHash(Data);
 		}
 

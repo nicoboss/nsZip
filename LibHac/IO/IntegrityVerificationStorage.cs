@@ -16,7 +16,7 @@ namespace LibHac.IO
         private byte[] Salt { get; }
         private IntegrityStorageType Type { get; }
 
-        private readonly SHA256 _hash = SHA256.Create();
+        private readonly SHA256Cng _hash = new SHA256Cng();
         private readonly object _locker = new object();
 
         public IntegrityVerificationStorage(IntegrityVerificationInfo info, IStorage hashStorage,

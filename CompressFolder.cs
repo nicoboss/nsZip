@@ -19,8 +19,8 @@ namespace nsZip
 		private int amountOfBlocks;
 		private int currentBlockID;
 		private byte[] nsZipHeader;
-		private SHA256 sha256Compressed;
-		private SHA256 sha256Header;
+		private SHA256Cng sha256Compressed;
+		private SHA256Cng sha256Header;
 		private int sizeOfSize;
 
 		private CompressFolder(Output OutArg, string inFolderPathArg, string outFolderPathArg,
@@ -82,7 +82,7 @@ namespace nsZip
 				nsZipHeader[0x12] = (byte) (amountOfBlocks >> 16);
 				nsZipHeader[0x13] = (byte) (amountOfBlocks >> 8);
 				nsZipHeader[0x14] = (byte) amountOfBlocks;
-				sha256Compressed = SHA256.Create();
+				sha256Compressed = new SHA256Cng();
 
 				while (true)
 				{
@@ -123,7 +123,7 @@ namespace nsZip
 				WriteBlock(outputFile, lastBlockInput, lastBlockOutput, true);
 				outputFile.Position = 0;
 				outputFile.Write(nsZipHeader, 0, headerSize);
-				sha256Header = SHA256.Create();
+				sha256Header = new SHA256Cng();
 				sha256Header.ComputeHash(nsZipHeader);
 				var sha256Hash = new byte[0x20];
 				Array.Copy(sha256Header.Hash, sha256Hash, 0x20);

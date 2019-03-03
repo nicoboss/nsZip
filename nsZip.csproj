@@ -150,7 +150,6 @@
     <Compile Include="LibHacExtensions\UntrimDeltaNCA.cs" />
     <Compile Include="LibHacExtensions\TrimDeltaNCA.cs" />
     <Compile Include="LibHacExtensions\MyBucketTree.cs" />
-    <Compile Include="Crypto\Crypto.cs" />
     <Compile Include="Crypto\CryptoInitialisers.cs" />
     <Compile Include="Crypto\AesCTR.cs" />
     <Compile Include="LibHacControl\Print.cs" />
