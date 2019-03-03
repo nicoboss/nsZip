@@ -10,7 +10,7 @@ namespace nsZip.LibHacExtensions
 {
 	public static class RecreateDelta
 	{
-		public static long Recreate(IStorage fragmentMeta, FileStream writer, string newBaseFolderPath)
+		public static long Recreate(IStorage fragmentMeta, FileStream writer, IFileSystem newBaseFolderFs)
 		{
 			var Segments = new List<DeltaFragmentSegment>();
 			if (fragmentMeta.Length < 0x40)
@@ -29,7 +29,8 @@ namespace nsZip.LibHacExtensions
 				var linkedNcafilename =
 					Encoding.ASCII.GetString(reader.ReadBytes(DeltaTools.LCA3Macic.Length + 1, linkedNcaFilenameSize,
 						true));
-				var newLinkedFile = File.Open($"{newBaseFolderPath}/{linkedNcafilename}", FileMode.Open);
+				
+				var newLinkedFile = newBaseFolderFs.OpenFile(linkedNcafilename, OpenMode.Read).AsStream();
 				newLinkedFile.CopyStream(writer, newLinkedFile.Length);
 				return reader.Position;
 			}
@@ -57,7 +58,7 @@ namespace nsZip.LibHacExtensions
 			var filenameOffset =
 				Encoding.ASCII.GetString(reader.ReadBytes(pos + 1, baseNcaFilenameSize, true)).Split(':');
 
-			var newBaseFile = File.Open($"{newBaseFolderPath}/{filenameOffset[0]}", FileMode.Open);
+			var newBaseFile = newBaseFolderFs.OpenFile(filenameOffset[0], OpenMode.Read).AsStream();
 
 			long offset = 0;
 			var endOffset = Header.NewSize;

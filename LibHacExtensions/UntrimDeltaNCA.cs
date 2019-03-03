@@ -10,7 +10,7 @@ namespace nsZip.LibHacControl
 	{
 		private const string FragmentFileName = "fragment";
 
-		public static void Process(string folderPath, string newBaseFolderPath, Keyset keyset, Output Out)
+		public static void Process(string folderPath, IFileSystem newBaseFolderFs, Keyset keyset, Output Out)
 		{
 			var dirDecrypted = new DirectoryInfo(folderPath);
 			foreach (var inFile in dirDecrypted.GetFiles("*.tca"))
@@ -56,7 +56,7 @@ namespace nsZip.LibHacControl
 						IStorage fragmentStorageOverflow = ncaStorage.Slice(offsetBefore,
 							ncaStorage.Length - offsetBefore, false);
 						ncaStorageBeforeFragment.CopyToStream(writer);
-						var TDV0len = RecreateDelta.Recreate(fragmentStorageOverflow, writer, newBaseFolderPath);
+						var TDV0len = RecreateDelta.Recreate(fragmentStorageOverflow, writer, newBaseFolderFs);
 						var offsetAfter = offsetBefore + TDV0len;
 						IStorage fragmentStorageAfter = ncaStorage.Slice(offsetAfter,
 							ncaStorage.Length - offsetAfter, false);

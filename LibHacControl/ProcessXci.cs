@@ -7,7 +7,7 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessXci
 	{
-		public static void Process(string inFile, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
+		public static void Decrypt(string inFile, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{

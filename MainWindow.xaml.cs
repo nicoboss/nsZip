@@ -136,8 +136,28 @@ namespace nsZip
 			var nspFileNoExtension = Path.GetFileNameWithoutExtension(nspFile);
 			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessNsp.Decrypt(nspFile, "decrypted", VerifyHashes, keyset, Out);
-			CompressDecrypted(keyset);
+			using (var inputFile = new FileStream(nspFile, FileMode.Open, FileAccess.Read))
+			{
+				var pfs = new PartitionFileSystem(inputFile.AsStorage());
+				ProcessNsp.Decrypt(pfs, "decrypted", VerifyHashes, keyset, Out);
+				TrimDeltaNCA.Process("decrypted", keyset, Out);
+				CompressFolder.Compress(Out, "decrypted", "compressed", BlockSize, ZstdLevel);
+
+				if (VerifyHashes)
+				{
+					cleanFolder("decrypted");
+					var compressedFs = new LocalFileSystem("compressed");
+					DecompressFs.ProcessFs(compressedFs, "decrypted", Out);
+
+					UntrimDeltaNCA.Process("decrypted", pfs, keyset, Out);
+
+					var dirDecrypted = new DirectoryInfo("decrypted");
+					foreach (var file in dirDecrypted.GetFiles("*.nca"))
+					{
+						EncryptNCA.Encrypt(file.Name, false, true, keyset, Out);
+					}
+				}
+			}
 			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
 			FolderTools.FolderToNSP("compressed", $"{nspzOutPath}.nspz");
 			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
@@ -148,16 +168,7 @@ namespace nsZip
 			var xciFileNoExtension = Path.GetFileNameWithoutExtension(xciFile);
 			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessXci.Process(xciFile, "decrypted/", VerifyHashes, keyset, Out);
-			CompressDecrypted(keyset);
-			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
-			FolderTools.FolderToNSP("compressed", $"{xciOutPath}.xciz");
-			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
-		}
-
-		private void CompressDecrypted(Keyset keyset)
-		{
-			TrimDeltaNCA.Process("decrypted", keyset, Out);
+			ProcessXci.Decrypt(xciFile, "decrypted/", VerifyHashes, keyset, Out);
 			CompressFolder.Compress(Out, "decrypted", "compressed", BlockSize, ZstdLevel);
 
 			if (VerifyHashes)
@@ -165,7 +176,6 @@ namespace nsZip
 				cleanFolder("decrypted");
 				var compressedFs = new LocalFileSystem("compressed");
 				DecompressFs.ProcessFs(compressedFs, "decrypted", Out);
-				UntrimDeltaNCA.Process("decrypted", "decrypted", keyset, Out);
 
 				var dirDecrypted = new DirectoryInfo("decrypted");
 				foreach (var file in dirDecrypted.GetFiles("*.nca"))
@@ -173,6 +183,10 @@ namespace nsZip
 					EncryptNCA.Encrypt(file.Name, false, true, keyset, Out);
 				}
 			}
+
+			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
+			FolderTools.FolderToNSP("compressed", $"{xciOutPath}.xciz");
+			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
 		}
 
 		private void DecompressNSPZ(string nspzFile)
@@ -210,7 +224,8 @@ namespace nsZip
 				}
 			}
 
-			UntrimDeltaNCA.Process("decrypted", "encrypted", keyset, Out);
+			var encryptedFs = new LocalFileSystem("encrypted");
+			UntrimDeltaNCA.Process("decrypted", encryptedFs, keyset, Out);
 
 			foreach (var file in dirDecrypted.GetFiles("*.nca"))
 			{

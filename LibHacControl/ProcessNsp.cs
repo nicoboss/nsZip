@@ -30,64 +30,59 @@ namespace nsZip.LibHacControl
 			}
 		}
 
-		public static void Decrypt(string inFile, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
+		public static void Decrypt(PartitionFileSystem pfs, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
-			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
+			Out.Print(pfs.Print());
+			var OutDirFs = new LocalFileSystem(outDirPath);
+			IDirectory sourceRoot = pfs.OpenDirectory("/", OpenDirectoryMode.All);
+			IDirectory destRoot = OutDirFs.OpenDirectory("/", OpenDirectoryMode.All);
+			IFileSystem sourceFs = sourceRoot.ParentFileSystem;
+			IFileSystem destFs = destRoot.ParentFileSystem;
+
+			foreach (DirectoryEntry entry in sourceRoot.Read())
 			{
-				var pfs = new PartitionFileSystem(file.AsStorage());
-				Out.Print(pfs.Print());
-				var OutDirFs = new LocalFileSystem(outDirPath);
-				IDirectory sourceRoot = pfs.OpenDirectory("/", OpenDirectoryMode.All);
-				IDirectory destRoot = OutDirFs.OpenDirectory("/", OpenDirectoryMode.All);
-				IFileSystem sourceFs = sourceRoot.ParentFileSystem;
-				IFileSystem destFs = destRoot.ParentFileSystem;
-
-				foreach (DirectoryEntry entry in sourceRoot.Read())
+				if (entry.Type == DirectoryEntryType.Directory)
 				{
-					if (entry.Type == DirectoryEntryType.Directory)
-					{
-						throw new InvalidDataException(
-							"Error: Directory inside NSP!\r\n" +
-							"Please report this as there are curently no known NSP containing a directory.");
-					}
+					throw new InvalidDataException(
+						"Error: Directory inside NSP!\r\n" +
+						"Please report this as there are curently no known NSP containing a directory.");
+				}
 
-					if (entry.Name.EndsWith(".nca"))
-					{
-						continue;
-					}
+				if (entry.Name.EndsWith(".nca"))
+				{
+					continue;
+				}
 
+				destFs.CreateFile(entry.Name, entry.Size, CreateFileOptions.None);
+				using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
+				using (IFile dstFile = destFs.OpenFile(entry.Name, OpenMode.Write))
+				{
+					srcFile.CopyTo(dstFile);
+				}
+			}
+
+			FolderTools.ExtractTitlekeys(outDirPath, keyset, Out);
+
+			foreach (DirectoryEntry entry in sourceRoot.Read())
+			{
+				if (entry.Type == DirectoryEntryType.Directory)
+				{
+					throw new InvalidDataException(
+						"Error: Directory inside NSP!\r\n" +
+						"Please report this as there are curently no known NSP containing a directory.");
+				}
+
+				if (entry.Name.EndsWith(".nca"))
+				{
 					destFs.CreateFile(entry.Name, entry.Size, CreateFileOptions.None);
 					using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
 					using (IFile dstFile = destFs.OpenFile(entry.Name, OpenMode.Write))
 					{
-						srcFile.CopyTo(dstFile);
-					}
-				}
-
-				FolderTools.ExtractTitlekeys(outDirPath, keyset, Out);
-
-				foreach (DirectoryEntry entry in sourceRoot.Read())
-				{
-					if (entry.Type == DirectoryEntryType.Directory)
-					{
-						throw new InvalidDataException(
-							"Error: Directory inside NSP!\r\n" +
-							"Please report this as there are curently no known NSP containing a directory.");
+						ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
 					}
 
-					if (entry.Name.EndsWith(".nca"))
-					{
-						destFs.CreateFile(entry.Name, entry.Size, CreateFileOptions.None);
-						using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
-						using (IFile dstFile = destFs.OpenFile(entry.Name, OpenMode.Write))
-						{
-							ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
-						}
-						
-					}
 				}
 			}
-
 		}
 
 		private static string Print(this PartitionFileSystem pfs)
