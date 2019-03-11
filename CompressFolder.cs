@@ -49,12 +49,14 @@ namespace nsZip
 				threadsUsedToCompress = Math.Min(16, threadsUsedToCompress);
 			}
 
-			var input = Utils.CreateJaggedArray<byte[][]>(threadsUsedToCompress, bs);
+			var CompressionIO_1 = new byte[104857600];
+			var CompressionIO_2 = new byte[104857600];
 			var output = new byte[threadsUsedToCompress][];
 			var task = new Task[threadsUsedToCompress];
 			var dirDecrypted = new DirectoryInfo(inFolderPath);
 			foreach (var file in dirDecrypted.GetFiles())
 			{
+				var doneFlag = false;
 				var outputFile = File.Open($"{outFolderPath}/{file.Name}.nsz", FileMode.Create);
 				var inputFile = File.Open(file.FullName, FileMode.Open);
 				amountOfBlocks = (int) Math.Ceiling((decimal) inputFile.Length / bs);
@@ -62,7 +64,6 @@ namespace nsZip
 				var perBlockHeaderSize = sizeOfSize + 1;
 				var headerSize = 0x15 + perBlockHeaderSize * amountOfBlocks;
 				outputFile.Position = headerSize;
-				var breakCondition = -1;
 				var nsZipMagic = new byte[] {0x6e, 0x73, 0x5a, 0x69, 0x70};
 				var nsZipMagicRandomKey = new byte[5];
 				secureRNG.GetBytes(nsZipMagicRandomKey);
@@ -84,114 +85,62 @@ namespace nsZip
 				nsZipHeader[0x14] = (byte) amountOfBlocks;
 				sha256Compressed = new SHA256Cng();
 
-				while (true)
+
+				var maxPos = inputFile.Length;
+
+				do
 				{
-					for (var i = 0; i < threadsUsedToCompress; ++i)
+					inputFile.Read(CompressionIO_1, 0, CompressionIO_1.Length);
+					//Parallel.For(0, 400, index => {
+					for (int index = 0; index < 399; ++index)
 					{
-						var iNow = i;
-						if (task[iNow] != null)
+						++currentBlockID;
+						if (currentBlockID > amountOfBlocks)
 						{
-							task[iNow].Wait();
-							WriteBlock(outputFile, input[iNow], output[iNow], false);
-							task[iNow] = null;
+							//Out.Print($"Skip Block: {currentBlockID}\r\n");
+							doneFlag = true;
+							continue;
 						}
 
-						if (breakCondition > -1)
+						var startPos = index * bs;
+						var blockSize = Math.Min(bs, (int)(maxPos - startPos));
+						var endPos = startPos + blockSize;
+
+						Out.Print($"{currentBlockID}/{amountOfBlocks} Blocks written\r\n");
+						if (endPos > maxPos)
 						{
-							if (iNow == breakCondition)
-							{
-								goto LastBlock;
-							}
-						}
-						else if (inputFile.Position + input[iNow].Length >= inputFile.Length)
-						{
-							breakCondition = iNow;
+							CompressBlock(ref CompressionIO_1, startPos, (int)(maxPos - startPos));
 						}
 						else
 						{
-							inputFile.Read(input[iNow], 0, input[iNow].Length);
-							task[iNow] = Task.Factory.StartNew(() => CompressBlock(ref input[iNow], ref output[iNow]));
+							CompressBlock(ref CompressionIO_1, startPos, blockSize);
 						}
+
 					}
-				}
+					//});
 
-				LastBlock:
-				var lastBlockInput = new byte[inputFile.Length - inputFile.Position];
-				byte[] lastBlockOutput = null;
-				inputFile.Read(lastBlockInput, 0, lastBlockInput.Length);
-				CompressBlock(ref lastBlockInput, ref lastBlockOutput);
-				WriteBlock(outputFile, lastBlockInput, lastBlockOutput, true);
-				outputFile.Position = 0;
-				outputFile.Write(nsZipHeader, 0, headerSize);
-				sha256Header = new SHA256Cng();
-				sha256Header.ComputeHash(nsZipHeader);
-				var sha256Hash = new byte[0x20];
-				Array.Copy(sha256Header.Hash, sha256Hash, 0x20);
-				Util.XorArrays(sha256Hash, sha256Compressed.Hash);
-				outputFile.Seek(0, SeekOrigin.End);
-				outputFile.Write(sha256Hash, 0, 0x10);
-				inputFile.Dispose();
+					sha256Compressed.TransformBlock(CompressionIO_1, 0, CompressionIO_1.Length, null, 0);
+					outputFile.Write(CompressionIO_1, 0, CompressionIO_1.Length);
+				} while (!doneFlag);
+
 				outputFile.Dispose();
+				inputFile.Dispose();
+				//break;
 			}
 		}
 
-		private void WriteBlock(FileStream outputFile, byte[] input, byte[] output, bool lastBlock)
-		{
-			var offset = currentBlockID * (sizeOfSize + 1);
-			var inputLen = input.Length;
-			var outputLen = output.Length;
-			if (outputLen >= inputLen)
-			{
-				nsZipHeader[0x15 + offset] = 0x00;
-				for (var j = 0; j < sizeOfSize; ++j)
-				{
-					nsZipHeader[0x16 + offset + j] = (byte) (inputLen >> ((sizeOfSize - j - 1) * 8));
-				}
 
-				outputFile.Write(input, 0, inputLen);
-				if (lastBlock)
-				{
-					sha256Compressed.TransformFinalBlock(input, 0, inputLen);
-				}
-				else
-				{
-					sha256Compressed.TransformBlock(input, 0, inputLen, input, 0);
-				}
-			}
-			else
-			{
-				nsZipHeader[0x15 + offset] = 0x01;
-				for (var j = 0; j < sizeOfSize; ++j)
-				{
-					nsZipHeader[0x16 + offset + j] = (byte) (outputLen >> ((sizeOfSize - j - 1) * 8));
-				}
-
-				outputFile.Write(output, 0, outputLen);
-				if (lastBlock)
-				{
-					sha256Compressed.TransformFinalBlock(output, 0, outputLen);
-				}
-				else
-				{
-					sha256Compressed.TransformBlock(output, 0, outputLen, output, 0);
-				}
-			}
-
-			Out.Print($"{currentBlockID + 1}/{amountOfBlocks} Blocks written\r\n");
-			++currentBlockID;
-		}
-
-
-		private void CompressBlock(ref byte[] input, ref byte[] output)
+		private void CompressBlock(ref byte[] input, int startPos, int blockSize)
 		{
 			// compress
 			using (var memoryStream = new MemoryStream())
 			using (var compressionStream = new ZstandardStream(memoryStream, CompressionMode.Compress))
 			{
 				compressionStream.CompressionLevel = ZstdLevel;
-				compressionStream.Write(input, 0, input.Length);
+				compressionStream.Write(input, startPos, blockSize);
 				compressionStream.Close();
-				output = memoryStream.ToArray();
+				var tmp = memoryStream.ToArray();
+				Array.Copy(tmp, 0, input, startPos, tmp.Length);
 			}
 		}
 	}

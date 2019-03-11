@@ -17,14 +17,14 @@ namespace nsZip.LibHacControl
 			if (cnmtExtended == null)
 			{
 				Out.Print(
-					"Skiped fragemt trimming as no patch Cnmt was found!\r\n=> probably no dlc/update over v65536");
+					"Info: Skiped fragemt trimming as no patch Cnmt was found!\r\n=> probably no dlc/update over v65536\r\n");
 				return;
 			}
 
 			if (cnmtExtended.DeltaApplyInfos.Length == 0)
 			{
 				Out.Print(
-					"Skiped fragemt trimming as no DeltaApplyInfos in the patch Cnmt were found!");
+					"Info: Skiped fragemt trimming as no DeltaApplyInfos in the patch Cnmt were found!\r\n");
 				return;
 			}
 
