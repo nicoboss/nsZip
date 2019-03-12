@@ -49,10 +49,8 @@ namespace nsZip
 				threadsUsedToCompress = Math.Min(16, threadsUsedToCompress);
 			}
 
-			var CompressionIO_1 = new byte[104857600];
-			var CompressionIO_2 = new byte[104857600];
-			var output = new byte[threadsUsedToCompress][];
-			var task = new Task[threadsUsedToCompress];
+			var CompressionIO = new byte[104857600];
+			var blocksPerChunk = CompressionIO.Length/bs + CompressionIO.Length % bs > 0 ? 1 : 0;
 			var dirDecrypted = new DirectoryInfo(inFolderPath);
 			foreach (var file in dirDecrypted.GetFiles())
 			{
@@ -90,9 +88,10 @@ namespace nsZip
 
 				do
 				{
-					inputFile.Read(CompressionIO_1, 0, CompressionIO_1.Length);
+					var outputLen = new int[blocksPerChunk]; //Filled with 0
+					inputFile.Read(CompressionIO, 0, CompressionIO.Length);
 					//Parallel.For(0, 400, index => {
-					for (int index = 0; index < 399; ++index)
+					for (int index = 0; index < blocksPerChunk; ++index)
 					{
 						++currentBlockID;
 						if (currentBlockID > amountOfBlocks)
@@ -107,22 +106,58 @@ namespace nsZip
 						var endPos = startPos + blockSize;
 
 						Out.Print($"{currentBlockID}/{amountOfBlocks} Blocks written\r\n");
+						CompressionAlgorithm compressionAlgorithm;
 						if (endPos > maxPos)
 						{
-							CompressBlock(ref CompressionIO_1, startPos, (int)(maxPos - startPos));
+							outputLen[index] = CompressBlock(ref CompressionIO, startPos, (int)(maxPos - startPos), out compressionAlgorithm);
 						}
 						else
 						{
-							CompressBlock(ref CompressionIO_1, startPos, blockSize);
+							outputLen[index] = CompressBlock(ref CompressionIO, startPos, blockSize, out compressionAlgorithm);
+						}
+						var offset = (currentBlockID - 1) * (sizeOfSize + 1);
+						switch (compressionAlgorithm)
+						{
+							case CompressionAlgorithm.None:
+								nsZipHeader[0x15 + offset] = 0x00;
+								break;
+							case CompressionAlgorithm.Zstandard:
+								nsZipHeader[0x15 + offset] = 0x01;
+								break;
+							case CompressionAlgorithm.LZMA:
+								nsZipHeader[0x15 + offset] = 0x02;
+								break;
+							default:
+								throw new ArgumentOutOfRangeException();
+						}
+						for (var j = 0; j < sizeOfSize; ++j)
+						{
+							nsZipHeader[0x16 + offset + j] = (byte)(outputLen[index] >> ((sizeOfSize - j - 1) * 8));
 						}
 
-					}
-					//});
 
-					sha256Compressed.TransformBlock(CompressionIO_1, 0, CompressionIO_1.Length, null, 0);
-					outputFile.Write(CompressionIO_1, 0, CompressionIO_1.Length);
+					}//});
+
+					for (int index = 0; index < blocksPerChunk; ++index)
+					{
+						if (outputLen[index] == 0) break;
+						var startPos = index * bs;
+						sha256Compressed.TransformBlock(CompressionIO, startPos, outputLen[index], null, 0);
+						outputFile.Write(CompressionIO, startPos, outputLen[index]);
+					}
+					
 				} while (!doneFlag);
 
+				outputFile.Position = 0;
+				outputFile.Write(nsZipHeader, 0, headerSize);
+				sha256Header = new SHA256Cng();
+				sha256Header.ComputeHash(nsZipHeader);
+				var sha256Hash = new byte[0x20];
+				Array.Copy(sha256Header.Hash, sha256Hash, 0x20);
+				sha256Compressed.TransformFinalBlock(new byte[0], 0, 0);
+				Util.XorArrays(sha256Hash, sha256Compressed.Hash);
+				outputFile.Seek(0, SeekOrigin.End);
+				outputFile.Write(sha256Hash, 0, 0x10);
 				outputFile.Dispose();
 				inputFile.Dispose();
 				//break;
@@ -130,9 +165,13 @@ namespace nsZip
 		}
 
 
-		private void CompressBlock(ref byte[] input, int startPos, int blockSize)
+
+		enum CompressionAlgorithm { None, Zstandard, LZMA };
+
+		private int CompressBlock(ref byte[] input, int startPos, int blockSize, out CompressionAlgorithm compressionAlgorithm)
 		{
 			// compress
+			int outputLen;
 			using (var memoryStream = new MemoryStream())
 			using (var compressionStream = new ZstandardStream(memoryStream, CompressionMode.Compress))
 			{
@@ -140,8 +179,19 @@ namespace nsZip
 				compressionStream.Write(input, startPos, blockSize);
 				compressionStream.Close();
 				var tmp = memoryStream.ToArray();
-				Array.Copy(tmp, 0, input, startPos, tmp.Length);
+				outputLen = tmp.Length;
+				if (tmp.Length < blockSize)
+				{
+					compressionAlgorithm = CompressionAlgorithm.Zstandard;
+					Array.Copy(tmp, 0, input, startPos, tmp.Length);
+				}
+				else
+				{
+					compressionAlgorithm = CompressionAlgorithm.None;
+				}
 			}
+
+			return outputLen;
 		}
 	}
 }
