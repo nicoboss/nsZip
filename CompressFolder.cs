@@ -50,7 +50,7 @@ namespace nsZip
 			}
 
 			var CompressionIO = new byte[104857600];
-			var blocksPerChunk = CompressionIO.Length/bs + CompressionIO.Length % bs > 0 ? 1 : 0;
+			var blocksPerChunk = CompressionIO.Length / bs + (CompressionIO.Length % bs > 0 ? 1 : 0);
 			var dirDecrypted = new DirectoryInfo(inFolderPath);
 			foreach (var file in dirDecrypted.GetFiles())
 			{
@@ -171,7 +171,6 @@ namespace nsZip
 		private int CompressBlock(ref byte[] input, int startPos, int blockSize, out CompressionAlgorithm compressionAlgorithm)
 		{
 			// compress
-			int outputLen;
 			using (var memoryStream = new MemoryStream())
 			using (var compressionStream = new ZstandardStream(memoryStream, CompressionMode.Compress))
 			{
@@ -179,19 +178,18 @@ namespace nsZip
 				compressionStream.Write(input, startPos, blockSize);
 				compressionStream.Close();
 				var tmp = memoryStream.ToArray();
-				outputLen = tmp.Length;
 				if (tmp.Length < blockSize)
 				{
 					compressionAlgorithm = CompressionAlgorithm.Zstandard;
 					Array.Copy(tmp, 0, input, startPos, tmp.Length);
+					return tmp.Length;
 				}
-				else
-				{
-					compressionAlgorithm = CompressionAlgorithm.None;
-				}
+
+				compressionAlgorithm = CompressionAlgorithm.None;
+				return blockSize;
 			}
 
-			return outputLen;
+			
 		}
 	}
 }
