@@ -101,7 +101,10 @@ namespace nsZip
 						var currentBlockID = chunkIndex * blocksPerChunk + index;
 						var startPos = currentBlockID * bs;
 						var startPosRelative = index * bs;
-						var blockSize = Math.Min(bs, (int)(maxPos - startPos));
+
+						//Don't directly cast bytesLeft to int or sectors over 2 GB will overflow into negative size
+						var bytesLeft = (long)(maxPos - startPos);
+						var blockSize = bs < bytesLeft ? bs : (int)bytesLeft;
 
 						Out.Print($"Block: {currentBlockID+1}/{amountOfBlocks}\r\n");
 
