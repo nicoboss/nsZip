@@ -312,7 +312,7 @@ namespace nsZip
 					}
 				} while (TaskQueue.Items.Count > 0);
 			}
-			catch (ArgumentNullException ex)
+			catch (Exception ex)
 			{
 				Out.Print(ex.StackTrace+"\r\n");
 				Out.Print(ex.Message);
