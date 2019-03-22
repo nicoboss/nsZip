@@ -145,6 +145,8 @@ namespace nsZip
 
 				if (VerifyHashes)
 				{
+					var dirDecryptedReal = new DirectoryInfo("decrypted");
+					var dirDecryptedRealCount = dirDecryptedReal.GetFiles().Length;
 					cleanFolder("decrypted");
 					var compressedFs = new LocalFileSystem("compressed");
 					DecompressFs.ProcessFs(compressedFs, "decrypted", Out);
@@ -152,6 +154,11 @@ namespace nsZip
 					UntrimDeltaNCA.Process("decrypted", pfs, keyset, Out);
 
 					var dirDecrypted = new DirectoryInfo("decrypted");
+					var dirDecryptedCount = dirDecrypted.GetFiles().Length;
+					if (dirDecryptedRealCount != dirDecryptedCount)
+					{
+						throw new FileNotFoundException();
+					}
 					foreach (var file in dirDecrypted.GetFiles("*.nca"))
 					{
 						EncryptNCA.Encrypt(file.Name, false, true, keyset, Out);
@@ -173,11 +180,18 @@ namespace nsZip
 
 			if (VerifyHashes)
 			{
+				var dirDecryptedReal = new DirectoryInfo("decrypted");
+				var dirDecryptedRealCount = dirDecryptedReal.GetFiles().Length;
 				cleanFolder("decrypted");
 				var compressedFs = new LocalFileSystem("compressed");
 				DecompressFs.ProcessFs(compressedFs, "decrypted", Out);
 
 				var dirDecrypted = new DirectoryInfo("decrypted");
+				var dirDecryptedCount = dirDecrypted.GetFiles().Length;
+				if (dirDecryptedRealCount != dirDecryptedCount)
+				{
+					throw new FileNotFoundException();
+				}
 				foreach (var file in dirDecrypted.GetFiles("*.nca"))
 				{
 					EncryptNCA.Encrypt(file.Name, false, true, keyset, Out);
