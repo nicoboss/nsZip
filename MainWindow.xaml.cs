@@ -279,10 +279,11 @@ namespace nsZip
 			{
 				do
 				{
-					cleanFolders();
 
 					var inFile = (string) TaskQueue.Items[0];
 					var infileLowerCase = inFile.ToLower();
+					var inFileNoExtension = Path.GetFileNameWithoutExtension(inFile);
+
 					Dispatcher.Invoke(() =>
 					{
 						BusyTextBlock.Text =
@@ -290,26 +291,61 @@ namespace nsZip
 						TaskQueue.Items.RemoveAt(0);
 					});
 
-					if (infileLowerCase.EndsWith("nsp"))
+					if (infileLowerCase.EndsWith("nsp") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.nspz"))
 					{
-						CompressNSP(inFile);
+						Out.Print($"Task CompressNSP \"{inFileNoExtension}.nspz\" skipped as it already exists in the output directory\r\n");
+						continue;
 					}
-					else if (infileLowerCase.EndsWith("xci"))
+
+					if (infileLowerCase.EndsWith("xci") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.xciz"))
 					{
-						CompressXCI(inFile);
+						Out.Print($"Task CompressXCI \"{inFileNoExtension}.xciz\" skipped as it already exists in the output directory\r\n");
+						continue;
 					}
-					else if (infileLowerCase.EndsWith("nspz"))
+
+					if (infileLowerCase.EndsWith("nspz") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.nsp"))
 					{
-						DecompressNSPZ(inFile);
+						Out.Print($"Task DecompressNSPZ \"{inFileNoExtension}.nsp\" skipped as it already exists in the output directory\r\n");
+						continue;
 					}
-					else if (infileLowerCase.EndsWith("xciz"))
+
+					if (infileLowerCase.EndsWith("xciz") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.xci"))
 					{
-						DecompressNSPZ(inFile);
+						Out.Print($"Task DecompressXCIZ \"{inFileNoExtension}.xci\" skipped as it already exists in the output directory\r\n");
+						continue;
 					}
-					else
+
+					cleanFolders();
+
+					try
 					{
-						throw new InvalidDataException($"Invalid file type {inFile}");
+						if (infileLowerCase.EndsWith("nsp"))
+						{
+							CompressNSP(inFile);
+						}
+						else if (infileLowerCase.EndsWith("xci"))
+						{
+							CompressXCI(inFile);
+						}
+						else if (infileLowerCase.EndsWith("nspz"))
+						{
+							DecompressNSPZ(inFile);
+						}
+						else if (infileLowerCase.EndsWith("xciz"))
+						{
+							DecompressNSPZ(inFile);
+						}
+						else
+						{
+							throw new InvalidDataException($"Invalid file type {inFile}");
+						}
 					}
+					catch (Exception ex)
+					{
+						Out.Print(ex.StackTrace + "\r\n");
+						Out.Print(ex.Message);
+					}
+
 				} while (TaskQueue.Items.Count > 0);
 			}
 			catch (Exception ex)
