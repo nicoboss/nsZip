@@ -15,7 +15,7 @@ namespace nsZip
 	{
 		internal static readonly string[] KakNames = {"application", "ocean", "system"};
 
-		public static void Encrypt(string ncaName, bool writeEncrypted, bool verifyEncrypted, Keyset keyset,
+		public static void Encrypt(string ncaPath, string outDir, bool writeEncrypted, bool verifyEncrypted, Keyset keyset,
 			Output Out)
 		{
 			var DecryptedKeys = Utils.CreateJaggedArray<byte[][]>(4, 0x10);
@@ -24,8 +24,8 @@ namespace nsZip
 			Buffer.BlockCopy(keyset.HeaderKey, 0, HeaderKey1, 0, 16);
 			Buffer.BlockCopy(keyset.HeaderKey, 16, HeaderKey2, 0, 16);
 
-			var Input = File.Open($"decrypted/{ncaName}", FileMode.Open);
-			Out.Print($"Input: {ncaName}\r\n");
+			var Input = File.Open(ncaPath, FileMode.Open);
+			Out.Print($"Input: {Path.GetFileName(ncaPath)}\r\n");
 			var DecryptedHeader = new byte[0xC00];
 			Input.Read(DecryptedHeader, 0, 0xC00);
 
@@ -90,7 +90,7 @@ namespace nsZip
 			FileStream Output = null;
 			if (writeEncrypted)
 			{
-				Output = File.Open($"encrypted/{ncaName}", FileMode.Create);
+				Output = File.Open(Path.Combine(outDir, Path.GetFileName(ncaPath)), FileMode.Create);
 			}
 
 			Out.Print("Opened NCA for writing...\r\n");
@@ -295,7 +295,7 @@ namespace nsZip
 			{
 				sha256NCA.TransformFinalBlock(new byte[0], 0, 0);
 				var sha256NCAHashString = Utils.BytesToString(sha256NCA.Hash).ToLower();
-				if (sha256NCAHashString.StartsWith(Path.GetFileNameWithoutExtension(ncaName).Split('.')[0].ToLower()))
+				if (sha256NCAHashString.StartsWith(Path.GetFileName(ncaPath).Split('.')[0].ToLower()))
 				{
 					Out.Print($"[VERIFIED] {sha256NCAHashString}\r\n");
 				}

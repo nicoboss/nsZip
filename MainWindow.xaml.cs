@@ -164,7 +164,7 @@ namespace nsZip
 
 					foreach (var file in dirDecrypted.GetFiles("*.nca"))
 					{
-						EncryptNCA.Encrypt(file.Name, false, true, keyset, Out);
+						EncryptNCA.Encrypt(file.FullName, encryptedDir, false, true, keyset, Out);
 					}
 				}
 			}
@@ -178,7 +178,7 @@ namespace nsZip
 			var xciFileNoExtension = Path.GetFileNameWithoutExtension(xciFile);
 			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessXci.Decrypt(xciFile, "decrypted/", VerifyHashes, keyset, Out);
+			ProcessXci.Decrypt(xciFile, decryptedDir, VerifyHashes, keyset, Out);
 			CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);
 
 			if (VerifyHashes)
@@ -198,7 +198,7 @@ namespace nsZip
 
 				foreach (var file in dirDecrypted.GetFiles("*.nca"))
 				{
-					EncryptNCA.Encrypt(file.Name, false, true, keyset, Out);
+					EncryptNCA.Encrypt(file.FullName, encryptedDir, false, true, keyset, Out);
 				}
 			}
 
@@ -233,12 +233,12 @@ namespace nsZip
 
 				if (file.Name.EndsWith(".nca"))
 				{
-					EncryptNCA.Encrypt(file.Name, true, VerifyHashes, keyset, Out);
+					EncryptNCA.Encrypt(file.FullName, encryptedDir, true, VerifyHashes, keyset, Out);
 					file.Delete();
 				}
 				else
 				{
-					file.MoveTo($"encrypted/{file.Name}");
+					file.MoveTo(Path.Combine(encryptedDir, file.Name));
 				}
 			}
 
@@ -247,7 +247,7 @@ namespace nsZip
 
 			foreach (var file in dirDecrypted.GetFiles("*.nca"))
 			{
-				EncryptNCA.Encrypt(file.Name, true, VerifyHashes, keyset, Out);
+				EncryptNCA.Encrypt(file.FullName, encryptedDir, true, VerifyHashes, keyset, Out);
 			}
 		}
 
