@@ -32,6 +32,9 @@ namespace nsZip
 		private string OutputFolderPath;
 		private int StandByWhenTaskDone;
 		private string TempFolderPath;
+		private string decryptedDir;
+		private string encryptedDir;
+		private string compressedDir;
 		private bool VerifyHashes = true;
 		private int ZstdLevel = 18;
 
@@ -126,9 +129,9 @@ namespace nsZip
 
 		private void cleanFolders()
 		{
-			cleanFolder("decrypted");
-			cleanFolder("encrypted");
-			cleanFolder("compressed");
+			cleanFolder(decryptedDir);
+			cleanFolder(encryptedDir);
+			cleanFolder(compressedDir);
 		}
 
 		private void CompressNSP(string nspFile)
@@ -139,19 +142,19 @@ namespace nsZip
 			using (var inputFile = new FileStream(nspFile, FileMode.Open, FileAccess.Read))
 			{
 				var pfs = new PartitionFileSystem(inputFile.AsStorage());
-				ProcessNsp.Decrypt(pfs, "decrypted", VerifyHashes, keyset, Out);
-				TrimDeltaNCA.Process("decrypted", keyset, Out);
-				CompressFolder.Compress(Out, "decrypted", "compressed", BlockSize, ZstdLevel);
+				ProcessNsp.Decrypt(pfs, decryptedDir, VerifyHashes, keyset, Out);
+				TrimDeltaNCA.Process(decryptedDir, keyset, Out);
+				CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);
 
 				if (VerifyHashes)
 				{
-					cleanFolder("decrypted");
-					var compressedFs = new LocalFileSystem("compressed");
-					DecompressFs.ProcessFs(compressedFs, "decrypted", Out);
+					cleanFolder(decryptedDir);
+					var compressedFs = new LocalFileSystem(compressedDir);
+					DecompressFs.ProcessFs(compressedFs, decryptedDir, Out);
 
-					UntrimDeltaNCA.Process("decrypted", pfs, keyset, Out);
+					UntrimDeltaNCA.Process(decryptedDir, pfs, keyset, Out);
 
-					var dirDecrypted = new DirectoryInfo("decrypted");
+					var dirDecrypted = new DirectoryInfo(decryptedDir);
 					foreach (var file in dirDecrypted.GetFiles("*.nca"))
 					{
 						EncryptNCA.Encrypt(file.Name, false, true, keyset, Out);
@@ -159,7 +162,7 @@ namespace nsZip
 				}
 			}
 			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
-			FolderTools.FolderToNSP("compressed", $"{nspzOutPath}.nspz");
+			FolderTools.FolderToNSP(compressedDir, $"{nspzOutPath}.nspz");
 			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
 		}
 
@@ -169,15 +172,15 @@ namespace nsZip
 			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
 			ProcessXci.Decrypt(xciFile, "decrypted/", VerifyHashes, keyset, Out);
-			CompressFolder.Compress(Out, "decrypted", "compressed", BlockSize, ZstdLevel);
+			CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);
 
 			if (VerifyHashes)
 			{
-				cleanFolder("decrypted");
-				var compressedFs = new LocalFileSystem("compressed");
-				DecompressFs.ProcessFs(compressedFs, "decrypted", Out);
+				cleanFolder(decryptedDir);
+				var compressedFs = new LocalFileSystem(compressedDir);
+				DecompressFs.ProcessFs(compressedFs, decryptedDir, Out);
 
-				var dirDecrypted = new DirectoryInfo("decrypted");
+				var dirDecrypted = new DirectoryInfo(decryptedDir);
 				foreach (var file in dirDecrypted.GetFiles("*.nca"))
 				{
 					EncryptNCA.Encrypt(file.Name, false, true, keyset, Out);
@@ -185,7 +188,7 @@ namespace nsZip
 			}
 
 			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
-			FolderTools.FolderToNSP("compressed", $"{xciOutPath}.xciz");
+			FolderTools.FolderToNSP(compressedDir, $"{xciOutPath}.xciz");
 			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
 		}
 
@@ -194,18 +197,18 @@ namespace nsZip
 			var nspzFileNoExtension = Path.GetFileNameWithoutExtension(nspzFile);
 			Out.Print($"Task DecompressNSPZ \"{nspzFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessNsp.Decompress(nspzFile, "decrypted", Out);
+			ProcessNsp.Decompress(nspzFile, decryptedDir, Out);
 			UntrimAndEncrypt(keyset);
 			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
-			FolderTools.FolderToNSP("encrypted", $"{nspOutPath}.nsp");
+			FolderTools.FolderToNSP(encryptedDir, $"{nspOutPath}.nsp");
 			Out.Print($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
 		}
 
 		public void UntrimAndEncrypt(Keyset keyset)
 		{
-			FolderTools.ExtractTitlekeys("decrypted", keyset, Out);
+			FolderTools.ExtractTitlekeys(decryptedDir, keyset, Out);
 
-			var dirDecrypted = new DirectoryInfo("decrypted");
+			var dirDecrypted = new DirectoryInfo(decryptedDir);
 			foreach (var file in dirDecrypted.GetFiles())
 			{
 				if (file.Name.EndsWith(".tca"))
@@ -224,8 +227,8 @@ namespace nsZip
 				}
 			}
 
-			var encryptedFs = new LocalFileSystem("encrypted");
-			UntrimDeltaNCA.Process("decrypted", encryptedFs, keyset, Out);
+			var encryptedFs = new LocalFileSystem(encryptedDir);
+			UntrimDeltaNCA.Process(decryptedDir, encryptedFs, keyset, Out);
 
 			foreach (var file in dirDecrypted.GetFiles("*.nca"))
 			{
@@ -388,6 +391,9 @@ namespace nsZip
 			TempFolderPath = TempFolderTextBox.Text;
 			Settings.Default.TempFolder = TempFolderPath;
 			Settings.Default.Save();
+			decryptedDir = Path.Combine(TempFolderPath, "decrypted");
+			encryptedDir = Path.Combine(TempFolderPath, "encrypted");
+			compressedDir = Path.Combine(TempFolderPath, "compressed");
 			Out.Print($"Set TempFolderPath to {TempFolderPath}\r\n");
 		}
 
