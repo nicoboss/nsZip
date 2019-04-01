@@ -2,7 +2,7 @@
 
 namespace nsZip
 {
-	internal class CommandLineArguments
+	internal class Options
 	{
 		[Option('i', "input", Required = false, HelpText = "NSP, XCI, NSPZ, XCIZ input file to compress/decompress")]
 		public bool InputFile { get; set; }

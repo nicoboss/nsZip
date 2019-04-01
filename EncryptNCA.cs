@@ -18,14 +18,34 @@ namespace nsZip
 		public static void Encrypt(string ncaPath, string outDir, bool writeEncrypted, bool verifyEncrypted, Keyset keyset,
 			Output Out)
 		{
+			Out.Print($"Input: {Path.GetFileName(ncaPath)}\r\n");
+			using (FileStream Input = File.Open(ncaPath, FileMode.Open))
+			{
+				if (writeEncrypted)
+				{
+					Out.Print("Opened NCA for writing...\r\n");
+					using (Stream Output = File.Open(Path.Combine(outDir, Path.GetFileName(ncaPath)), FileMode.Create))
+					{
+						EncryptFunct(Input, Output, ncaPath, verifyEncrypted, keyset, Out);
+					}
+				}
+				else
+				{
+					EncryptFunct(Input, null, ncaPath, verifyEncrypted, keyset, Out);
+				}
+			}
+		}
+
+		public static void EncryptFunct(
+			FileStream Input, Stream Output, string ncaPath,
+			bool verifyEncrypted, Keyset keyset, Output Out)
+		{
 			var DecryptedKeys = Utils.CreateJaggedArray<byte[][]>(4, 0x10);
 			var HeaderKey1 = new byte[16];
 			var HeaderKey2 = new byte[16];
 			Buffer.BlockCopy(keyset.HeaderKey, 0, HeaderKey1, 0, 16);
 			Buffer.BlockCopy(keyset.HeaderKey, 16, HeaderKey2, 0, 16);
 
-			var Input = File.Open(ncaPath, FileMode.Open);
-			Out.Print($"Input: {Path.GetFileName(ncaPath)}\r\n");
 			var DecryptedHeader = new byte[0xC00];
 			Input.Read(DecryptedHeader, 0, 0xC00);
 
@@ -87,13 +107,6 @@ namespace nsZip
 				Sections[i] = section;
 			}
 
-			FileStream Output = null;
-			if (writeEncrypted)
-			{
-				Output = File.Open(Path.Combine(outDir, Path.GetFileName(ncaPath)), FileMode.Create);
-			}
-
-			Out.Print("Opened NCA for writing...\r\n");
 			Out.Print($"HeaderKey: {Utils.BytesToString(keyset.HeaderKey)}\r\n");
 			Out.Print("Encrypting and writing header to NCA...\r\n");
 			SHA256Cng sha256NCA = null;
@@ -104,7 +117,7 @@ namespace nsZip
 			}
 
 			var encryptedHeader = CryptoInitialisers.AES_XTS(HeaderKey1, HeaderKey2, 0x200, DecryptedHeader, 0);
-			if (writeEncrypted)
+			if (Output != null)
 			{
 				Output.Write(encryptedHeader, 0, DecryptedHeader.Length);
 			}
@@ -120,11 +133,11 @@ namespace nsZip
 
 			for (dummyHeaderPos = 0xC00; dummyHeaderPos < lowestOffset; dummyHeaderPos += 0xC00)
 			{
-				var dummyHeaderWriteCount = (int) Math.Min(lowestOffset - dummyHeaderPos, DecryptedHeader.Length);
+				var dummyHeaderWriteCount = (int)Math.Min(lowestOffset - dummyHeaderPos, DecryptedHeader.Length);
 				Input.Read(dummyHeader, 0, dummyHeaderWriteCount);
 				var dummyHeaderEncrypted =
 					CryptoInitialisers.AES_XTS(HeaderKey1, HeaderKey2, 0x200, dummyHeader, dummyHeaderSector);
-				if (writeEncrypted)
+				if (Output != null)
 				{
 					Output.Write(dummyHeaderEncrypted, 0, dummyHeaderWriteCount);
 				}
@@ -147,7 +160,7 @@ namespace nsZip
 					continue;
 				}
 
-				var isExefs = Header.ContentType == ContentType.Program && i == (int) ProgramPartitionType.Code;
+				var isExefs = Header.ContentType == ContentType.Program && i == (int)ProgramPartitionType.Code;
 				var PartitionType = isExefs ? "ExeFS" : sect.Type.ToString();
 				Out.Print($"    Section {i}:\r\n");
 				Out.Print($"        Offset: 0x{sect.Offset:x12}\r\n");
@@ -182,10 +195,10 @@ namespace nsZip
 					case NcaEncryptionType.None:
 						while (Input.Position < sectOffsetEnd)
 						{
-							bs = (int) Math.Min(sectOffsetEnd - Input.Position, maxBS);
+							bs = (int)Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
-							if (writeEncrypted)
+							if (Output != null)
 							{
 								Output.Write(DecryptedSectionBlock, 0, bs);
 							}
@@ -198,17 +211,17 @@ namespace nsZip
 
 						break;
 					case NcaEncryptionType.AesCtr:
-						
+
 						while (Input.Position < sectOffsetEnd)
 						{
 							SetCtrOffset(initialCounter, Input.Position);
-							bs = (int) Math.Min(sectOffsetEnd - Input.Position, maxBS);
+							bs = (int)Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
 							AesCtrEncrypter.Counter = initialCounter;
 							AesCtrEncrypter.TransformBlock(DecryptedSectionBlock);
 
-							if (writeEncrypted)
+							if (Output != null)
 							{
 								Output.Write(DecryptedSectionBlock, 0, bs);
 							}
@@ -234,20 +247,20 @@ namespace nsZip
 						{
 							//Array.Copy(initialCounter, subsectionEntryCounter, 0x10);
 							SetCtrOffset(subsectionEntryCounter, Input.Position);
-							subsectionEntryCounter[7] = (byte) entry.Counter;
-							subsectionEntryCounter[6] = (byte) (entry.Counter >> 8);
-							subsectionEntryCounter[5] = (byte) (entry.Counter >> 16);
-							subsectionEntryCounter[4] = (byte) (entry.Counter >> 24);
+							subsectionEntryCounter[7] = (byte)entry.Counter;
+							subsectionEntryCounter[6] = (byte)(entry.Counter >> 8);
+							subsectionEntryCounter[5] = (byte)(entry.Counter >> 16);
+							subsectionEntryCounter[4] = (byte)(entry.Counter >> 24);
 
 							//bs = (int)Math.Min((sect.Offset + entry.OffsetEnd) - Input.Position, maxBS);
-							bs = (int) (entry.OffsetEnd - entry.Offset);
+							bs = (int)(entry.OffsetEnd - entry.Offset);
 							var DecryptedSectionBlockLUL = new byte[bs];
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Out.Print($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
 							Input.Read(DecryptedSectionBlockLUL, 0, bs);
 							AesCtrEncrypter.Counter = subsectionEntryCounter;
 							AesCtrEncrypter.TransformBlock(DecryptedSectionBlockLUL);
-							if (writeEncrypted)
+							if (Output != null)
 							{
 								Output.Write(DecryptedSectionBlockLUL, 0, bs);
 							}
@@ -261,13 +274,13 @@ namespace nsZip
 						while (Input.Position < sectOffsetEnd)
 						{
 							SetCtrOffset(subsectionEntryCounter, Input.Position);
-							bs = (int) Math.Min(sectOffsetEnd - Input.Position, maxBS);
+							bs = (int)Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							Out.Print($"EncryptedAfter: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
 							Out.Print($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
 							AesCtrEncrypter.Counter = subsectionEntryCounter;
 							AesCtrEncrypter.TransformBlock(DecryptedSectionBlock);
-							if (writeEncrypted)
+							if (Output != null)
 							{
 								Output.Write(DecryptedSectionBlock, 0, bs);
 							}
@@ -283,12 +296,6 @@ namespace nsZip
 					default:
 						throw new NotImplementedException();
 				}
-			}
-
-			Input.Dispose();
-			if (writeEncrypted)
-			{
-				Output.Dispose();
 			}
 
 			if (verifyEncrypted)

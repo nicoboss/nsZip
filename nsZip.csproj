@@ -165,6 +165,7 @@
     <Compile Include="Crypto\XTS-AES\XtsCryptoTransform.cs" />
     <Compile Include="Crypto\XTS-AES\XtsSectorStream.cs" />
     <Compile Include="Crypto\XTS-AES\XtsStream.cs" />
+    <Compile Include="TaskLogic.cs" />
     <Compile Include="Utils.cs" />
     <Content Include="nsZip.ico" />
     <EmbeddedResource Include="Properties\Resources.resx">

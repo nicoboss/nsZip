@@ -13,6 +13,7 @@ using LibHac.IO;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
 using nsZip.Properties;
+using CommandLine;
 
 namespace nsZip
 {
@@ -116,141 +117,6 @@ namespace nsZip
 			Process.Start(e.Uri.ToString());
 		}
 
-		private void cleanFolder(string folderName)
-		{
-			if (Directory.Exists(folderName))
-			{
-				Directory.Delete(folderName, true);
-			}
-
-			Thread.Sleep(50); //Wait for folder deletion!
-			Directory.CreateDirectory(folderName);
-		}
-
-		private void cleanFolders()
-		{
-			cleanFolder(decryptedDir);
-			cleanFolder(encryptedDir);
-			cleanFolder(compressedDir);
-		}
-
-		private void CompressNSP(string nspFile)
-		{
-			var nspFileNoExtension = Path.GetFileNameWithoutExtension(nspFile);
-			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
-			var keyset = ProcessKeyset.OpenKeyset();
-			using (var inputFile = new FileStream(nspFile, FileMode.Open, FileAccess.Read))
-			{
-				var pfs = new PartitionFileSystem(inputFile.AsStorage());
-				ProcessNsp.Decrypt(pfs, decryptedDir, VerifyHashes, keyset, Out);
-				TrimDeltaNCA.Process(decryptedDir, keyset, Out);
-				CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);
-
-				if (VerifyHashes)
-				{
-					var dirDecryptedReal = new DirectoryInfo(decryptedDir);
-					var dirDecryptedRealCount = dirDecryptedReal.GetFiles().Length;
-					cleanFolder(decryptedDir);
-					var compressedFs = new LocalFileSystem(compressedDir);
-					DecompressFs.ProcessFs(compressedFs, decryptedDir, Out);
-					UntrimDeltaNCA.Process(decryptedDir, pfs, keyset, Out);
-
-					var dirDecrypted = new DirectoryInfo(decryptedDir);
-					var dirDecryptedCount = dirDecrypted.GetFiles().Length;
-					if (dirDecryptedRealCount != dirDecryptedCount)
-					{
-						throw new FileNotFoundException();
-					}
-
-					foreach (var file in dirDecrypted.GetFiles("*.nca"))
-					{
-						EncryptNCA.Encrypt(file.FullName, encryptedDir, false, true, keyset, Out);
-					}
-				}
-			}
-			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
-			FolderTools.FolderToNSP(compressedDir, $"{nspzOutPath}.nspz");
-			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
-		}
-
-		private void CompressXCI(string xciFile)
-		{
-			var xciFileNoExtension = Path.GetFileNameWithoutExtension(xciFile);
-			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
-			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessXci.Decrypt(xciFile, decryptedDir, VerifyHashes, keyset, Out);
-			CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);
-
-			if (VerifyHashes)
-			{
-				var dirDecryptedReal = new DirectoryInfo(decryptedDir);
-				var dirDecryptedRealCount = dirDecryptedReal.GetFiles().Length;
-				cleanFolder(decryptedDir);
-				var compressedFs = new LocalFileSystem(compressedDir);
-				DecompressFs.ProcessFs(compressedFs, decryptedDir, Out);
-
-				var dirDecrypted = new DirectoryInfo(decryptedDir);
-				var dirDecryptedCount = dirDecrypted.GetFiles().Length;
-				if (dirDecryptedRealCount != dirDecryptedCount)
-				{
-					throw new FileNotFoundException();
-				}
-
-				foreach (var file in dirDecrypted.GetFiles("*.nca"))
-				{
-					EncryptNCA.Encrypt(file.FullName, encryptedDir, false, true, keyset, Out);
-				}
-			}
-
-			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
-			FolderTools.FolderToNSP(compressedDir, $"{xciOutPath}.xciz");
-			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
-		}
-
-		private void DecompressNSPZ(string nspzFile)
-		{
-			var nspzFileNoExtension = Path.GetFileNameWithoutExtension(nspzFile);
-			Out.Print($"Task DecompressNSPZ \"{nspzFileNoExtension}\" started\r\n");
-			var keyset = ProcessKeyset.OpenKeyset();
-			ProcessNsp.Decompress(nspzFile, decryptedDir, Out);
-			UntrimAndEncrypt(keyset);
-			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
-			FolderTools.FolderToNSP(encryptedDir, $"{nspOutPath}.nsp");
-			Out.Print($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
-		}
-
-		public void UntrimAndEncrypt(Keyset keyset)
-		{
-			FolderTools.ExtractTitlekeys(decryptedDir, keyset, Out);
-
-			var dirDecrypted = new DirectoryInfo(decryptedDir);
-			foreach (var file in dirDecrypted.GetFiles())
-			{
-				if (file.Name.EndsWith(".tca"))
-				{
-					continue;
-				}
-
-				if (file.Name.EndsWith(".nca"))
-				{
-					EncryptNCA.Encrypt(file.FullName, encryptedDir, true, VerifyHashes, keyset, Out);
-					file.Delete();
-				}
-				else
-				{
-					file.MoveTo(Path.Combine(encryptedDir, file.Name));
-				}
-			}
-
-			var encryptedFs = new LocalFileSystem(encryptedDir);
-			UntrimDeltaNCA.Process(decryptedDir, encryptedFs, keyset, Out);
-
-			foreach (var file in dirDecrypted.GetFiles("*.nca"))
-			{
-				EncryptNCA.Encrypt(file.FullName, encryptedDir, true, VerifyHashes, keyset, Out);
-			}
-		}
-
 		private void SelectFileToCompressButton_Click(object sender, RoutedEventArgs e)
 		{
 			if (SelectNspXciDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -333,25 +199,26 @@ namespace nsZip
 						continue;
 					}
 
-					cleanFolders();
+					var tl = new TaskLogic(OutputFolderPath, TempFolderPath, VerifyHashes, BlockSize, ZstdLevel, Out);
+					tl.cleanFolders();
 
 					try
 					{
 						if (infileLowerCase.EndsWith("nsp"))
 						{
-							CompressNSP(inFile);
+							tl.CompressNSP(inFile);
 						}
 						else if (infileLowerCase.EndsWith("xci"))
 						{
-							CompressXCI(inFile);
+							tl.CompressXCI(inFile);
 						}
 						else if (infileLowerCase.EndsWith("nspz"))
 						{
-							DecompressNSPZ(inFile);
+							tl.DecompressNSPZ(inFile);
 						}
 						else if (infileLowerCase.EndsWith("xciz"))
 						{
-							DecompressNSPZ(inFile);
+							tl.DecompressNSPZ(inFile);
 						}
 						else
 						{
@@ -361,7 +228,7 @@ namespace nsZip
 					catch (Exception ex)
 					{
 						Out.Print(ex.StackTrace + "\r\n");
-						Out.Print(ex.Message);
+						Out.Print(ex.Message + "\r\n\r\n");
 					}
 
 				} while (TaskQueue.Items.Count > 0);
@@ -374,10 +241,10 @@ namespace nsZip
 			}
 			finally
 			{
-				if (!KeepTempFilesAfterTask)
-				{
-					cleanFolders();
-				}
+				//if (!KeepTempFilesAfterTask && tl != null)
+				//{
+				//	tl.cleanFolders();
+				//}
 
 				Dispatcher.Invoke(() =>
 				{
