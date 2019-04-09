@@ -8,12 +8,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Navigation;
-using LibHac;
-using LibHac.IO;
-using nsZip.LibHacControl;
-using nsZip.LibHacExtensions;
 using nsZip.Properties;
-using CommandLine;
+
 
 namespace nsZip
 {
@@ -31,11 +27,9 @@ namespace nsZip
 		private bool CheckForUpdates;
 		private bool KeepTempFilesAfterTask;
 		private string OutputFolderPath;
-		private int StandByWhenTaskDone;
+		private enum TaskDonePowerState { None, Suspend, Hibernate };
+		private TaskDonePowerState StandByWhenTaskDone;
 		private string TempFolderPath;
-		private string decryptedDir;
-		private string encryptedDir;
-		private string compressedDir;
 		private bool VerifyHashes = true;
 		private int ZstdLevel = 18;
 
@@ -104,11 +98,6 @@ namespace nsZip
 				Out.Print("LICENSE file not found!\r\n");
 			}
 
-			//System.Windows.Forms.Application.SetSuspendState(PowerState.Suspend, false, false);
-
-			//CompressionLevelComboBox.SelectedIndex = 3;
-			//BlockSizeComboBox.SelectedIndex = 0;
-			//VerifyAfterCompressCheckBox_CheckedChanged(null, null);
 			Out.Print("nsZip initialized\r\n");
 		}
 
@@ -175,31 +164,11 @@ namespace nsZip
 						TaskQueue.Items.RemoveAt(0);
 					});
 
-					if (infileLowerCase.EndsWith("nsp") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.nspz"))
-					{
-						Out.Print($"Task CompressNSP \"{inFileNoExtension}.nspz\" skipped as it already exists in the output directory\r\n");
-						continue;
-					}
-
-					if (infileLowerCase.EndsWith("xci") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.xciz"))
-					{
-						Out.Print($"Task CompressXCI \"{inFileNoExtension}.xciz\" skipped as it already exists in the output directory\r\n");
-						continue;
-					}
-
-					if (infileLowerCase.EndsWith("nspz") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.nsp"))
-					{
-						Out.Print($"Task DecompressNSPZ \"{inFileNoExtension}.nsp\" skipped as it already exists in the output directory\r\n");
-						continue;
-					}
-
-					if (infileLowerCase.EndsWith("xciz") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.xci"))
-					{
-						Out.Print($"Task DecompressXCIZ \"{inFileNoExtension}.xci\" skipped as it already exists in the output directory\r\n");
-						continue;
-					}
-
 					var tl = new TaskLogic(OutputFolderPath, TempFolderPath, VerifyHashes, BlockSize, ZstdLevel, Out);
+					if (tl.checkIfAlreadyExist(inFile))
+					{
+						continue;
+					}
 					tl.cleanFolders();
 
 					try
@@ -230,7 +199,13 @@ namespace nsZip
 						Out.Print(ex.StackTrace + "\r\n");
 						Out.Print(ex.Message + "\r\n\r\n");
 					}
-
+					finally
+					{
+						if (!KeepTempFilesAfterTask && tl != null)
+						{
+							tl.cleanFolders();
+						}
+					}
 				} while (TaskQueue.Items.Count > 0);
 			}
 			catch (Exception ex)
@@ -241,16 +216,25 @@ namespace nsZip
 			}
 			finally
 			{
-				//if (!KeepTempFilesAfterTask && tl != null)
-				//{
-				//	tl.cleanFolders();
-				//}
-
 				Dispatcher.Invoke(() =>
 				{
 					MainGrid.Visibility = Visibility.Visible;
 					MainGridBusy.Visibility = Visibility.Hidden;
 				});
+
+				switch (StandByWhenTaskDone)
+				{
+					case TaskDonePowerState.Suspend:
+						Out.Print("Activate standby mode...\r\n");
+						Thread.Sleep(1000);
+						System.Windows.Forms.Application.SetSuspendState(PowerState.Suspend, false, false);
+						break;
+					case TaskDonePowerState.Hibernate:
+						Out.Print("Activate hibernate mode...\r\n");
+						Thread.Sleep(1000);
+						System.Windows.Forms.Application.SetSuspendState(PowerState.Hibernate, false, false);
+						break;
+				}
 			}
 		}
 
@@ -309,9 +293,6 @@ namespace nsZip
 			TempFolderPath = TempFolderTextBox.Text;
 			Settings.Default.TempFolder = TempFolderPath;
 			Settings.Default.Save();
-			decryptedDir = Path.Combine(TempFolderPath, "decrypted");
-			encryptedDir = Path.Combine(TempFolderPath, "encrypted");
-			compressedDir = Path.Combine(TempFolderPath, "compressed");
 			Out.Print($"Set TempFolderPath to {TempFolderPath}\r\n");
 		}
 
@@ -335,8 +316,18 @@ namespace nsZip
 
 		private void StandByWhenTaskDoneComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			StandByWhenTaskDone = StandByWhenTaskDoneComboBox.SelectedIndex;
-			Settings.Default.StandbyWhenDone = StandByWhenTaskDone;
+			switch(StandByWhenTaskDoneComboBox.SelectedIndex) {
+				case 0:
+					StandByWhenTaskDone = TaskDonePowerState.None;
+					break;
+				case 1:
+					StandByWhenTaskDone = TaskDonePowerState.Suspend;
+					break;
+				case 2:
+					StandByWhenTaskDone = TaskDonePowerState.Hibernate;
+					break;
+			}
+			Settings.Default.StandbyWhenDone = StandByWhenTaskDoneComboBox.SelectedIndex;
 			Settings.Default.Save();
 			Out.Print($"Set StandByWhenTaskDone to {StandByWhenTaskDone}\r\n");
 		}

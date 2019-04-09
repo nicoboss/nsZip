@@ -40,6 +40,38 @@ namespace nsZip
 			Out = OutArg;
 		}
 
+		public bool checkIfAlreadyExist(string inFile)
+		{
+			var infileLowerCase = inFile.ToLower();
+			var inFileNoExtension = Path.GetFileNameWithoutExtension(inFile);
+
+			if (infileLowerCase.EndsWith("nsp") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.nspz"))
+			{
+				Out.Print($"Task CompressNSP \"{inFileNoExtension}.nspz\" skipped as it already exists in the output directory\r\n");
+				return true;
+			}
+
+			if (infileLowerCase.EndsWith("xci") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.xciz"))
+			{
+				Out.Print($"Task CompressXCI \"{inFileNoExtension}.xciz\" skipped as it already exists in the output directory\r\n");
+				return true;
+			}
+
+			if (infileLowerCase.EndsWith("nspz") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.nsp"))
+			{
+				Out.Print($"Task DecompressNSPZ \"{inFileNoExtension}.nsp\" skipped as it already exists in the output directory\r\n");
+				return true;
+			}
+
+			if (infileLowerCase.EndsWith("xciz") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.xci"))
+			{
+				Out.Print($"Task DecompressXCIZ \"{inFileNoExtension}.xci\" skipped as it already exists in the output directory\r\n");
+				return true;
+			}
+
+			return false;
+		}
+
 		public void cleanFolder(string folderName)
 		{
 			Thread.Sleep(50); //Wait for files to be closed!

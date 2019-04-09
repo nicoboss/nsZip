@@ -11,7 +11,6 @@ namespace nsZip.LibHacExtensions
 	{
 		public static long Save(IStorage delta, FileStream writer, string foundBaseNCA)
 		{
-			Debug.Print(foundBaseNCA);
 			var filenameOffset = foundBaseNCA.Split(':');
 
 			if (delta.Length < 0x40)
@@ -76,7 +75,6 @@ namespace nsZip.LibHacExtensions
 				}
 
 				reader.Position += size;
-				Debug.Print(reader.Position.ToString());
 			}
 
 			if (reader.Position == delta.Length)
