@@ -123,9 +123,9 @@
 								           FontWeight="Bold" />
 								<ComboBox x:Name="CheckForUpdatesComboBox" Grid.Column="1" Grid.Row="2"
 								          VerticalAlignment="Center" Margin="0,2,0,1.333"
-								          SelectionChanged="CheckForUpdatesComboBox_SelectionChanged">
-									<ComboBoxItem Content="Yes (nsZip Protable)" />
-									<ComboBoxItem Content="Installed version only" />
+								          SelectionChanged="CheckForUpdatesComboBox_SelectionChanged" IsEnabled="False">
+									<ComboBoxItem Content="[NOT AVAILABLE]" />
+									<ComboBoxItem Content="[NOT AVAILABLE]" />
 								</ComboBox>
 								<TextBlock x:Name="CompressionLevelTextBlock" Grid.Column="0" Grid.Row="3" Text="Compression Level:"
 								           VerticalAlignment="Center"
@@ -178,22 +178,9 @@
 							</Grid>
 						</GroupBox>
 						<TextBlock HorizontalAlignment="Left" Margin="477,28,0,0" TextWrapping="Wrap" VerticalAlignment="Top"
-						           Height="330" Width="290">
-							<Run FontWeight="Bold" Text="Verifications" /><Run Text=":" /><Run Text=" " /><Run Text="W" />
-							<Run Text="ill ensure that the compressed file can be decompressed to the exact same NCA files" />
-							<Run Text=". In no case a" /><Run Text=" corrupted output file should be possible if enabled." /><LineBreak />
-							<Run /><LineBreak /><Run FontWeight="Bold" Text="Check for update" /><Run Text=":" /><Run Text=" " />
-							<Run Text="W" /><Run Text="ill notify nsZip portable" /><Run Text=" users" /><Run Text=" " /><Run Text="when" />
-							<Run Text=" there is an update available" /><Run Text=" " /><Run Text="as replacement of the system" />
-							<Run Text=" used by the installed version." />
-						</TextBlock>
+						           Height="330" Width="290"><Span Foreground="Black" FontWeight="Bold" FontSize="20" FontFamily="Segoe UI"><Run Text="Verifications"/></Span><Run Text=": Will ensure that the compressed file can be decompressed to the exact same NCA"/><Run Text=" "/><Run Text="files. In no case a corrupted output file should be possible if enabled."/><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><LineBreak/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><LineBreak/></Span><Span Foreground="Black" FontWeight="Bold" FontSize="20" FontFamily="Segoe UI"><Run Text="Check for update"/></Span><Run FontSize="20" FontFamily="Segoe UI" Text=": Will notify nsZip portable users when there is an update available as replacement of the system used by the installed version"/><Run FontSize="20" FontFamily="Segoe UI" Text="."/></TextBlock>
 						<TextBlock HorizontalAlignment="Left" Margin="10,248,0,0" TextWrapping="Wrap" VerticalAlignment="Top"
-						           Height="110" Width="442">
-							<Run FontWeight="Bold" Text="Compression Level" />
-							<Run Text=": Trade-off between compression speed and compression ratio." /><LineBreak />
-							<Run FontWeight="Bold" Text="Block Size" /><Run Text=": Trade-off between random access speed " />
-							<Run Text="to compressed data " /><Run Text="and compression ratio." />
-						</TextBlock>
+						           Height="110" Width="442"><Span Foreground="Black" FontWeight="Bold"><Run Text="Compression Level"/></Span><Span Foreground="Black"><Run Text=": Trade-off between compression speed and compression ratio."/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><LineBreak/></Span><Span Foreground="Black" FontWeight="Bold"><Run Text="Block Size"/></Span><Span Foreground="Black"><Run Text=": Trade-off between random access speed to compressed data and compression ratio."/></Span></TextBlock>
 					</Grid>
 				</TabItem>
 				<TabItem x:Name="AdvancedTab" Header="Advanced" FontSize="20">
@@ -241,34 +228,7 @@
 							</Grid>
 						</GroupBox>
 						<TextBlock HorizontalAlignment="Left" Margin="487,27,0,0" TextWrapping="Wrap" VerticalAlignment="Top"
-						           Height="331" Width="280">
-							<Span Foreground="Black" FontWeight="Bold">
-								<Run Text="Temp folder:" />
-							</Span>
-							<Span Foreground="Black">
-								<Run
-									Text=" Location of temporarily files. Requires around largest input * 5 free space. SSD/RAMdisk will result in faster speed." />
-							</Span>
-							<Span Foreground="Black" FontSize="20" FontFamily="Segoe UI">
-								<LineBreak />
-							</Span>
-							<Span Foreground="Black" FontWeight="Bold">
-								<Run Text="Keep temporary files:" />
-							</Span>
-							<Span Foreground="Black">
-								<Run Text=" Only delete temporary files when a task starts but not when it's completed." />
-							</Span>
-							<Span Foreground="Black" FontSize="20" FontFamily="Segoe UI">
-								<LineBreak />
-							</Span>
-							<Span Foreground="Black" FontWeight="Bold">
-								<Run Text="Standby when done:" />
-							</Span>
-							<Span Foreground="Black">
-								<Run Text=" Puts your PC into standby when all tasks are completed." />
-							</Span>
-							<LineBreak />
-						</TextBlock>
+						           Height="331" Width="280"><Span Foreground="Black" FontWeight="Bold" FontSize="20" FontFamily="Segoe UI"><Run Text="Temp folder: "/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><Run Text="Location of temporarily files. Requires around largest input * 5 free space. SSD/RAMdisk will result in faster speed. "/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><LineBreak/></Span><Span Foreground="Black" FontWeight="Bold" FontSize="20" FontFamily="Segoe UI"><Run Text="Keep temporary files:"/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><Run Text=" Only delete temporary files when a task starts but not when it's completed. "/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><LineBreak/></Span><Span Foreground="Black" FontWeight="Bold" FontSize="20" FontFamily="Segoe UI"><Run Text="Standby when done:"/></Span><Span Foreground="Black" FontSize="20" FontFamily="Segoe UI"><Run Text=" Puts your PC into standby when all tasks are completed."/></Span></TextBlock>
 						<TextBlock HorizontalAlignment="Left" Margin="10,169,0,0" TextWrapping="Wrap" VerticalAlignment="Top"
 						           Height="189" Width="472">
 							<Run Text="More futures will be added in the future. Feel free to post your suggestion on" />
@@ -294,64 +254,7 @@
 				</TabItem>
 				<TabItem x:Name="AboutTab" Header="About" FontSize="20">
 					<Grid Background="#FFE5E5E5">
-						<TextBlock TextWrapping="Wrap" Margin="10,10,9.667,243" LineHeight="16">
-							<Run FontWeight="Bold" FontSize="24" Text="nsZip v1.2.0 - (c) 2019 Nico Bosshard" />
-							<LineBreak />
-							<Run Text="A tool to compress/decompress Switch games using the NSP compression format." />
-							<LineBreak />
-							<Run FontWeight="Bold" Text="GitHub:" />
-							<Run Text=" " />
-							<Hyperlink
-								NavigateUri="https://github.com/nicoboss/nsZip"
-								ToolTip="https://github.com/nicoboss/nsZip"
-								RequestNavigate="Hyperlink_RequestNavigate">
-								<Run Text="https://github.com/nicoboss/nsZip" />
-							</Hyperlink>
-							<LineBreak />
-							<Hyperlink
-								NavigateUri="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
-								ToolTip="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"
-								RequestNavigate="Hyperlink_RequestNavigate">
-								<Run Text="GBAtemp" />
-							</Hyperlink>
-							<Hyperlink
-								NavigateUri="https://github.com/nicoboss/nsZip/releases"
-								ToolTip="https://github.com/nicoboss/nsZip/releases"
-								RequestNavigate="Hyperlink_RequestNavigate">
-								<Run Text="Releases" />
-							</Hyperlink>
-							<Hyperlink
-								NavigateUri="https://github.com/nicoboss/nsZip/issues"
-								ToolTip="https://github.com/nicoboss/nsZip/issues"
-								RequestNavigate="Hyperlink_RequestNavigate">
-								<Run Text="Issues" />
-							</Hyperlink>
-							<Hyperlink
-								NavigateUri="https://github.com/nicoboss/nsZip/commits/master"
-								ToolTip="https://github.com/nicoboss/nsZip/commits/master"
-								RequestNavigate="Hyperlink_RequestNavigate">
-								<Run Text="Commits" />
-							</Hyperlink>
-							<Hyperlink
-								NavigateUri="https://github.com/nicoboss/nsZip/pulls"
-								ToolTip="https://github.com/nicoboss/nsZip/pulls"
-								RequestNavigate="Hyperlink_RequestNavigate">
-								<Run Text="Pull Requests" />
-							</Hyperlink>
-							<Hyperlink
-								NavigateUri="https://github.com/nicoboss/nsZip/blob/master/LICENSE"
-								ToolTip="https://github.com/nicoboss/nsZip/blob/master/LICENSE"
-								RequestNavigate="Hyperlink_RequestNavigate">
-								<Run Text="License" />
-							</Hyperlink>
-							<Hyperlink
-								NavigateUri="https://github.com/nicoboss/nsZip/wiki"
-								ToolTip="https://github.com/nicoboss/nsZip/wiki"
-								RequestNavigate="Hyperlink_RequestNavigate">
-								<Run Text="Wiki" />
-							</Hyperlink>
-							<LineBreak />
-						</TextBlock>
+						<TextBlock TextWrapping="Wrap" Margin="10,10,9.667,243" LineHeight="16"><Run FontWeight="Bold" FontSize="24" Text="nsZip v"/><Run FontWeight="Bold" FontSize="24" Text="2"/><Run FontWeight="Bold" FontSize="24" Text="."/><Run FontWeight="Bold" FontSize="24" Text="0"/><Run FontWeight="Bold" FontSize="24" Text=".0 - (c) 2019 Nico Bosshard"/><LineBreak/><Run Text="A tool to compress/decompress Switch games using the NSP compression format."/><LineBreak/><Run FontWeight="Bold" Text="GitHub:"/><Run Text=" "/><Run Text=" "/><Run Text=" "/><Hyperlink NavigateUri="https://github.com/nicoboss/nsZip" ToolTip="https://github.com/nicoboss/nsZip"><Run Text="https://github.com/nicoboss/nsZip"/></Hyperlink><LineBreak/><Hyperlink NavigateUri="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/" ToolTip="https://gbatemp.net/threads/nszip-nsp-compressor-decompressor-to-reduce-storage.530313/"><Run Text="GBAtemp"/></Hyperlink><Run Text=" "/><Hyperlink NavigateUri="https://github.com/nicoboss/nsZip/releases" ToolTip="https://github.com/nicoboss/nsZip/releases"><Run Text="Releases"/></Hyperlink><Run Text=" "/><Hyperlink NavigateUri="https://github.com/nicoboss/nsZip/issues" ToolTip="https://github.com/nicoboss/nsZip/issues"><Run Text="Issues"/></Hyperlink><Run Text=" "/><Hyperlink NavigateUri="https://github.com/nicoboss/nsZip/commits/master" ToolTip="https://github.com/nicoboss/nsZip/commits/master"><Run Text="Commits"/></Hyperlink><Run Text=" "/><Hyperlink NavigateUri="https://github.com/nicoboss/nsZip/pulls" ToolTip="https://github.com/nicoboss/nsZip/pulls"><Run Text="Pull Requests"/></Hyperlink><Run Text=" "/><Hyperlink NavigateUri="https://github.com/nicoboss/nsZip/blob/master/LICENSE" ToolTip="https://github.com/nicoboss/nsZip/blob/master/LICENSE"><Run Text="License"/></Hyperlink><Run Text=" "/><Hyperlink NavigateUri="https://github.com/nicoboss/nsZip/wiki" ToolTip="https://github.com/nicoboss/nsZip/wiki"><Run Text="Wiki"/></Hyperlink><LineBreak/></TextBlock>
 						<TextBox x:Name="LicenseTextBox" HorizontalAlignment="Left" Height="228" Margin="10,130,0,0" TextWrapping="Wrap"
 						         Text="License: MIT (load from file)" VerticalAlignment="Top" Width="757" IsReadOnly="True"
 						         VerticalScrollBarVisibility="Visible" FontSize="16" Background="#FFCCCCCC" />
