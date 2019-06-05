@@ -50,6 +50,30 @@
 				</Trigger>
 			</Style.Triggers>
 		</Style>
+		<Style x:Key="Button_SelectInputFiles_OnMouseOverStyle" BasedOn="{StaticResource ButtonDefaultStyle}" TargetType="{x:Type Button}">
+			<Setter Property="Background" Value="#FF80F0C8" />
+			<Style.Triggers>
+				<Trigger Property="IsMouseOver" Value="True">
+					<Setter Property="Background" Value="#FF00FFC8" />
+				</Trigger>
+			</Style.Triggers>
+		</Style>
+		<Style x:Key="Button_ExtractTitlekeys_OnMouseOverStyle" BasedOn="{StaticResource ButtonDefaultStyle}" TargetType="{x:Type Button}">
+			<Setter Property="Background" Value="#FFD1FF6C" />
+			<Style.Triggers>
+				<Trigger Property="IsMouseOver" Value="True">
+					<Setter Property="Background" Value="#FFAFFF00" />
+				</Trigger>
+			</Style.Triggers>
+		</Style>
+		<Style x:Key="Button_ExtractTickets_OnMouseOverStyle" BasedOn="{StaticResource ButtonDefaultStyle}" TargetType="{x:Type Button}">
+			<Setter Property="Background" Value="#FFFFFD8B" />
+			<Style.Triggers>
+				<Trigger Property="IsMouseOver" Value="True">
+					<Setter Property="Background" Value="#FFFFFB00" />
+				</Trigger>
+			</Style.Triggers>
+		</Style>
 	</Window.Resources>
 	<Grid>
 		<Viewbox x:Name="MainGrid">
@@ -250,6 +274,31 @@
 							<Run Text="-l = Compression level [1-" /><Run Text="22" /><Run Text="] (default: 18)" /><LineBreak />
 							<Run Text="-b = Block Size in bytes (default: 262144)" /><LineBreak />
 						</TextBlock>
+					</Grid>
+				</TabItem>
+				<TabItem x:Name="ToolsTab" Header="Tools" FontSize="20">
+					<Grid Background="#FFE5E5E5">
+						<Grid x:Name="ToolsGrid" Background="#FFE5E5E5">
+							<WrapPanel HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top">
+								<Button x:Name="SelectInputFilesButton" FontSize="36" Height="80" Width="302" Margin="0,0,10,0"
+									Style="{StaticResource Button_SelectInputFiles_OnMouseOverStyle}"
+									Click="SelectInputFilesButton_Click">
+									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="28"><Run Text="Select NSP/XCI"/><Run Text="/NSPZ/XCIZ"/><Run Text=" files to "/><Run Text="Progress"/></TextBlock>
+									</Button>
+								<Button x:Name="ExtractTitlekeysButton" FontSize="36" Height="80" Width="212" Margin="10,0,0,0"
+									Style="{StaticResource Button_ExtractTitlekeys_OnMouseOverStyle}"
+									Click="ExtractTitlekeys_Click">
+									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="24" Text="Extract Titlekeys"/>
+								</Button>
+								<Button x:Name="ExtractTicketsButton" FontSize="36" Height="80" Width="212" Margin="10,0,0,0"
+									Style="{StaticResource Button_ExtractTickets_OnMouseOverStyle}"
+									Click="ExtractTickets_Click">
+									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="24"><Run Text="Extract "/><Run Text="Ti"/><Run Text="c"/><Run Text="ket"/><Run Text="s"/></TextBlock>
+								</Button>
+							</WrapPanel>
+							<ListBox x:Name="ToolsTaskQueue" HorizontalAlignment="Left" Height="258" Margin="10,104,0,0" VerticalAlignment="Top"
+				 Width="756" Background="#FFCCCCCC" />
+						</Grid>
 					</Grid>
 				</TabItem>
 				<TabItem x:Name="AboutTab" Header="About" FontSize="20">

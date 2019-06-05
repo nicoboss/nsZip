@@ -21,13 +21,21 @@ namespace nsZip
 		private readonly Output Out;
 		private readonly OpenFileDialog SelectNspXciDialog = new OpenFileDialog();
 		private readonly OpenFileDialog SelectNspzDialog = new OpenFileDialog();
+		private readonly OpenFileDialog SelectInputFileDialog = new OpenFileDialog();
 		private readonly FolderBrowserDialog SelectOutputDictionaryDialog = new FolderBrowserDialog();
 		private readonly FolderBrowserDialog SelectTempDictionaryDialog = new FolderBrowserDialog();
 		private int BlockSize = 262144;
 		private bool CheckForUpdates;
 		private bool KeepTempFilesAfterTask;
 		private string OutputFolderPath;
-		private enum TaskDonePowerState { None, Suspend, Hibernate };
+
+		private enum TaskDonePowerState
+		{
+			None,
+			Suspend,
+			Hibernate
+		};
+
 		private TaskDonePowerState StandByWhenTaskDone;
 		private string TempFolderPath;
 		private bool VerifyHashes = true;
@@ -42,14 +50,24 @@ namespace nsZip
 			MainGridBusy.Visibility = Visibility.Hidden;
 
 			SelectNspzDialog.Filter =
-				"Compressed Switch File (*.nspz)|*.nspz|XCIZ to not-installable NSP (*.xciz)|*.xciz";
+				"Compressed Switch File (*.nspz)|*.nspz|" +
+				"XCIZ to not-installable NSP (*.xciz)|*.xciz";
 			SelectNspzDialog.Multiselect = true;
-			SelectNspzDialog.Title = "Select input nspz fIles...";
+			SelectNspzDialog.Title = "Select input nspz files...";
+
+			SelectInputFileDialog.Filter =
+				"All Switch Games (*.nsp;*.xci;*.nspz;*.xciz)|*.nsp;*.xci;*.nspz;*.xciz|" +
+				"Switch Package (*.nsp)|*.nsp|Switch Cartridge (*.xci)|*.xci|" +
+				"Compressed Switch File (*.nspz)|*.nspz|" +
+				"Compressed Switch Cart (*.xciz)|*.xciz";
+			SelectInputFileDialog.Multiselect = true;
+			SelectInputFileDialog.Title = "Select input files...";
 
 			SelectNspXciDialog.Filter =
-				"Switch Games (*.nsp;*.xci)|*.nsp;*.xci|Switch Package (*.nsp)|*.ns|Switch Cartridge (*.xci)|*.xci";
+				"Switch Games (*.nsp;*.xci)|*.nsp;*.xci|" +
+				"Switch Package (*.nsp)|*.ns|Switch Cartridge (*.xci)|*.xci";
 			SelectNspXciDialog.Multiselect = true;
-			SelectNspXciDialog.Title = "Select input NSP fIles...";
+			SelectNspXciDialog.Title = "Select input NSP files...";
 
 			SelectOutputDictionaryDialog.RootFolder = Environment.SpecialFolder.MyComputer;
 			OutputFolderTextBox.Text = Settings.Default.OutputFolder != ""
@@ -160,7 +178,8 @@ namespace nsZip
 					Dispatcher.Invoke(() =>
 					{
 						BusyTextBlock.Text =
-							$"Task \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...\r\nThis might take quite some time.\r\nPlease take a look at the console window for more information.";
+							$"Task \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...\r\nThis might take quite some time.\r\n" +
+							$"Please take a look at the console window for more information.";
 						TaskQueue.Items.RemoveAt(0);
 					});
 
@@ -169,6 +188,7 @@ namespace nsZip
 					{
 						continue;
 					}
+
 					tl.cleanFolders();
 
 					try
@@ -210,7 +230,7 @@ namespace nsZip
 			}
 			catch (Exception ex)
 			{
-				Out.Print(ex.StackTrace+"\r\n");
+				Out.Print(ex.StackTrace + "\r\n");
 				Out.Print(ex.Message);
 				throw ex;
 			}
@@ -316,7 +336,8 @@ namespace nsZip
 
 		private void StandByWhenTaskDoneComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			switch(StandByWhenTaskDoneComboBox.SelectedIndex) {
+			switch (StandByWhenTaskDoneComboBox.SelectedIndex)
+			{
 				case 0:
 					StandByWhenTaskDone = TaskDonePowerState.None;
 					break;
@@ -327,9 +348,85 @@ namespace nsZip
 					StandByWhenTaskDone = TaskDonePowerState.Hibernate;
 					break;
 			}
+
 			Settings.Default.StandbyWhenDone = StandByWhenTaskDoneComboBox.SelectedIndex;
 			Settings.Default.Save();
 			Out.Print($"Set StandByWhenTaskDone to {StandByWhenTaskDone}\r\n");
+		}
+
+		private void SelectInputFilesButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (SelectInputFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+			{
+				foreach (var filename in SelectInputFileDialog.FileNames)
+				{
+					ToolsTaskQueue.Items.Add(filename);
+				}
+			}
+		}
+
+		private void ExtractTitlekeys_Click(object sender, RoutedEventArgs e)
+		{
+			var t = Task.Run(() => { RunToolsTask(); });
+		}
+
+		private void ExtractTickets_Click(object sender, RoutedEventArgs e)
+		{
+			var t = Task.Run(() => { RunToolsTask(); });
+		}
+
+		private void RunToolsTask()
+		{
+			if (ToolsTaskQueue.Items.Count == 0)
+			{
+				Out.Print("Nothing to do - ToolsTaskQueue empty! Please select any input file first!\r\n");
+				return;
+			}
+
+			Dispatcher.Invoke(() =>
+			{
+				BusyTextBlock.Text = "Working...";
+				MainGrid.Visibility = Visibility.Hidden;
+				MainGridBusy.Visibility = Visibility.Visible;
+			});
+
+
+			try
+			{
+				do
+				{
+					var inFile = (string)ToolsTaskQueue.Items[0];
+					var infileLowerCase = inFile.ToLower();
+					var inFileNoExtension = Path.GetFileNameWithoutExtension(inFile);
+
+					Dispatcher.Invoke(() =>
+					{
+						BusyTextBlock.Text =
+							$"ToolsTask \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...\r\nThis might take quite some time.\r\n" +
+							$"Please take a look at the console window for more information.";
+						ToolsTaskQueue.Items.RemoveAt(0);
+					});
+
+					Thread.Sleep(1000);
+				} while (ToolsTaskQueue.Items.Count > 0);
+			}
+			catch (Exception ex)
+			{
+				Out.Print(ex.StackTrace + "\r\n");
+				Out.Print(ex.Message);
+				throw ex;
+			}
+			finally
+			{
+				Dispatcher.Invoke(() =>
+				{
+					MainGrid.Visibility = Visibility.Visible;
+					MainGridBusy.Visibility = Visibility.Hidden;
+				});
+			}
+
+			Out.Print("ToolsTask done!\r\n");
+
 		}
 	}
 }
