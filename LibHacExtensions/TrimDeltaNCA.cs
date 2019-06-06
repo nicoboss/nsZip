@@ -45,6 +45,11 @@ namespace nsZip.LibHacControl
 					var lowerNcaID = Utils.BytesToString(cnmtExtended.DeltaContents[DeltaContentID].NcaId)
 						.ToLower();
 					var ncaFileName = Path.Combine(folderPath, $"{lowerNcaID}.nca");
+					if (!File.Exists(ncaFileName))
+					{
+						Out.Print($"[WARN] File: {ncaFileName} not found!\r\n");
+						break;
+					}
 					Out.Print($"{ncaFileName}\r\n");
 					var ncaStorage = new StreamStorage(new FileStream(ncaFileName, FileMode.Open, FileAccess.Read),
 						false);
