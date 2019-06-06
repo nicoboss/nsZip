@@ -139,6 +139,7 @@
     <Compile Include="CompressFolder.cs" />
     <Compile Include="DecompressFs.cs" />
     <Compile Include="EncryptNCA.cs" />
+    <Compile Include="FileTools.cs" />
     <Compile Include="LibHacControl\ProcessKeyset.cs" />
     <Compile Include="LibHacControl\ProcessXci.cs" />
     <Compile Include="LibHacExtensions\FolderTools.cs" />
@@ -166,6 +167,7 @@
     <Compile Include="Crypto\XTS-AES\XtsSectorStream.cs" />
     <Compile Include="Crypto\XTS-AES\XtsStream.cs" />
     <Compile Include="TaskLogic.cs" />
+    <Compile Include="TitleKeyTools.cs" />
     <Compile Include="Utils.cs" />
     <Content Include="nsZip.ico" />
     <EmbeddedResource Include="Properties\Resources.resx">

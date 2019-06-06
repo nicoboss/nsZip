@@ -33,22 +33,12 @@ namespace nsZip.LibHacExtensions
 		{
 			var dirExtracted = new DirectoryInfo(inFolder);
 			var TikFiles = dirExtracted.GetFiles("*.tik");
-			var titleKey = new byte[0x10];
 			foreach (var file in TikFiles)
 			{
-				var TicketFile = File.Open($"{inFolder}/{file.Name}", FileMode.Open);
-				TicketFile.Seek(0x180, SeekOrigin.Begin);
-				TicketFile.Read(titleKey, 0, 0x10);
-				var ticketNameWithoutExtension = Path.GetFileNameWithoutExtension(file.Name);
-				if (!ticketNameWithoutExtension.TryToBytes(out var rightsId))
+				using (var TicketFile = File.Open($"{inFolder}/{file.Name}", FileMode.Open))
 				{
-					throw new InvalidDataException(
-						$"Invalid rights ID \"{ticketNameWithoutExtension}\" as ticket file name");
+					TitleKeyTools.ExtractKey(TicketFile, file.Name, keyset, Out);
 				}
-
-				keyset.TitleKeys[rightsId] = titleKey;
-				Out.Print($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
-				TicketFile.Dispose();
 			}
 		}
 	}

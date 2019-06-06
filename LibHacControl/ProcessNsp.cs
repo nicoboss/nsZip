@@ -33,11 +33,12 @@ namespace nsZip.LibHacControl
 		public static void Decrypt(PartitionFileSystem pfs, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
 			Out.Print(pfs.Print());
+			ProcessNsp.GetTitlekey(pfs, keyset, Out);
 			var OutDirFs = new LocalFileSystem(outDirPath);
 			IDirectory sourceRoot = pfs.OpenDirectory("/", OpenDirectoryMode.All);
 			IDirectory destRoot = OutDirFs.OpenDirectory("/", OpenDirectoryMode.All);
 			IFileSystem sourceFs = sourceRoot.ParentFileSystem;
-			IFileSystem destFs = destRoot.ParentFileSystem;
+			IFileSystem destFs = destRoot.ParentFileSystem;			
 
 			foreach (DirectoryEntry entry in sourceRoot.Read())
 			{
@@ -46,41 +47,20 @@ namespace nsZip.LibHacControl
 					throw new InvalidDataException(
 						"Error: Directory inside NSP!\r\n" +
 						"Please report this as there are curently no known NSP containing a directory.");
-				}
-
-				if (entry.Name.EndsWith(".nca"))
-				{
-					continue;
 				}
 
 				destFs.CreateFile(entry.Name, entry.Size, CreateFileOptions.None);
 				using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
 				using (IFile dstFile = destFs.OpenFile(entry.Name, OpenMode.Write))
 				{
-					srcFile.CopyTo(dstFile);
-				}
-			}
-
-			FolderTools.ExtractTitlekeys(outDirPath, keyset, Out);
-
-			foreach (DirectoryEntry entry in sourceRoot.Read())
-			{
-				if (entry.Type == DirectoryEntryType.Directory)
-				{
-					throw new InvalidDataException(
-						"Error: Directory inside NSP!\r\n" +
-						"Please report this as there are curently no known NSP containing a directory.");
-				}
-
-				if (entry.Name.EndsWith(".nca"))
-				{
-					destFs.CreateFile(entry.Name, entry.Size, CreateFileOptions.None);
-					using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
-					using (IFile dstFile = destFs.OpenFile(entry.Name, OpenMode.Write))
+					if (entry.Name.EndsWith(".nca"))
 					{
 						ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
 					}
-
+					else
+					{
+						srcFile.CopyTo(dstFile);
+					}
 				}
 			}
 		}
@@ -155,6 +135,29 @@ namespace nsZip.LibHacControl
 			using (var outStream = new FileStream(nspFilename, FileMode.Create, FileAccess.ReadWrite))
 			{
 				builder.Build(outStream, logger);
+			}
+		}
+
+		public static void GetTitlekey(PartitionFileSystem pfs, Keyset keyset, Output Out)
+		{
+			IDirectory sourceRoot = pfs.OpenDirectory("/", OpenDirectoryMode.All);
+			IFileSystem sourceFs = sourceRoot.ParentFileSystem;
+			foreach (DirectoryEntry entry in sourceRoot.Read())
+			{
+				if (entry.Type == DirectoryEntryType.Directory)
+				{
+					throw new InvalidDataException(
+						"Error: Directory inside NSP!\r\n" +
+						"Please report this as there are curently no known NSP containing a directory.");
+				}
+
+				if (entry.Name.EndsWith(".tik"))
+				{
+					using (var TicketFile = sourceFs.OpenFile(entry.Name, OpenMode.Read).AsStream())
+					{
+						TitleKeyTools.ExtractKey(TicketFile, entry.Name, keyset, Out);
+					}
+				}
 			}
 		}
 	}

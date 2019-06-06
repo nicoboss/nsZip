@@ -27,62 +27,68 @@ namespace nsZip.LibHacControl
 
 				Out.Print(Print.PrintXci(xci));
 
-				if (xci.RootPartition != null)
+				var root = xci.RootPartition;
+				if (root == null)
 				{
-					var root = xci.RootPartition;
-					if (root == null)
-					{
-						Out.Print("Could not find root partition");
-						return;
-					}
-
-					foreach (var sub in root.Files)
-					{
-						var subPfs = new PartitionFileSystem(new FileStorage(root.OpenFile(sub, OpenMode.Read)));
-						foreach (var subPfsFile in subPfs.Files)
-						{
-							if (!subPfsFile.Name.EndsWith(".nca"))
-							{
-								destFs.CreateFile(subPfsFile.Name, subPfsFile.Size, CreateFileOptions.None);
-								using (IFile srcFile = subPfs.OpenFile(subPfsFile.Name, OpenMode.Read))
-								using (IFile dstFile = destFs.OpenFile(subPfsFile.Name, OpenMode.Write))
-								{
-									srcFile.CopyTo(dstFile);
-								}
-							}
-						}
-					}
-					FolderTools.ExtractTitlekeys(outDirPath, keyset, Out);
-
-					foreach (var sub in root.Files)
-					{
-						outputFile.WriteByte(0x0A);
-						outputFile.WriteByte(0x0A);
-						var subDirName = Encoding.ASCII.GetBytes(sub.Name);
-						outputFile.Write(subDirName, 0, subDirName.Length);
-						var subPfs = new PartitionFileSystem(new FileStorage(root.OpenFile(sub, OpenMode.Read)));
-						foreach (var subPfsFile in subPfs.Files)
-						{
-							outputFile.WriteByte(0x0A);
-							var subPfsFileName = Encoding.ASCII.GetBytes(subPfsFile.Name);
-							outputFile.Write(subPfsFileName, 0, subPfsFileName.Length);
-
-							if (subPfsFile.Name.EndsWith(".nca"))
-							{
-								destFs.CreateFile(subPfsFile.Name, subPfsFile.Size, CreateFileOptions.None);
-								using (IFile srcFile = subPfs.OpenFile(subPfsFile.Name, OpenMode.Read))
-								using (IFile dstFile = destFs.OpenFile(subPfsFile.Name, OpenMode.Write))
-								{
-									ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
-								}
-							}
-						}
-					}
-
-					outputFile.WriteByte(0x0A);
+					throw new InvalidDataException("Could not find root partition");
 				}
 
+				ProcessXci.GetTitleKeys(xci, keyset, Out);
+				foreach (var sub in root.Files)
+				{
+					outputFile.WriteByte(0x0A);
+					outputFile.WriteByte(0x0A);
+					var subDirName = Encoding.ASCII.GetBytes(sub.Name);
+					outputFile.Write(subDirName, 0, subDirName.Length);
+					var subPfs = new PartitionFileSystem(new FileStorage(root.OpenFile(sub, OpenMode.Read)));
+					foreach (var subPfsFile in subPfs.Files)
+					{
+						outputFile.WriteByte(0x0A);
+						var subPfsFileName = Encoding.ASCII.GetBytes(subPfsFile.Name);
+						outputFile.Write(subPfsFileName, 0, subPfsFileName.Length);
+
+						destFs.CreateFile(subPfsFile.Name, subPfsFile.Size, CreateFileOptions.None);
+						using (IFile srcFile = subPfs.OpenFile(subPfsFile.Name, OpenMode.Read))
+						using (IFile dstFile = destFs.OpenFile(subPfsFile.Name, OpenMode.Write))
+						{
+							if (subPfsFile.Name.EndsWith(".nca"))
+							{
+								ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
+							}
+							else
+							{
+								srcFile.CopyTo(dstFile);
+							}
+						}
+					}
+				}
+
+				outputFile.WriteByte(0x0A);
 				outputFile.Dispose();
+			}
+		}
+
+		public static void GetTitleKeys(Xci xci, Keyset keyset, Output Out)
+		{
+			var root = xci.RootPartition;
+			if (root == null)
+			{
+				throw new InvalidDataException("Could not find root partition");
+			}
+
+			foreach (var sub in root.Files)
+			{
+				var subPfs = new PartitionFileSystem(new FileStorage(root.OpenFile(sub, OpenMode.Read)));
+				foreach (var subPfsFile in subPfs.Files)
+				{
+					if (subPfsFile.Name.EndsWith(".tik"))
+					{
+						using (var TicketFile = subPfs.OpenFile(subPfsFile.Name, OpenMode.Read).AsStream())
+						{
+							TitleKeyTools.ExtractKey(TicketFile, subPfsFile.Name, keyset, Out);
+						}
+					}
+				}
 			}
 		}
 	}

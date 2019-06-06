@@ -28,6 +28,27 @@ namespace nsZip
 			}
 		}
 
+		public static void GetTitleKeys(IFileSystem sourceFs, Keyset keyset, Output Out)
+		{
+			IDirectory sourceRoot = sourceFs.OpenDirectory("/", OpenDirectoryMode.All);
+			foreach (DirectoryEntry entry in sourceRoot.Read())
+			{
+				if (entry.Type == DirectoryEntryType.Directory)
+				{
+					throw new InvalidDataException("Error: Directory inside NSPZ/XCIZ!");
+				}
+				if (Path.GetExtension(entry.Name) != ".tik")
+				{
+					break;
+				}
+				
+				using (var TicketFile = sourceFs.OpenFile(entry.Name, OpenMode.Read).AsStream())
+				{
+					TitleKeyTools.ExtractKey(TicketFile, entry.Name, keyset, Out);
+				}
+			}
+		}
+
 		public static void ProcessFile(IFile inputFileObj, FileStream outputFile, DirectoryEntry inputFileEntry, Output Out)
 		{
 			var inputFile = inputFileObj.AsStream();

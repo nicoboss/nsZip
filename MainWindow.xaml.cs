@@ -390,14 +390,12 @@ namespace nsZip
 				MainGridBusy.Visibility = Visibility.Visible;
 			});
 
-
+			var extractedTitleKeys = new LibHac.Keyset();
 			try
 			{
 				do
 				{
 					var inFile = (string)ToolsTaskQueue.Items[0];
-					var infileLowerCase = inFile.ToLower();
-					var inFileNoExtension = Path.GetFileNameWithoutExtension(inFile);
 
 					Dispatcher.Invoke(() =>
 					{
@@ -406,8 +404,9 @@ namespace nsZip
 							$"Please take a look at the console window for more information.";
 						ToolsTaskQueue.Items.RemoveAt(0);
 					});
+					FileTools.File2Titlekey(inFile, extractedTitleKeys, Out);
+					Thread.Sleep(50);
 
-					Thread.Sleep(1000);
 				} while (ToolsTaskQueue.Items.Count > 0);
 			}
 			catch (Exception ex)
@@ -423,6 +422,12 @@ namespace nsZip
 					MainGrid.Visibility = Visibility.Visible;
 					MainGridBusy.Visibility = Visibility.Hidden;
 				});
+			}
+
+			Out.Print("titlekeys.txt\r\n");
+			foreach (var entry in extractedTitleKeys.TitleKeys)
+			{
+				Out.Print($"{Utils.BytesToString(entry.Key)},{Utils.BytesToString(entry.Value)}\r\n");
 			}
 
 			Out.Print("ToolsTask done!\r\n");
