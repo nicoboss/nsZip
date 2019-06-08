@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -64,12 +65,75 @@ namespace LibHac
             return true;
         }
 
+        /// <summary>
+        /// Compares two strings stored int byte spans. For the strings to be equal,
+        /// they must terminate in the same place.
+        /// A string can be terminated by either a null character or the end of the span.
+        /// </summary>
+        /// <param name="s1">The first string to be compared.</param>
+        /// <param name="s2">The first string to be compared.</param>
+        /// <returns><see langword="true"/> if the strings are equal;
+        /// otherwise <see langword="false"/>.</returns>
+        public static bool StringSpansEqual(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2)
+        {
+            // Make s1 the long string for simplicity
+            if (s1.Length < s2.Length)
+            {
+                ReadOnlySpan<byte> tmp = s1;
+                s1 = s2;
+                s2 = tmp;
+            }
+
+            int shortLength = s2.Length;
+            int i;
+
+            for (i = 0; i < shortLength; i++)
+            {
+                if (s1[i] != s2[i]) return false;
+
+                // Both strings are null-terminated
+                if (s1[i] == 0) return true;
+            }
+
+            // The bytes in the short string equal those in the long.
+            // Check if the strings are the same length or if the next
+            // character in the long string is a null character
+            return s1.Length == s2.Length || s1[i] == 0;
+        }
+
+        public static ReadOnlySpan<byte> GetUtf8Bytes(string value)
+        {
+            return Encoding.UTF8.GetBytes(value).AsSpan();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string GetUtf8String(ReadOnlySpan<byte> value)
+        {
+#if NETFRAMEWORK
+            return Encoding.UTF8.GetString(value.ToArray());
+#else
+            return Encoding.UTF8.GetString(value);
+#endif
+        }
+
+        public static string GetUtf8StringNullTerminated(ReadOnlySpan<byte> value)
+        {
+            int i;
+            for (i = 0; i < value.Length && value[i] != 0; i++) { }
+
+            value = value.Slice(0, i);
+
+#if NETFRAMEWORK
+            return Encoding.UTF8.GetString(value.ToArray());
+#else
+            return Encoding.UTF8.GetString(value);
+#endif
+        }
+
         public static bool IsEmpty(this byte[] array) => ((ReadOnlySpan<byte>)array).IsEmpty();
 
         public static bool IsEmpty(this ReadOnlySpan<byte> span)
         {
-            if (span == null) throw new ArgumentNullException(nameof(span));
-
             for (int i = 0; i < span.Length; i++)
             {
                 if (span[i] != 0)
@@ -128,7 +192,7 @@ namespace LibHac
             }
         }
 
-        public static string ReadAsciiZ(this BinaryReader reader, int maxLength = int.MaxValue)
+        public static string ReadAsciiZ(this BinaryReader reader, int maxLength = Int32.MaxValue)
         {
             long start = reader.BaseStream.Position;
             int size = 0;
@@ -145,7 +209,7 @@ namespace LibHac
             return text;
         }
 
-        public static string ReadUtf8Z(this BinaryReader reader, int maxLength = int.MaxValue)
+        public static string ReadUtf8Z(this BinaryReader reader, int maxLength = Int32.MaxValue)
         {
             long start = reader.BaseStream.Position;
             int size = 0;
@@ -182,23 +246,6 @@ namespace LibHac
         public static string ReadUtf8(this BinaryReader reader, int size)
         {
             return Encoding.UTF8.GetString(reader.ReadBytes(size), 0, size);
-        }
-
-        // todo Maybe make less naive
-        public static string GetRelativePath(string path, string basePath)
-        {
-            var directory = new DirectoryInfo(basePath);
-            var file = new FileInfo(path);
-
-            string fullDirectory = directory.FullName;
-            string fullFile = file.FullName;
-
-            if (!fullFile.StartsWith(fullDirectory))
-            {
-                throw new ArgumentException($"{nameof(path)} is not a subpath of {nameof(basePath)}");
-            }
-
-            return fullFile.Substring(fullDirectory.Length + 1);
         }
 
         private static bool TryHexToInt(char c, out int value)
@@ -305,7 +352,9 @@ namespace LibHac
             return result;
         }
 
-        public static string ToHexString(this byte[] bytes)
+        public static string ToHexString(this byte[] bytes) => ToHexString(bytes.AsSpan());
+
+        public static string ToHexString(this Span<byte> bytes)
         {
             uint[] lookup32 = Lookup32;
             var result = new char[bytes.Length * 2];
@@ -441,6 +490,8 @@ namespace LibHac
                 case 3: return "4.0.0-4.1.0";
                 case 4: return "5.0.0-5.1.0";
                 case 5: return "6.0.0-6.0.1";
+                case 6: return "6.2.0";
+                case 7: return "7.0.0-8.0.1";
                 default: return "Unknown";
             }
         }
@@ -459,6 +510,13 @@ namespace LibHac
                          ((uintVal >> 8) & 0x0000ff00) |
                          ((uintVal << 8) & 0x00ff0000) |
                          ((uintVal << 24) & 0xff000000));
+        }
+
+        public static int GetMasterKeyRevision(int keyGeneration)
+        {
+            if (keyGeneration == 0) return 0;
+
+            return keyGeneration - 1;
         }
     }
 

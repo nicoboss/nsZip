@@ -2,7 +2,7 @@
 using System.IO;
 using System.Numerics;
 using System.Security.Cryptography;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace LibHac
 {
@@ -14,7 +14,7 @@ namespace LibHac
         public static Validity CheckMemoryHashTable(byte[] data, byte[] hash, int offset, int count)
         {
             Validity comp;
-            using (SHA256Cng sha = new SHA256Cng())
+            using (SHA256 sha = SHA256.Create())
             {
                 comp = Util.ArraysEqual(hash, sha.ComputeHash(data, offset, count)) ? Validity.Valid : Validity.Invalid;
             }
@@ -23,7 +23,7 @@ namespace LibHac
 
         public static byte[] ComputeSha256(byte[] data, int offset, int count)
         {
-            using (SHA256Cng sha = new SHA256Cng())
+            using (SHA256 sha = SHA256.Create())
             {
                 return sha.ComputeHash(data, offset, count);
             }
