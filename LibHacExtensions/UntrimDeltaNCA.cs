@@ -1,7 +1,8 @@
 ﻿using System.IO;
 using System.Linq;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 using nsZip.LibHacExtensions;
 
 namespace nsZip.LibHacControl
@@ -20,14 +21,14 @@ namespace nsZip.LibHacControl
 					false);
 				var DecryptedHeader = new byte[0xC00];
 				ncaStorage.Read(DecryptedHeader, 0, 0xC00, 0);
-				var Header = new NcaHeader(new BinaryReader(new MemoryStream(DecryptedHeader)), keyset);
+				var Header = new NcaHeader(keyset, new MemoryStorage(DecryptedHeader));
 
 				var fragmentTrimmed = false;
 				for (var i = 0; i < 4; ++i)
 				{
 					var section = NcaParseSection.ParseSection(Header, i);
 
-					if (section == null || section.Header.Type != SectionType.Pfs0)
+					if (section == null || section.Type != NcaFormatType.Pfs0)
 					{
 						continue;
 					}
@@ -54,12 +55,12 @@ namespace nsZip.LibHacControl
 						                   fragmentFile.Offset;
 						IStorage ncaStorageBeforeFragment = ncaStorage.Slice(0, offsetBefore, false);
 						IStorage fragmentStorageOverflow = ncaStorage.Slice(offsetBefore,
-							ncaStorage.Length - offsetBefore, false);
+							ncaStorage.GetSize() - offsetBefore, false);
 						ncaStorageBeforeFragment.CopyToStream(writer);
 						var TDV0len = RecreateDelta.Recreate(fragmentStorageOverflow, writer, newBaseFolderFs);
 						var offsetAfter = offsetBefore + TDV0len;
 						IStorage fragmentStorageAfter = ncaStorage.Slice(offsetAfter,
-							ncaStorage.Length - offsetAfter, false);
+							ncaStorage.GetSize() - offsetAfter, false);
 						fragmentStorageAfter.CopyToStream(writer);
 						writer.Position = 0x200;
 						writer.WriteByte(0x4E);

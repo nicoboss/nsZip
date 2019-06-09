@@ -2,7 +2,7 @@
 using System.IO;
 using System.IO.Compression;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using Zstandard.Net;
 
 namespace nsZip

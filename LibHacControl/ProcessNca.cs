@@ -1,7 +1,8 @@
 ﻿using System.IO;
 using System.Text;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 
 namespace nsZip.LibHacControl
 {
@@ -60,7 +61,7 @@ namespace nsZip.LibHacControl
 			}
 			else
 			{
-				LibHacControl.Print.PrintItem(sb, colLen, "Key Area Encryption Key:", nca.Header.KaekInd);
+				LibHacControl.Print.PrintItem(sb, colLen, "Key Area Encryption Key:", nca.Header.KeyAreaKeyIndex);
 				sb.AppendLine("Key Area (Encrypted):");
 				for (var i = 0; i < 4; i++)
 				{
@@ -90,7 +91,7 @@ namespace nsZip.LibHacControl
 						continue;
 					}
 
-					var isExefs = nca.Header.ContentType == ContentType.Program && i == (int) ProgramPartitionType.Code;
+					var isExefs = nca.Header.ContentType == ContentType.Program && i == (int) NcaFormatType.Code;
 
 					sb.AppendLine($"    Section {i}:");
 					LibHacControl.Print.PrintItem(sb, colLen, "        Offset:", $"0x{sect.Offset:x12}");
@@ -117,7 +118,8 @@ namespace nsZip.LibHacControl
 
 			void PrintSha256Hash(NcaSection sect)
 			{
-				var hashInfo = sect.Header.Sha256Info;
+				var hashInfo = sect.Header.
+					;
 
 				LibHacControl.Print.PrintItem(sb, colLen,
 					$"        Master Hash{sect.MasterHashValidity.GetValidityString()}:", hashInfo.MasterHash);

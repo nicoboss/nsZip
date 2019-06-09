@@ -1,10 +1,11 @@
 ﻿using LibHac;
+using LibHac.Fs.NcaUtils;
 
 namespace nsZip.LibHacExtensions
 {
 	public static class NcaParseSection
 	{
-		public static NcaSection ParseSection(NcaHeader Header, int index)
+		public static NcaFsHeader ParseSection(NcaHeader Header, int index)
 		{
 			var entry = Header.SectionEntries[index];
 			var header = Header.FsHeaders[index];
@@ -13,7 +14,7 @@ namespace nsZip.LibHacExtensions
 				return null;
 			}
 
-			var sect = new NcaSection();
+			var sect = new NcaFsHeader();
 
 			sect.SectionNum = index;
 			sect.Offset = Utils.MediaToReal(entry.MediaStartOffset);

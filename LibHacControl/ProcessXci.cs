@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using nsZip.LibHacExtensions;
 
 namespace nsZip.LibHacControl
@@ -27,7 +27,7 @@ namespace nsZip.LibHacControl
 
 				Out.Print(Print.PrintXci(xci));
 
-				var root = xci.RootPartition;
+				var root = xci.OpenPartition(XciPartitionType.Root);
 				if (root == null)
 				{
 					throw new InvalidDataException("Could not find root partition");
@@ -70,7 +70,7 @@ namespace nsZip.LibHacControl
 
 		public static void GetTitleKeys(Xci xci, Keyset keyset, Output Out)
 		{
-			var root = xci.RootPartition;
+			var root = xci.OpenPartition(XciPartitionType.Root);
 			if (root == null)
 			{
 				throw new InvalidDataException("Could not find root partition");

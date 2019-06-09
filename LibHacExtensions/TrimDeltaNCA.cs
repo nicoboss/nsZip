@@ -2,7 +2,8 @@
 using System.IO;
 using System.Linq;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 using nsZip.LibHacExtensions;
 
 namespace nsZip.LibHacControl
@@ -21,7 +22,7 @@ namespace nsZip.LibHacControl
 				return;
 			}
 
-			if (cnmtExtended.DeltaApplyInfos.Length == 0)
+			if (cnmtExtended.FragmentSets.Length == 0)
 			{
 				Out.Print(
 					"Info: Skiped fragemt trimming as no DeltaApplyInfos in the patch Cnmt were found!\r\n");
@@ -29,15 +30,15 @@ namespace nsZip.LibHacControl
 			}
 
 			var DeltaContentID = 0;
-			foreach (var deltaApplyInfo in cnmtExtended.DeltaApplyInfos)
+			foreach (var deltaApplyInfo in cnmtExtended.FragmentSets)
 			{
 				long offset = 0;
-				for (var deltaApplyInfoId = 0; deltaApplyInfoId < deltaApplyInfo.Field2C; ++deltaApplyInfoId)
+				for (var deltaApplyInfoId = 0; deltaApplyInfoId < deltaApplyInfo.FragmentCount; ++deltaApplyInfoId)
 				{
 					var matching = $"{Utils.BytesToString(deltaApplyInfo.NcaIdNew).ToLower()}.nca";
 					var length = new FileInfo(Path.Combine(folderPath, matching)).Length;
 					var hexLen = Math.Ceiling(Math.Log(length, 16.0));
-					if (deltaApplyInfo.Field2C > 1)
+					if (deltaApplyInfo.FragmentCount > 1)
 					{
 						matching += $":{offset.ToString($"X{hexLen}")}:{0.ToString($"X{hexLen}")}";
 					}
@@ -55,20 +56,21 @@ namespace nsZip.LibHacControl
 						false);
 					var DecryptedHeader = new byte[0xC00];
 					ncaStorage.Read(DecryptedHeader, 0, 0xC00, 0);
-					var Header = new NcaHeader(new BinaryReader(new MemoryStream(DecryptedHeader)), keyset);
+					var Header = new NcaHeader(keyset, new MemoryStorage(DecryptedHeader));
 
 					var fragmentTrimmed = false;
 					for (var sector = 0; sector < 4; ++sector)
 					{
 						var section = NcaParseSection.ParseSection(Header, sector);
 
-						if (section == null || section.Header.Type != SectionType.Pfs0)
+						if (section == null || section.Header.Type != NcaFormatType.Pfs0)
 						{
 							continue;
 						}
 
 						IStorage sectionStorage = ncaStorage.Slice(section.Offset, section.Size, false);
-						IStorage pfs0Storage = sectionStorage.Slice(section.Header.Sha256Info.DataOffset,
+						IStorage pfs0Storage = sectionStorage.Slice(section.Header.
+							.DataOffset,
 							section.Header.Sha256Info.DataSize, false);
 						var Pfs0Header = new PartitionFileSystemHeader(new BinaryReader(pfs0Storage.AsStream()));
 						var FileDict = Pfs0Header.Files.ToDictionary(x => x.Name, x => x);
@@ -101,7 +103,7 @@ namespace nsZip.LibHacControl
 							var offsetAfter = offsetBefore + fragmentFile.Size;
 							IStorage ncaStorageBeforeFragment = ncaStorage.Slice(0, offsetBefore, false);
 							IStorage ncaStorageAfterFragment =
-								ncaStorage.Slice(offsetAfter, ncaStorage.Length - offsetAfter, false);
+								ncaStorage.Slice(offsetAfter, ncaStorage.GetSize() - offsetAfter, false);
 							ncaStorageBeforeFragment.CopyToStream(writer);
 
 							offset += SaveDeltaHeader.Save(fragmentStorage, writer, matching);

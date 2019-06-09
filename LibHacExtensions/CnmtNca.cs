@@ -1,7 +1,8 @@
 ﻿using System.IO;
 using System.Linq;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 
 namespace nsZip.LibHacExtensions
 {
@@ -17,18 +18,20 @@ namespace nsZip.LibHacExtensions
 					false);
 				var DecryptedHeader = new byte[0xC00];
 				ncaStorage.Read(DecryptedHeader, 0, 0xC00, 0);
-				var Header = new NcaHeader(new BinaryReader(new MemoryStream(DecryptedHeader)), keyset);
+				var Header = new NcaHeader(keyset, new MemoryStorage(DecryptedHeader));
 
 				for (var i = 0; i < 4; ++i)
 				{
-					var section = NcaParseSection.ParseSection(Header, i);
-					if (section == null || section.Header.Type != SectionType.Pfs0)
+					var section = Header.GetFsHeader(i);
+					if (section.FormatType != NcaFormatType.Pfs0)
 					{
 						continue;
 					}
+					var sectOffset = Header.GetSectionStartOffset(i);
+					var sectSize = Header.GetSectionSize(i);
 
-					IStorage sectionStorage = ncaStorage.Slice(section.Offset, section.Size, false);
-					IStorage pfs0Storage = sectionStorage.Slice(section.Header.Sha256Info.DataOffset,
+					IStorage sectionStorage = ncaStorage.Slice(sectOffset, sectSize, false);
+					IStorage pfs0Storage = sectionStorage.Slice(Header..Sha256Info.DataOffset,
 						section.Header.Sha256Info.DataSize, false);
 					var Pfs0Header = new PartitionFileSystemHeader(new BinaryReader(pfs0Storage.AsStream()));
 					var FileDict = Pfs0Header.Files.ToDictionary(x => x.Name, x => x);

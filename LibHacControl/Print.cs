@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace nsZip.LibHacControl
 {
@@ -90,15 +90,15 @@ namespace nsZip.LibHacControl
 			PrintItem(sb, colLen, $"Header Signature{xci.Header.SignatureValidity.GetValidityString()}:",
 				xci.Header.Signature);
 			PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:",
-				xci.Header.PartitionFsHeaderHash);
+				xci.Header.RootPartitionHeaderHash);
 			PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.RomSize));
 			PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
 			PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
 
-			foreach (var partition in xci.Partitions.OrderBy(x => x.Offset))
-			{
-				PrintPartition(sb, colLen, partition);
-			}
+			//foreach (var partition in xci.Partitions.OrderBy(x => x.Offset))
+			//{
+			//	PrintPartition(sb, colLen, partition);
+			//}
 
 			return sb.ToString();
 		}
@@ -107,7 +107,7 @@ namespace nsZip.LibHacControl
 		{
 			const int fileNameLen = 57;
 
-			sb.AppendLine($"{GetDisplayName(partition.Name)} Partition:{partition.HashValidity.GetValidityString()}");
+			sb.AppendLine($"{GetDisplayName(partition.GetType().Name)} Partition:{partition.HashValidity.GetValidityString()}");
 			PrintItem(sb, colLen, "    Magic:", partition.Header.Magic);
 			PrintItem(sb, colLen, "    Offset:", $"{partition.Offset:x12}");
 			PrintItem(sb, colLen, "    Number of files:", partition.Files.Length);
@@ -121,7 +121,7 @@ namespace nsZip.LibHacControl
 					var label = i == 0 ? "    Files:" : "";
 					var offsets =
 						$"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
-					var data = $"{partition.Name}:/{file.Name}".PadRight(fileNameLen) + offsets;
+					var data = $"{partition.GetType().Name}:/{file.Name}".PadRight(fileNameLen) + offsets;
 
 					PrintItem(sb, colLen, label, data);
 				}

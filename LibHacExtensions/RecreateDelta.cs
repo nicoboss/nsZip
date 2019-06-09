@@ -4,7 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace nsZip.LibHacExtensions
 {
@@ -13,7 +13,7 @@ namespace nsZip.LibHacExtensions
 		public static long Recreate(IStorage fragmentMeta, FileStream writer, IFileSystem newBaseFolderFs)
 		{
 			var Segments = new List<DeltaFragmentSegment>();
-			if (fragmentMeta.Length < 0x40)
+			if (fragmentMeta.GetSize() < 0x40)
 			{
 				throw new InvalidDataException("Delta file is too small.");
 			}

@@ -4,7 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
+using LibHac.Fs.NcaUtils;
 using nsZip.Crypto;
 using nsZip.LibHacExtensions;
 using AesSubsectionEntry = nsZip.LibHacExtensions.AesSubsectionEntry;
@@ -49,62 +50,47 @@ namespace nsZip
 			var DecryptedHeader = new byte[0xC00];
 			Input.Read(DecryptedHeader, 0, 0xC00);
 
-			var Header = new NcaHeader(new BinaryReader(new MemoryStream(DecryptedHeader)), keyset);
-			var CryptoType = Math.Max(Header.CryptoType, Header.CryptoType2);
-			if (CryptoType > 0)
-			{
-				CryptoType--;
-			}
+			var Header = new NcaHeader(keyset, new MemoryStorage(DecryptedHeader));
 
-			var HasRightsId = !Header.RightsId.IsEmpty();
-
-			if (!HasRightsId)
+			if (!Header.HasRightsId)
 			{
 				Out.Print("Key Area (Encrypted):\r\n");
-				if (keyset.KeyAreaKeys[CryptoType][Header.KaekInd].IsEmpty())
+				if (keyset.KeyAreaKeys[Header.KeyGeneration][Header.KeyAreaKeyIndex].IsEmpty())
 				{
-					throw new ArgumentException($"key_area_key_{KakNames[Header.KaekInd]}_{CryptoType:x2}",
+					throw new ArgumentException($"key_area_key_{KakNames[Header.KeyAreaKeyIndex]}_{Header.KeyGeneration:x2}",
 						"Missing area key!");
 				}
 
 				Out.Print(
-					$"key_area_key_{KakNames[Header.KaekInd]}_{CryptoType:x2}: {Utils.BytesToString(keyset.KeyAreaKeys[CryptoType][Header.KaekInd])}\r\n");
+					$"key_area_key_{KakNames[Header.KeyAreaKeyIndex]}_{Header.KeyGeneration:x2}: {Utils.BytesToString(keyset.KeyAreaKeys[Header.KeyGeneration][Header.KeyAreaKeyIndex])}\r\n");
 				for (var i = 0; i < 4; ++i)
 				{
-					LibHac.Crypto.DecryptEcb(keyset.KeyAreaKeys[CryptoType][Header.KaekInd], Header.EncryptedKeys[i],
+					LibHac.Crypto.DecryptEcb(keyset.KeyAreaKeys[Header.KeyGeneration][Header.KeyAreaKeyIndex], Header.GetEncryptedKey(i).ToArray(),
 						DecryptedKeys[i], 0x10);
-					Out.Print($"Key {i} (Encrypted): {Utils.BytesToString(Header.EncryptedKeys[i])}\r\n");
+					Out.Print($"Key {i} (Encrypted): {Utils.BytesToString(Header.GetEncryptedKey(i).ToArray())}\r\n");
 					Out.Print($"Key {i} (Decrypted): {Utils.BytesToString(DecryptedKeys[i])}\r\n");
 				}
 			}
 			else
 			{
-				var titleKey = keyset.TitleKeys[Header.RightsId];
+				var titleKey = keyset.TitleKeys[Header.RightsId.ToArray()];
 				var TitleKeyDec = new byte[0x10];
-				LibHac.Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
+				LibHac.Crypto.DecryptEcb(keyset.TitleKeks[Header.KeyGeneration], titleKey, TitleKeyDec, 0x10);
 				Out.Print($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
 				Out.Print($"TitleKeyDec: {Utils.BytesToString(TitleKeyDec)}\r\n");
 				DecryptedKeys[2] = TitleKeyDec;
 			}
 
-			var Sections = new NcaSection[4];
 			var SectionsByOffset = new Dictionary<long, int>();
 			var lowestOffset = long.MaxValue;
 			for (var i = 0; i < 4; ++i)
 			{
-				var section = NcaParseSection.ParseSection(Header, i);
-				if (section == null)
+				var offset = Header.GetSectionStartOffset(i);
+				SectionsByOffset.Add(offset, i);
+				if (offset < lowestOffset)
 				{
-					continue;
+					lowestOffset = offset;
 				}
-
-				SectionsByOffset.Add(section.Offset, i);
-				if (section.Offset < lowestOffset)
-				{
-					lowestOffset = section.Offset;
-				}
-
-				Sections[i] = section;
 			}
 
 			Out.Print($"HeaderKey: {Utils.BytesToString(keyset.HeaderKey)}\r\n");
@@ -154,33 +140,25 @@ namespace nsZip
 			Out.Print("Sections:\r\n");
 			foreach (var i in SectionsByOffset.OrderBy(i => i.Key).Select(item => item.Value))
 			{
-				var sect = Sections[i];
-				if (sect == null)
-				{
-					continue;
-				}
+				var sect = Header.GetFsHeader(i);
+				var sectOffset = Header.GetSectionStartOffset(i);
+				var sectSize = Header.GetSectionSize(i);
 
-				var isExefs = Header.ContentType == ContentType.Program && i == (int)ProgramPartitionType.Code;
-				var PartitionType = isExefs ? "ExeFS" : sect.Type.ToString();
+				var isExefs = Header.ContentType == ContentType.Program && i == (int)NcaFormatType.Romfs;
+				var PartitionType = isExefs ? "ExeFS" : sect.FormatType.ToString();
 				Out.Print($"    Section {i}:\r\n");
-				Out.Print($"        Offset: 0x{sect.Offset:x12}\r\n");
-				Out.Print($"        Size: 0x{sect.Size:x12}\r\n");
+				Out.Print($"        Offset: 0x{sectOffset:x12}\r\n");
+				Out.Print($"        Size: 0x{sectSize:x12}\r\n");
 				Out.Print($"        Partition Type: {PartitionType}\r\n");
-				Out.Print($"        Section CTR: {Utils.BytesToString(sect.Header.Ctr)}\r\n");
+				Out.Print($"        Section CTR: {sect.Counter}\r\n");
+
 				var initialCounter = new byte[0x10];
+				SetCtrOffset(initialCounter, sect.Counter);
 
-
-				if (sect.Header.Ctr != null)
+				if (Input.Position != sectOffset)
 				{
-					Array.Copy(sect.Header.Ctr, initialCounter, 8);
-				}
-
-				Out.Print($"initialCounter: {Utils.BytesToString(initialCounter)}\r\n");
-
-				if (Input.Position != sect.Offset)
-				{
-					//Input.Seek(sect.Offset, SeekOrigin.Begin);
-					//Output.Seek(sect.Offset, SeekOrigin.Begin);
+					//Input.Seek(sectOffset, SeekOrigin.Begin);
+					//Output.Seek(sectOffset, SeekOrigin.Begin);
 					//Todo: sha256NCA Gap support
 					throw new NotImplementedException("Gaps between NCA sections aren't implemented yet!");
 				}
@@ -188,9 +166,9 @@ namespace nsZip
 				const int maxBS = 10485760; //10 MB
 				int bs;
 				var DecryptedSectionBlock = new byte[maxBS];
-				var sectOffsetEnd = sect.Offset + sect.Size;
+				var sectOffsetEnd = sectOffset + sectSize;
 				var AesCtrEncrypter = new Aes128CtrTransform(DecryptedKeys[2], initialCounter);
-				switch (sect.Header.EncryptionType)
+				switch (sect.EncryptionType)
 				{
 					case NcaEncryptionType.None:
 						while (Input.Position < sectOffsetEnd)
@@ -214,7 +192,7 @@ namespace nsZip
 
 						while (Input.Position < sectOffsetEnd)
 						{
-							SetCtrOffset(initialCounter, Input.Position);
+							SetCtrOffset(initialCounter, (ulong)Input.Position);
 							bs = (int)Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
@@ -234,10 +212,10 @@ namespace nsZip
 
 						break;
 					case NcaEncryptionType.AesCtrEx:
-						var info = sect.Header.BktrInfo;
+						var info = sect.GetPatchInfo();
 						var MyBucketTree = new MyBucketTree<AesSubsectionEntry>(
-							new MemoryStream(sect.Header.BktrInfo.EncryptionHeader.Header), Input,
-							sect.Offset + info.EncryptionHeader.Offset);
+							new MemoryStream(info.EncryptionTreeHeader.ToArray()), Input,
+							sectOffset + info.EncryptionTreeOffset);
 						var SubsectionEntries = MyBucketTree.GetEntryList();
 						var SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
 
@@ -246,13 +224,13 @@ namespace nsZip
 						foreach (var entry in SubsectionEntries)
 						{
 							//Array.Copy(initialCounter, subsectionEntryCounter, 0x10);
-							SetCtrOffset(subsectionEntryCounter, Input.Position);
+							SetCtrOffset(subsectionEntryCounter, (ulong)Input.Position);
 							subsectionEntryCounter[7] = (byte)entry.Counter;
 							subsectionEntryCounter[6] = (byte)(entry.Counter >> 8);
 							subsectionEntryCounter[5] = (byte)(entry.Counter >> 16);
 							subsectionEntryCounter[4] = (byte)(entry.Counter >> 24);
 
-							//bs = (int)Math.Min((sect.Offset + entry.OffsetEnd) - Input.Position, maxBS);
+							//bs = (int)Math.Min((sectOffset + entry.OffsetEnd) - Input.Position, maxBS);
 							bs = (int)(entry.OffsetEnd - entry.Offset);
 							var DecryptedSectionBlockLUL = new byte[bs];
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
@@ -273,7 +251,7 @@ namespace nsZip
 
 						while (Input.Position < sectOffsetEnd)
 						{
-							SetCtrOffset(subsectionEntryCounter, Input.Position);
+							SetCtrOffset(subsectionEntryCounter, (ulong)Input.Position);
 							bs = (int)Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							Out.Print($"EncryptedAfter: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
@@ -313,7 +291,7 @@ namespace nsZip
 			}
 		}
 
-		private static void SetCtrOffset(byte[] ctr, long offset)
+		private static void SetCtrOffset(byte[] ctr, ulong offset)
 		{
 			ctr[0xF] = (byte) (offset >> 4);
 			ctr[0xE] = (byte) (offset >> 12);

@@ -9,7 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Navigation;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
 using nsZip.Properties;
