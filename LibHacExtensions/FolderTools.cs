@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using LibHac;
 
@@ -11,22 +12,30 @@ namespace nsZip.LibHacExtensions
 			var newNSP = new Pfs0Builder();
 			var dirEncrypted = new DirectoryInfo(inFolder);
 			var fileStreamList = new List<FileStream>();
-			foreach (var file in dirEncrypted.GetFiles())
+			FileStream outfile = null;
+
+			try
 			{
-				var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read);
-				fileStreamList.Add(fs);
-				newNSP.AddFile(file.Name, fs);
+				foreach (var file in dirEncrypted.GetFiles())
+				{
+					var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read);
+					fileStreamList.Add(fs);
+					newNSP.AddFile(file.Name, fs);
+				}
+
+				outfile = new FileStream(nspFile, FileMode.Create, FileAccess.Write);
+				newNSP.Build(outfile);
+			}
+			finally
+			{
+				foreach (var fs in fileStreamList)
+				{
+					fs.Dispose();
+				}
+
+				outfile?.Dispose();
 			}
 
-			var outfile = new FileStream(nspFile, FileMode.Create, FileAccess.Write);
-			newNSP.Build(outfile);
-
-			foreach (var fs in fileStreamList)
-			{
-				fs.Dispose();
-			}
-
-			outfile.Dispose();
 		}
 
 		public static void ExtractTitlekeys(string inFolder, Keyset keyset, Output Out)
