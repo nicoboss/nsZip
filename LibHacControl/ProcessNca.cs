@@ -12,22 +12,22 @@ namespace nsZip.LibHacControl
 			using (var file = new StreamStorage(inFile.AsStream(), false))
 			{
 				var nca = new Nca(keyset, file, false);
-				Out.Print(nca.Print());
+				Out.Log(nca.Print());
 				if (verifyBeforeDecrypting)
 				{
-					Out.Print($"ValidateMasterHashes...\r\n");
+					Out.Log($"ValidateMasterHashes...\r\n");
 					nca.ValidateMasterHashes();
 					//nca.ParseNpdm();
 					for (var i = 0; i < 3; ++i)
 					{
 						if (nca.Sections[i] != null)
 						{
-							Out.Print($"VerifySection {i}...\r\n");
+							Out.Log($"VerifySection {i}...\r\n");
 							nca.VerifySection(i);
 						}
 					}
 				}
-				Out.Print($"Decripting...\r\n");
+				Out.Log($"Decripting...\r\n");
 				nca.OpenDecryptedNca().CopyToStream(outFile.AsStream());
 			}
 		}

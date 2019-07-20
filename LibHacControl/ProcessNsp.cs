@@ -15,7 +15,7 @@ namespace nsZip.LibHacControl
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
 				var pfs = new PartitionFileSystem(file.AsStorage());
-				Out.Print(pfs.Print());
+				Out.Log(pfs.Print());
 				pfs.Extract(outDirPath);
 			}
 		}
@@ -25,14 +25,14 @@ namespace nsZip.LibHacControl
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
 				var pfs = new PartitionFileSystem(file.AsStorage());
-				Out.Print(pfs.Print());
+				Out.Log(pfs.Print());
 				DecompressFs.ProcessFs(pfs, outDirPath, Out);				
 			}
 		}
 
 		public static void Decrypt(PartitionFileSystem pfs, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
-			Out.Print(pfs.Print());
+			Out.Log(pfs.Print());
 			ProcessNsp.GetTitlekey(pfs, keyset, Out);
 			var OutDirFs = new LocalFileSystem(outDirPath);
 			IDirectory sourceRoot = pfs.OpenDirectory("/", OpenDirectoryMode.All);

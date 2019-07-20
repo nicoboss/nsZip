@@ -12,7 +12,7 @@ namespace nsZip.LibHacExtensions
 			var dirDecrypted = new DirectoryInfo(folderPath);
 			foreach (var inFile in dirDecrypted.GetFiles("*.cnmt.nca"))
 			{
-				Out.Print($"{inFile}\r\n");
+				Out.Log($"{inFile}\r\n");
 				var ncaStorage = new StreamStorage(new FileStream(inFile.FullName, FileMode.Open, FileAccess.Read),
 					false);
 				var DecryptedHeader = new byte[0xC00];

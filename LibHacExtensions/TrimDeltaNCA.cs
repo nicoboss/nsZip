@@ -16,15 +16,15 @@ namespace nsZip.LibHacControl
 			var cnmtExtended = CnmtNca.GetCnmtExtended(folderPath, keyset, Out);
 			if (cnmtExtended == null)
 			{
-				Out.Print(
-					"Info: Skiped fragemt trimming as no patch Cnmt was found!\r\n=> probably no dlc/update over v65536\r\n");
+				Out.Log(
+					"[Info] Skiped fragemt trimming as no patch Cnmt was found\r\n");
 				return;
 			}
 
 			if (cnmtExtended.DeltaApplyInfos.Length == 0)
 			{
-				Out.Print(
-					"Info: Skiped fragemt trimming as no DeltaApplyInfos in the patch Cnmt were found!\r\n");
+				Out.Log(
+					"[Info] Skiped fragemt trimming as no DeltaApplyInfos in the patch Cnmt were found\r\n");
 				return;
 			}
 
@@ -47,10 +47,10 @@ namespace nsZip.LibHacControl
 					var ncaFileName = Path.Combine(folderPath, $"{lowerNcaID}.nca");
 					if (!File.Exists(ncaFileName))
 					{
-						Out.Print($"[WARN] File: {ncaFileName} not found!\r\n");
+						Out.Warn($"[WARN] File: {ncaFileName} not found!\r\n");
 						break;
 					}
-					Out.Print($"{ncaFileName}\r\n");
+					Out.Log($"{ncaFileName}\r\n");
 					var ncaStorage = new StreamStorage(new FileStream(ncaFileName, FileMode.Open, FileAccess.Read),
 						false);
 					var DecryptedHeader = new byte[0xC00];
@@ -118,7 +118,7 @@ namespace nsZip.LibHacControl
 					++DeltaContentID;
 				}
 
-				Out.Print("----------\r\n");
+				Out.Log("----------\r\n");
 			}
 		}
 	}

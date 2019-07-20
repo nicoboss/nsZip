@@ -25,7 +25,7 @@ namespace nsZip.LibHacControl
 				inputFile.Read(xciHeaderData, 0, 0x400);
 				outputFile.Write(xciHeaderData, 0, 0x400);
 
-				Out.Print(Print.PrintXci(xci));
+				Out.Log(Print.PrintXci(xci));
 
 				var root = xci.RootPartition;
 				if (root == null)

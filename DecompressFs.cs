@@ -60,7 +60,7 @@ namespace nsZip
 			Util.XorArrays(nsZipMagicEncrypted, nsZipMagicRandomKey);
 			if (!Util.ArraysEqual(nsZipMagicEncrypted, nsZipMagic))
 			{
-				Out.Print($"Invalid magic: Skipping {inputFileEntry.Name}\r\n");
+				Out.Warn($"Invalid magic: Skipping {inputFileEntry.Name}\r\n");
 				return;
 			}
 

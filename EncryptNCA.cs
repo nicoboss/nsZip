@@ -18,12 +18,12 @@ namespace nsZip
 		public static void Encrypt(string ncaPath, string outDir, bool writeEncrypted, bool verifyEncrypted, Keyset keyset,
 			Output Out)
 		{
-			Out.Print($"Input: {Path.GetFileName(ncaPath)}\r\n");
+			Out.Log($"Input: {Path.GetFileName(ncaPath)}\r\n");
 			using (FileStream Input = File.Open(ncaPath, FileMode.Open))
 			{
 				if (writeEncrypted)
 				{
-					Out.Print("Opened NCA for writing...\r\n");
+					Out.Log("Opened NCA for writing...\r\n");
 					using (Stream Output = File.Open(Path.Combine(outDir, Path.GetFileName(ncaPath)), FileMode.Create))
 					{
 						EncryptFunct(Input, Output, ncaPath, verifyEncrypted, keyset, Out);
@@ -60,21 +60,21 @@ namespace nsZip
 
 			if (!HasRightsId)
 			{
-				Out.Print("Key Area (Encrypted):\r\n");
+				Out.Log("Key Area (Encrypted):\r\n");
 				if (keyset.KeyAreaKeys[CryptoType][Header.KaekInd].IsEmpty())
 				{
 					throw new ArgumentException($"key_area_key_{KakNames[Header.KaekInd]}_{CryptoType:x2}",
 						"Missing area key!");
 				}
 
-				Out.Print(
+				Out.Log(
 					$"key_area_key_{KakNames[Header.KaekInd]}_{CryptoType:x2}: {Utils.BytesToString(keyset.KeyAreaKeys[CryptoType][Header.KaekInd])}\r\n");
 				for (var i = 0; i < 4; ++i)
 				{
 					LibHac.Crypto.DecryptEcb(keyset.KeyAreaKeys[CryptoType][Header.KaekInd], Header.EncryptedKeys[i],
 						DecryptedKeys[i], 0x10);
-					Out.Print($"Key {i} (Encrypted): {Utils.BytesToString(Header.EncryptedKeys[i])}\r\n");
-					Out.Print($"Key {i} (Decrypted): {Utils.BytesToString(DecryptedKeys[i])}\r\n");
+					Out.Log($"Key {i} (Encrypted): {Utils.BytesToString(Header.EncryptedKeys[i])}\r\n");
+					Out.Log($"Key {i} (Decrypted): {Utils.BytesToString(DecryptedKeys[i])}\r\n");
 				}
 			}
 			else
@@ -82,8 +82,8 @@ namespace nsZip
 				var titleKey = keyset.TitleKeys[Header.RightsId];
 				var TitleKeyDec = new byte[0x10];
 				LibHac.Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
-				Out.Print($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
-				Out.Print($"TitleKeyDec: {Utils.BytesToString(TitleKeyDec)}\r\n");
+				Out.Log($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
+				Out.Log($"TitleKeyDec: {Utils.BytesToString(TitleKeyDec)}\r\n");
 				DecryptedKeys[2] = TitleKeyDec;
 			}
 
@@ -107,8 +107,8 @@ namespace nsZip
 				Sections[i] = section;
 			}
 
-			Out.Print($"HeaderKey: {Utils.BytesToString(keyset.HeaderKey)}\r\n");
-			Out.Print("Encrypting and writing header to NCA...\r\n");
+			Out.Log($"HeaderKey: {Utils.BytesToString(keyset.HeaderKey)}\r\n");
+			Out.Log("Encrypting and writing header to NCA...\r\n");
 			SHA256Cng sha256NCA = null;
 			if (verifyEncrypted)
 			{
@@ -150,8 +150,8 @@ namespace nsZip
 				dummyHeaderSector += 6;
 			}
 
-			Out.Print("Encrypting and writing sectors to NCA...\r\n");
-			Out.Print("Sections:\r\n");
+			Out.Log("Encrypting and writing sectors to NCA...\r\n");
+			Out.Log("Sections:\r\n");
 			foreach (var i in SectionsByOffset.OrderBy(i => i.Key).Select(item => item.Value))
 			{
 				var sect = Sections[i];
@@ -162,11 +162,11 @@ namespace nsZip
 
 				var isExefs = Header.ContentType == ContentType.Program && i == (int)ProgramPartitionType.Code;
 				var PartitionType = isExefs ? "ExeFS" : sect.Type.ToString();
-				Out.Print($"    Section {i}:\r\n");
-				Out.Print($"        Offset: 0x{sect.Offset:x12}\r\n");
-				Out.Print($"        Size: 0x{sect.Size:x12}\r\n");
-				Out.Print($"        Partition Type: {PartitionType}\r\n");
-				Out.Print($"        Section CTR: {Utils.BytesToString(sect.Header.Ctr)}\r\n");
+				Out.Log($"    Section {i}:\r\n");
+				Out.Log($"        Offset: 0x{sect.Offset:x12}\r\n");
+				Out.Log($"        Size: 0x{sect.Size:x12}\r\n");
+				Out.Log($"        Partition Type: {PartitionType}\r\n");
+				Out.Log($"        Section CTR: {Utils.BytesToString(sect.Header.Ctr)}\r\n");
 				var initialCounter = new byte[0x10];
 
 
@@ -175,7 +175,7 @@ namespace nsZip
 					Array.Copy(sect.Header.Ctr, initialCounter, 8);
 				}
 
-				Out.Print($"initialCounter: {Utils.BytesToString(initialCounter)}\r\n");
+				Out.Log($"initialCounter: {Utils.BytesToString(initialCounter)}\r\n");
 
 				if (Input.Position != sect.Offset)
 				{
@@ -256,7 +256,7 @@ namespace nsZip
 							bs = (int)(entry.OffsetEnd - entry.Offset);
 							var DecryptedSectionBlockLUL = new byte[bs];
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
-							Out.Print($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
+							Out.Log($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
 							Input.Read(DecryptedSectionBlockLUL, 0, bs);
 							AesCtrEncrypter.Counter = subsectionEntryCounter;
 							AesCtrEncrypter.TransformBlock(DecryptedSectionBlockLUL);
@@ -277,7 +277,7 @@ namespace nsZip
 							bs = (int)Math.Min(sectOffsetEnd - Input.Position, maxBS);
 							Out.Print($"EncryptedAfter: {Input.Position / 0x100000} MB\r\n");
 							Input.Read(DecryptedSectionBlock, 0, bs);
-							Out.Print($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
+							Out.Log($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
 							AesCtrEncrypter.Counter = subsectionEntryCounter;
 							AesCtrEncrypter.TransformBlock(DecryptedSectionBlock);
 							if (Output != null)
@@ -304,7 +304,7 @@ namespace nsZip
 				var sha256NCAHashString = Utils.BytesToString(sha256NCA.Hash).ToLower();
 				if (sha256NCAHashString.StartsWith(Path.GetFileName(ncaPath).Split('.')[0].ToLower()))
 				{
-					Out.Print($"[VERIFIED] {sha256NCAHashString}\r\n");
+					Out.Log($"[VERIFIED] {sha256NCAHashString}\r\n");
 				}
 				else
 				{

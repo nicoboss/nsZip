@@ -47,25 +47,25 @@ namespace nsZip
 
 			if (infileLowerCase.EndsWith("nsp") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.nspz"))
 			{
-				Out.Print($"Task CompressNSP \"{inFileNoExtension}.nspz\" skipped as it already exists in the output directory\r\n");
+				Out.Event($"Task CompressNSP \"{inFileNoExtension}.nspz\" skipped as it already exists in the output directory\r\n");
 				return true;
 			}
 
 			if (infileLowerCase.EndsWith("xci") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.xciz"))
 			{
-				Out.Print($"Task CompressXCI \"{inFileNoExtension}.xciz\" skipped as it already exists in the output directory\r\n");
+				Out.Event($"Task CompressXCI \"{inFileNoExtension}.xciz\" skipped as it already exists in the output directory\r\n");
 				return true;
 			}
 
 			if (infileLowerCase.EndsWith("nspz") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.nsp"))
 			{
-				Out.Print($"Task DecompressNSPZ \"{inFileNoExtension}.nsp\" skipped as it already exists in the output directory\r\n");
+				Out.Event($"Task DecompressNSPZ \"{inFileNoExtension}.nsp\" skipped as it already exists in the output directory\r\n");
 				return true;
 			}
 
 			if (infileLowerCase.EndsWith("xciz") && File.Exists($"{Path.Combine(OutputFolderPath, inFileNoExtension)}.xci"))
 			{
-				Out.Print($"Task DecompressXCIZ \"{inFileNoExtension}.xci\" skipped as it already exists in the output directory\r\n");
+				Out.Event($"Task DecompressXCIZ \"{inFileNoExtension}.xci\" skipped as it already exists in the output directory\r\n");
 				return true;
 			}
 
@@ -93,7 +93,7 @@ namespace nsZip
 		public void CompressNSP(string nspFile)
 		{
 			var nspFileNoExtension = Path.GetFileNameWithoutExtension(nspFile);
-			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
+			Out.Event($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
 			using (var inputFile = new FileStream(nspFile, FileMode.Open, FileAccess.Read))
 			{
@@ -126,13 +126,13 @@ namespace nsZip
 			}
 			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
 			FolderTools.FolderToNSP(compressedDir, $"{nspzOutPath}.nspz");
-			Out.Print($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
+			Out.Event($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
 		}
 
 		public void CompressXCI(string xciFile)
 		{
 			var xciFileNoExtension = Path.GetFileNameWithoutExtension(xciFile);
-			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
+			Out.Event($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
 			ProcessXci.Decrypt(xciFile, decryptedDir, VerifyHashes, keyset, Out);
 			CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);
@@ -160,19 +160,19 @@ namespace nsZip
 
 			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
 			FolderTools.FolderToNSP(compressedDir, $"{xciOutPath}.xciz");
-			Out.Print($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
+			Out.Event($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
 		}
 
 		public void DecompressNSPZ(string nspzFile)
 		{
 			var nspzFileNoExtension = Path.GetFileNameWithoutExtension(nspzFile);
-			Out.Print($"Task DecompressNSPZ \"{nspzFileNoExtension}\" started\r\n");
+			Out.Event($"Task DecompressNSPZ \"{nspzFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
 			ProcessNsp.Decompress(nspzFile, decryptedDir, Out);
 			UntrimAndEncrypt(keyset);
 			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
 			FolderTools.FolderToNSP(encryptedDir, $"{nspOutPath}.nsp");
-			Out.Print($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
+			Out.Event($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
 		}
 
 		public void UntrimAndEncrypt(Keyset keyset)

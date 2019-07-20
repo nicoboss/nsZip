@@ -23,7 +23,7 @@ namespace nsZip
 			}
 
 			keyset.TitleKeys[rightsId] = titleKey;
-			Out.Print($"titleKey: {Utils.BytesToString(rightsId)},{Utils.BytesToString(titleKey)}\r\n");
+			Out.Log($"titleKey: {Utils.BytesToString(rightsId)},{Utils.BytesToString(titleKey)}\r\n");
 		}
 	}
 }

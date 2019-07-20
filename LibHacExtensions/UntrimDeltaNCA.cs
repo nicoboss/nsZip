@@ -15,7 +15,7 @@ namespace nsZip.LibHacControl
 			var dirDecrypted = new DirectoryInfo(folderPath);
 			foreach (var inFile in dirDecrypted.GetFiles("*.tca"))
 			{
-				Out.Print($"{inFile}\r\n");
+				Out.Log($"{inFile}\r\n");
 				var ncaStorage = new StreamStorage(new FileStream(inFile.FullName, FileMode.Open, FileAccess.Read),
 					false);
 				var DecryptedHeader = new byte[0xC00];
@@ -34,7 +34,7 @@ namespace nsZip.LibHacControl
 
 					if (fragmentTrimmed)
 					{
-						Out.Print(
+						Out.Log(
 							"Warning: Multiple fragments in NCA found! Skip trimming this fragment.\r\n");
 						continue;
 					}

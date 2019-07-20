@@ -55,8 +55,8 @@ namespace nsZip
 						}
 						catch (Exception ex)
 						{
-							Out.Print(ex.StackTrace);
-							Out.Print(ex.Message + "\r\n");
+							Out.Log(ex.StackTrace);
+							Out.Log(ex.Message + "\r\n");
 						}
 						finally
 						{

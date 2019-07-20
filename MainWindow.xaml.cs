@@ -113,10 +113,10 @@ namespace nsZip
 			}
 			catch (Exception ex)
 			{
-				Out.Print("LICENSE file not found!\r\n");
+				Out.Log("LICENSE file not found!\r\n");
 			}
 
-			Out.Print("nsZip initialized\r\n");
+			Out.Log("nsZip initialized\r\n");
 		}
 
 		private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
@@ -155,7 +155,7 @@ namespace nsZip
 		{
 			if (TaskQueue.Items.Count == 0)
 			{
-				Out.Print("Nothing to do - TaskQueue empty! Please add an NSP or NSPZ!\r\n");
+				Out.Log("Nothing to do - TaskQueue empty! Please add an NSP or NSPZ!\r\n");
 				return;
 			}
 
@@ -216,8 +216,8 @@ namespace nsZip
 					}
 					catch (Exception ex)
 					{
-						Out.Print(ex.StackTrace + "\r\n");
-						Out.Print(ex.Message + "\r\n\r\n");
+						Out.Error(ex.StackTrace + "\r\n");
+						Out.Error(ex.Message + "\r\n\r\n");
 					}
 					finally
 					{
@@ -230,8 +230,8 @@ namespace nsZip
 			}
 			catch (Exception ex)
 			{
-				Out.Print(ex.StackTrace + "\r\n");
-				Out.Print(ex.Message);
+				Out.Log(ex.StackTrace + "\r\n");
+				Out.Log(ex.Message);
 				throw ex;
 			}
 			finally
@@ -245,12 +245,12 @@ namespace nsZip
 				switch (StandByWhenTaskDone)
 				{
 					case TaskDonePowerState.Suspend:
-						Out.Print("Activate standby mode...\r\n");
+						Out.Log("Activate standby mode...\r\n");
 						Thread.Sleep(1000);
 						System.Windows.Forms.Application.SetSuspendState(PowerState.Suspend, false, false);
 						break;
 					case TaskDonePowerState.Hibernate:
-						Out.Print("Activate hibernate mode...\r\n");
+						Out.Log("Activate hibernate mode...\r\n");
 						Thread.Sleep(1000);
 						System.Windows.Forms.Application.SetSuspendState(PowerState.Hibernate, false, false);
 						break;
@@ -263,7 +263,7 @@ namespace nsZip
 			VerifyHashes = VerificationComboBox.SelectedIndex != 1;
 			Settings.Default.Verification = VerifyHashes;
 			Settings.Default.Save();
-			Out.Print($"Set VerifyHashes to {VerifyHashes}\r\n");
+			Out.Log($"Set VerifyHashes to {VerifyHashes}\r\n");
 		}
 
 		private void CheckForUpdatesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -271,7 +271,7 @@ namespace nsZip
 			CheckForUpdates = CheckForUpdatesComboBox.SelectedIndex != 1;
 			Settings.Default.CheckForUpdates = CheckForUpdates;
 			Settings.Default.Save();
-			Out.Print($"Set CheckForUpdates to {CheckForUpdates}\r\n");
+			Out.Log($"Set CheckForUpdates to {CheckForUpdates}\r\n");
 		}
 
 		private void CompressionLevelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -279,7 +279,7 @@ namespace nsZip
 			ZstdLevel = (int) ((ComboBoxItem) CompressionLevelComboBox.SelectedItem).Tag;
 			Settings.Default.CompressionLevel = ZstdLevel;
 			Settings.Default.Save();
-			Out.Print($"Set ZstdLevel to {ZstdLevel}\r\n");
+			Out.Log($"Set ZstdLevel to {ZstdLevel}\r\n");
 		}
 
 		private void BlockSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -287,7 +287,7 @@ namespace nsZip
 			BlockSize = (int) ((ComboBoxItem) BlockSizeComboBox.SelectedItem).Tag;
 			Settings.Default.BlockSize = BlockSize;
 			Settings.Default.Save();
-			Out.Print($"Set BlockSize to {BlockSize} bytes\r\n");
+			Out.Log($"Set BlockSize to {BlockSize} bytes\r\n");
 		}
 
 		private void OutputFolderTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -295,7 +295,7 @@ namespace nsZip
 			OutputFolderPath = OutputFolderTextBox.Text;
 			Settings.Default.OutputFolder = OutputFolderPath;
 			Settings.Default.Save();
-			Out.Print($"Set OutputFolderPath to {OutputFolderPath}\r\n");
+			Out.Log($"Set OutputFolderPath to {OutputFolderPath}\r\n");
 		}
 
 		private void OutputFolderButton_Click(object sender, RoutedEventArgs e)
@@ -313,7 +313,7 @@ namespace nsZip
 			TempFolderPath = TempFolderTextBox.Text;
 			Settings.Default.TempFolder = TempFolderPath;
 			Settings.Default.Save();
-			Out.Print($"Set TempFolderPath to {TempFolderPath}\r\n");
+			Out.Log($"Set TempFolderPath to {TempFolderPath}\r\n");
 		}
 
 		private void TempFolderButton_Click(object sender, RoutedEventArgs e)
@@ -331,7 +331,7 @@ namespace nsZip
 			KeepTempFilesAfterTask = KeepTempFilesAfterTaskComboBox.SelectedIndex != 1;
 			Settings.Default.KeepTempFiles = KeepTempFilesAfterTask;
 			Settings.Default.Save();
-			Out.Print($"Set KeepTempFilesAfterTask to {KeepTempFilesAfterTask}\r\n");
+			Out.Log($"Set KeepTempFilesAfterTask to {KeepTempFilesAfterTask}\r\n");
 		}
 
 		private void StandByWhenTaskDoneComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -351,7 +351,7 @@ namespace nsZip
 
 			Settings.Default.StandbyWhenDone = StandByWhenTaskDoneComboBox.SelectedIndex;
 			Settings.Default.Save();
-			Out.Print($"Set StandByWhenTaskDone to {StandByWhenTaskDone}\r\n");
+			Out.Log($"Set StandByWhenTaskDone to {StandByWhenTaskDone}\r\n");
 		}
 
 		private void SelectInputFilesButton_Click(object sender, RoutedEventArgs e)
@@ -379,7 +379,7 @@ namespace nsZip
 		{
 			if (ToolsTaskQueue.Items.Count == 0)
 			{
-				Out.Print("Nothing to do - ToolsTaskQueue empty! Please select any input file first!\r\n");
+				Out.Log("Nothing to do - ToolsTaskQueue empty! Please select any input file first!\r\n");
 				return;
 			}
 
@@ -397,10 +397,12 @@ namespace nsZip
 				{
 					var inFile = (string)ToolsTaskQueue.Items[0];
 
+					var ToolsTaskText = "ToolsTask \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...";
+					Out.Event($"{ToolsTaskText}\r\n");
 					Dispatcher.Invoke(() =>
 					{
 						BusyTextBlock.Text =
-							$"ToolsTask \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...\r\nThis might take quite some time.\r\n" +
+							$"{ToolsTaskText}\r\nThis might take quite some time.\r\n" +
 							$"Please take a look at the console window for more information.";
 						ToolsTaskQueue.Items.RemoveAt(0);
 					});
@@ -411,8 +413,8 @@ namespace nsZip
 			}
 			catch (Exception ex)
 			{
-				Out.Print(ex.StackTrace + "\r\n");
-				Out.Print(ex.Message);
+				Out.Log(ex.StackTrace + "\r\n");
+				Out.Log(ex.Message);
 				throw ex;
 			}
 			finally
@@ -424,13 +426,13 @@ namespace nsZip
 				});
 			}
 
-			Out.Print("titlekeys.txt\r\n");
+			Out.Log("titlekeys.txt\r\n");
 			foreach (var entry in extractedTitleKeys.TitleKeys)
 			{
-				Out.Print($"{Utils.BytesToString(entry.Key)},{Utils.BytesToString(entry.Value)}\r\n");
+				Out.Log($"{Utils.BytesToString(entry.Key)},{Utils.BytesToString(entry.Value)}\r\n");
 			}
 
-			Out.Print("ToolsTask done!\r\n");
+			Out.Event("ToolsTask done!\r\n");
 
 		}
 	}
