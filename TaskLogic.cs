@@ -31,6 +31,12 @@ namespace nsZip
 		public TaskLogic(string OutputFolderPathArg, string TempFolderPathArg, bool VerifyHashesArg, int bs, int lv, Output OutArg)
 		{
 			OutputFolderPath = OutputFolderPathArg;
+			
+			if (!Directory.Exists(OutputFolderPath))
+			{
+				Directory.CreateDirectory(OutputFolderPath);
+			}
+
 			decryptedDir = Path.Combine(TempFolderPathArg, "decrypted");
 			encryptedDir = Path.Combine(TempFolderPathArg, "encrypted");
 			compressedDir = Path.Combine(TempFolderPathArg, "compressed");
