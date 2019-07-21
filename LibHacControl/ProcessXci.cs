@@ -111,7 +111,8 @@ namespace nsZip.LibHacControl
 			foreach (var entry in FileIterator(xci, keyset, Out))
 			{
 				var fileName = entry.subPfsFile.Name;
-				if (!fileName.EndsWith(".tik") || fileName.EndsWith(".cert"))
+				Out.Log($"{fileName}\r\n");
+				if (fileName.EndsWith(".tik") || fileName.EndsWith(".cert"))
 				{
 					destFs.CreateFile(fileName, entry.subPfsFile.Size, CreateFileOptions.None);
 					using (IFile srcFile = entry.subPfs.OpenFile(fileName, OpenMode.Read))
