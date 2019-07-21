@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 
 namespace nsZip
 {
@@ -11,8 +12,8 @@ namespace nsZip
 		
 		public Output()
 		{
-			debug = new StreamWriter(File.Open("debug.log", FileMode.Append));
-			error = new StreamWriter(File.Open("error.log", FileMode.Append));
+			debug = new StreamWriter(File.Open("debug.log", FileMode.Append), Encoding.UTF8);
+			error = new StreamWriter(File.Open("error.log", FileMode.Append), Encoding.UTF8);
 			debug.WriteLine();
 			error.WriteLine();
 		}

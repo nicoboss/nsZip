@@ -14,10 +14,7 @@ namespace nsZip
 	{
 		public static void File2Titlekey(string inFile, Keyset keyset, Output Out)
 		{
-			var infileLowerCase = inFile.ToLower();
-			var inFileNoExtension = Path.GetFileNameWithoutExtension(inFile);
 			var inFileExtension = Path.GetExtension(inFile).ToLower();
-
 			using (var inputFile = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{
 				var titleKey = new byte[0x10];
@@ -42,5 +39,36 @@ namespace nsZip
 			}
 
 		}
+
+		public static void File2Tickets(string inFile, string outDirPath, Keyset keyset, Output Out)
+		{
+			var inFileExtension = Path.GetExtension(inFile).ToLower();
+
+			using (var inputFile = new FileStream(inFile, FileMode.Open, FileAccess.Read))
+			{
+				var titleKey = new byte[0x10];
+				switch (inFileExtension)
+				{
+					case ".nsp":
+						var pfs = new PartitionFileSystem(inputFile.AsStorage());
+						ProcessNsp.ExtractTickets(pfs, outDirPath, keyset, Out);
+						break;
+					case ".xci":
+						var xci = new Xci(keyset, inputFile.AsStorage());
+						ProcessXci.ExtractTickets(xci, outDirPath, keyset, Out);
+						break;
+					case ".nspz":
+					case ".xciz":
+						var pfsz = new PartitionFileSystem(inputFile.AsStorage());
+						DecompressFs.ExtractTickets(pfsz, outDirPath, keyset, Out);
+						break;
+					default:
+						throw new NotImplementedException();
+				}
+			}
+
+		}
+
+
 	}
 }

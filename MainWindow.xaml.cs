@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -365,17 +366,22 @@ namespace nsZip
 			}
 		}
 
+		enum ToolsTaskType {
+			ExtractTitlekeys,
+			ExtractTickets
+		}
+
 		private void ExtractTitlekeys_Click(object sender, RoutedEventArgs e)
 		{
-			var t = Task.Run(() => { RunToolsTask(); });
+			var t = Task.Run(() => { RunToolsTask(ToolsTaskType.ExtractTitlekeys); });
 		}
 
 		private void ExtractTickets_Click(object sender, RoutedEventArgs e)
 		{
-			var t = Task.Run(() => { RunToolsTask(); });
+			var t = Task.Run(() => { RunToolsTask(ToolsTaskType.ExtractTickets); });
 		}
 
-		private void RunToolsTask()
+		private void RunToolsTask(ToolsTaskType toolsTaskType)
 		{
 			if (ToolsTaskQueue.Items.Count == 0)
 			{
@@ -393,11 +399,19 @@ namespace nsZip
 			var extractedTitleKeys = new LibHac.Keyset();
 			try
 			{
+
+				var TitlekeysOutputFilePath = $"{OutputFolderPath}/titlekeys.txt";
+				var TicketOutputPath = $"{OutputFolderPath}/Tickets";
+				if (!Directory.Exists(TicketOutputPath))
+				{
+					Directory.CreateDirectory(TicketOutputPath);
+				}
+
 				do
 				{
 					var inFile = (string)ToolsTaskQueue.Items[0];
 
-					var ToolsTaskText = "ToolsTask \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...";
+					var ToolsTaskText = $"ToolsTask \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...";
 					Out.Event($"{ToolsTaskText}\r\n");
 					Dispatcher.Invoke(() =>
 					{
@@ -406,10 +420,37 @@ namespace nsZip
 							$"Please take a look at the console window for more information.";
 						ToolsTaskQueue.Items.RemoveAt(0);
 					});
-					FileTools.File2Titlekey(inFile, extractedTitleKeys, Out);
-					Thread.Sleep(50);
+
+					switch(toolsTaskType)
+					{
+						case ToolsTaskType.ExtractTitlekeys:
+							FileTools.File2Titlekey(inFile, extractedTitleKeys, Out);
+							break;
+						case ToolsTaskType.ExtractTickets:
+							FileTools.File2Tickets(inFile, TicketOutputPath, extractedTitleKeys, Out);
+							break;
+						default:
+							throw new NotImplementedException($"Unknown ToolsTaskType: {toolsTaskType}!");
+					}
+					Thread.Sleep(10);
 
 				} while (ToolsTaskQueue.Items.Count > 0);
+
+				if (toolsTaskType == ToolsTaskType.ExtractTitlekeys)
+				{
+					Out.Log($"Writing to {TitlekeysOutputFilePath}\r\n");
+					using (var titlekeys = new StreamWriter(File.Open(TitlekeysOutputFilePath, FileMode.Create), Encoding.ASCII))
+					{
+						foreach (var entry in extractedTitleKeys.TitleKeys)
+						{
+							var line = $"{Utils.BytesToString(entry.Key)},{Utils.BytesToString(entry.Value)}\r\n";
+							titlekeys.Write(line);
+							Out.Log(line);
+						}
+					}
+				}
+
+				Out.Event("ToolsTask done!\r\n");
 			}
 			catch (Exception ex)
 			{
@@ -425,15 +466,6 @@ namespace nsZip
 					MainGridBusy.Visibility = Visibility.Hidden;
 				});
 			}
-
-			Out.Log("titlekeys.txt\r\n");
-			foreach (var entry in extractedTitleKeys.TitleKeys)
-			{
-				Out.Log($"{Utils.BytesToString(entry.Key)},{Utils.BytesToString(entry.Value)}\r\n");
-			}
-
-			Out.Event("ToolsTask done!\r\n");
-
 		}
 	}
 }

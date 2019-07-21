@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using LibHac;
@@ -10,15 +11,24 @@ namespace nsZip
 	public static class DecompressFs
 	{
 
-		public static void ProcessFs(IFileSystem sourceFs, string outDirPath, Output Out)
+		public static IEnumerable<DirectoryEntry> FileIterator(IFileSystem sourceFs)
 		{
 			IDirectory sourceRoot = sourceFs.OpenDirectory("/", OpenDirectoryMode.All);
-			foreach (DirectoryEntry entry in sourceRoot.Read())
+			foreach (var entry in sourceRoot.Read())
 			{
 				if (entry.Type == DirectoryEntryType.Directory)
 				{
 					throw new InvalidDataException("Error: Directory inside NSPZ/XCIZ!");
 				}
+
+				yield return entry;
+			}
+		}
+
+		public static void ProcessFs(IFileSystem sourceFs, string outDirPath, Output Out)
+		{
+			foreach (var entry in FileIterator(sourceFs))
+			{
 				var outFilePath = Path.Combine(outDirPath, Path.GetFileNameWithoutExtension(entry.Name));
 				using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
 				using (FileStream outputFile = File.OpenWrite(outFilePath))
@@ -30,26 +40,40 @@ namespace nsZip
 
 		public static void GetTitleKeys(IFileSystem sourceFs, Keyset keyset, Output Out)
 		{
-			IDirectory sourceRoot = sourceFs.OpenDirectory("/", OpenDirectoryMode.All);
-			foreach (DirectoryEntry entry in sourceRoot.Read())
+			foreach (var entry in FileIterator(sourceFs))
 			{
-				if (entry.Type == DirectoryEntryType.Directory)
+				if (entry.Name.EndsWith(".tik.nsz"))
 				{
-					throw new InvalidDataException("Error: Directory inside NSPZ/XCIZ!");
-				}
-				if (Path.GetExtension(entry.Name) != ".tik")
-				{
-					break;
-				}
-				
-				using (var TicketFile = sourceFs.OpenFile(entry.Name, OpenMode.Read).AsStream())
-				{
-					TitleKeyTools.ExtractKey(TicketFile, entry.Name, keyset, Out);
+					using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
+					using (var dstStream = new MemoryStream())
+					{
+						ProcessFile(srcFile, dstStream, entry, Out);
+						TitleKeyTools.ExtractKey(dstStream, entry.Name, keyset, Out);
+					}
 				}
 			}
 		}
 
-		public static void ProcessFile(IFile inputFileObj, FileStream outputFile, DirectoryEntry inputFileEntry, Output Out)
+		public static void ExtractTickets(IFileSystem sourceFs, string outDirPath, Keyset keyset, Output Out)
+		{
+			var OutDirFs = new LocalFileSystem(outDirPath);
+			IDirectory destRoot = OutDirFs.OpenDirectory("/", OpenDirectoryMode.All);
+
+			foreach (var entry in FileIterator(sourceFs))
+			{
+				if (entry.Name.EndsWith(".tik.nsz") || entry.Name.EndsWith(".cert.nsz"))
+				{
+					var outFilePath = Path.Combine(outDirPath, Path.GetFileNameWithoutExtension(entry.Name));
+					using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
+					using (FileStream outputFile = File.OpenWrite(outFilePath))
+					{
+						ProcessFile(srcFile, outputFile, entry, Out);
+					}
+				}
+			}
+		}
+
+		public static void ProcessFile(IFile inputFileObj, Stream outputFile, DirectoryEntry inputFileEntry, Output Out)
 		{
 			var inputFile = inputFileObj.AsStream();
 			var nsZipMagic = new byte[] { 0x6e, 0x73, 0x5a, 0x69, 0x70 };
@@ -127,12 +151,9 @@ namespace nsZip
 							"The specified compression algorithm isn't implemented yet!");
 				}
 			}
-
-			inputFile.Dispose();
-			outputFile.Dispose();
 		}
 
-		private static void DecompressBlock(ref byte[] input, ref FileStream output)
+		private static void DecompressBlock(ref byte[] input, ref Stream output)
 		{
 			// decompress
 			using (var memoryStream = new MemoryStream(input))

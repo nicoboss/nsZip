@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using LibHac;
 using LibHac.IO;
@@ -68,7 +69,7 @@ namespace nsZip.LibHacControl
 			}
 		}
 
-		public static void GetTitleKeys(Xci xci, Keyset keyset, Output Out)
+		public static IEnumerable<(PartitionFileSystem subPfs, PartitionFileEntry subPfsFile)> FileIterator(Xci xci, Keyset keyset, Output Out)
 		{
 			var root = xci.RootPartition;
 			if (root == null)
@@ -81,12 +82,42 @@ namespace nsZip.LibHacControl
 				var subPfs = new PartitionFileSystem(new FileStorage(root.OpenFile(sub, OpenMode.Read)));
 				foreach (var subPfsFile in subPfs.Files)
 				{
-					if (subPfsFile.Name.EndsWith(".tik"))
+					yield return (subPfs, subPfsFile);
+				}
+			}
+		}
+
+		public static void GetTitleKeys(Xci xci, Keyset keyset, Output Out)
+		{
+			foreach (var item in FileIterator(xci, keyset, Out))
+			{
+				var fileName = item.subPfsFile.Name;
+				if (fileName.EndsWith(".tik"))
+				{
+					using (var TicketFile = item.subPfs.OpenFile(fileName, OpenMode.Read).AsStream())
 					{
-						using (var TicketFile = subPfs.OpenFile(subPfsFile.Name, OpenMode.Read).AsStream())
-						{
-							TitleKeyTools.ExtractKey(TicketFile, subPfsFile.Name, keyset, Out);
-						}
+						TitleKeyTools.ExtractKey(TicketFile, fileName, keyset, Out);
+					}
+				}
+			}
+		}
+
+		public static void ExtractTickets(Xci xci, string outDirPath, Keyset keyset, Output Out)
+		{
+			var OutDirFs = new LocalFileSystem(outDirPath);
+			IDirectory destRoot = OutDirFs.OpenDirectory("/", OpenDirectoryMode.All);
+			IFileSystem destFs = destRoot.ParentFileSystem;
+
+			foreach (var entry in FileIterator(xci, keyset, Out))
+			{
+				var fileName = entry.subPfsFile.Name;
+				if (!fileName.EndsWith(".tik") || fileName.EndsWith(".cert"))
+				{
+					destFs.CreateFile(fileName, entry.subPfsFile.Size, CreateFileOptions.None);
+					using (IFile srcFile = entry.subPfs.OpenFile(fileName, OpenMode.Read))
+					using (IFile dstFile = destFs.OpenFile(fileName, OpenMode.Write))
+					{
+						srcFile.CopyTo(dstFile);
 					}
 				}
 			}

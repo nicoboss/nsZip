@@ -15,11 +15,11 @@ namespace nsZip
 			var titleKey = new byte[0x10];
 			TicketFile.Seek(0x180, SeekOrigin.Begin);
 			TicketFile.Read(titleKey, 0, 0x10);
-			var ticketNameWithoutExtension = Path.GetFileNameWithoutExtension(filename);
-			if (!ticketNameWithoutExtension.TryToBytes(out var rightsId))
+			var ticketNameWithoutAnyExtensions = filename.Split('.')[0];
+			if (!ticketNameWithoutAnyExtensions.TryToBytes(out var rightsId))
 			{
 				throw new InvalidDataException(
-					$"Invalid rights ID \"{ticketNameWithoutExtension}\" as ticket file name");
+					$"Invalid rights ID \"{ticketNameWithoutAnyExtensions}\" as ticket file name");
 			}
 
 			keyset.TitleKeys[rightsId] = titleKey;
