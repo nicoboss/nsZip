@@ -21,6 +21,31 @@ namespace nsZip.LibHacControl
 			}
 		}
 
+		public static void ExtractRomFS(string inFile, string outDirPath, Keyset keyset, Output Out)
+		{
+			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
+			{
+				var pfs = new PartitionFileSystem(file.AsStorage());
+				var OutDirFs = new LocalFileSystem(outDirPath);
+				IDirectory sourceRoot = pfs.OpenDirectory("/", OpenDirectoryMode.All);
+				IFileSystem sourceFs = sourceRoot.ParentFileSystem;
+				Out.Log(pfs.Print());
+
+				foreach (var entry in FileIterator(sourceRoot))
+				{
+					if (entry.Name.EndsWith(".nca"))
+					{
+						var fullOutDirPath = $"{outDirPath}/{entry.Name}";
+						Out.Log($"Extracting {entry.Name}...\r\n");
+						using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
+						{
+							ProcessNca.Extract(srcFile, fullOutDirPath, true, keyset, Out);
+						}
+					}
+				}
+			}
+		}
+
 		public static IEnumerable<DirectoryEntry> FileIterator(IDirectory sourceRoot)
 		{
 			foreach (var entry in sourceRoot.Read())

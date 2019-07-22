@@ -9,18 +9,29 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessXci
 	{
+		enum XciTaskType
+		{
+			extract,
+			decrypt,
+			extractRomFS
+		}
 
 		public static void Extract(string inputFilePath, string outDirPath, Keyset keyset, Output Out)
 		{
-			Process(inputFilePath, outDirPath, false, true, keyset, Out);
+			Process(inputFilePath, outDirPath, XciTaskType.extract, keyset, Out);
 		}
 
 		public static void Decrypt(string inputFilePath, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
-			Process(inputFilePath, outDirPath, true, false, keyset, Out, verifyBeforeDecrypting);
+			Process(inputFilePath, outDirPath, XciTaskType.decrypt, keyset, Out, verifyBeforeDecrypting);
 		}
 
-		private static void Process(string inputFilePath, string outDirPath, bool decrypt, bool folderStructure, Keyset keyset, Output Out, bool verifyBeforeDecrypting = true)
+		public static void ExtractRomFS(string inputFilePath, string outDirPath, Keyset keyset, Output Out)
+		{
+			Process(inputFilePath, outDirPath, XciTaskType.extractRomFS, keyset, Out);
+		}
+
+		private static void Process(string inputFilePath, string outDirPath, XciTaskType taskType, Keyset keyset, Output Out, bool verifyBeforeDecrypting = true)
 		{
 			using (var inputFile = new FileStream(inputFilePath, FileMode.Open, FileAccess.Read))
 			using (var outputFile = File.Open($"{outDirPath}/xciMeta.dat", FileMode.Create))
@@ -58,19 +69,30 @@ namespace nsZip.LibHacControl
 						outputFile.WriteByte(0x0A);
 						var subPfsFileNameChar = Encoding.ASCII.GetBytes(subPfsFile.Name);
 						outputFile.Write(subPfsFileNameChar, 0, subPfsFileNameChar.Length);
-
-						var destFileName = folderStructure ? $"{sub.Name}/{subPfsFile.Name}" : subPfsFile.Name;
-						destFs.CreateFile(destFileName, subPfsFile.Size, CreateFileOptions.None);
 						using (IFile srcFile = subPfs.OpenFile(subPfsFile.Name, OpenMode.Read))
-						using (IFile dstFile = destFs.OpenFile(destFileName, OpenMode.Write))
 						{
-							if (decrypt && subPfsFile.Name.EndsWith(".nca"))
+							if (taskType == XciTaskType.extractRomFS && subPfsFile.Name.EndsWith(".nca"))
 							{
-								ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
+								var fullOutDirPath = $"{outDirPath}/{sub.Name}/{subPfsFile.Name}";
+								Out.Log($"Extracting {subPfsFile.Name}...\r\n");
+								ProcessNca.Extract(srcFile, fullOutDirPath, verifyBeforeDecrypting, keyset, Out);
 							}
 							else
 							{
-								srcFile.CopyTo(dstFile);
+								var destFileName = taskType == XciTaskType.extract
+									? $"{sub.Name}/{subPfsFile.Name}" : subPfsFile.Name;
+								destFs.CreateFile(destFileName, subPfsFile.Size, CreateFileOptions.None);
+								using (IFile dstFile = destFs.OpenFile(destFileName, OpenMode.Write))
+								{
+									if (taskType == XciTaskType.decrypt && subPfsFile.Name.EndsWith(".nca"))
+									{
+										ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
+									}
+									else
+									{
+										srcFile.CopyTo(dstFile);
+									}
+								}
 							}
 						}
 					}

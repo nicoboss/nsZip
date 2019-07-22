@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.IO;
@@ -7,6 +8,34 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessNca
 	{
+
+		public static void Extract(IFile inFile, string outDir, bool verify, Keyset keyset, Output Out)
+		{
+			using (var file = new StreamStorage(inFile.AsStream(), false))
+			{
+				var nca = new Nca(keyset, file, false);
+				Out.Log(nca.Print());
+				if (verify)
+				{
+					Out.Log($"ValidateMasterHashes...\r\n");
+					nca.ValidateMasterHashes();
+				}
+
+				for (var i = 0; i < 3; ++i)
+				{
+					if (nca.Sections[i] != null)
+					{
+						if (verify)
+						{
+							Out.Log($"VerifySection {i}...\r\n");
+							nca.VerifySection(i);
+						}
+						nca.ExtractSection(i, outDir);
+					}
+				}
+			}
+		}
+
 		public static void Process(IFile inFile, IFile outFile, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
 		{
 			using (var file = new StreamStorage(inFile.AsStream(), false))

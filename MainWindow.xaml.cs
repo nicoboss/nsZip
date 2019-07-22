@@ -409,21 +409,28 @@ namespace nsZip
 			});
 
 			var extractedTitleKeys = new LibHac.Keyset();
+			var keyset = new LibHac.Keyset();
+			if (toolsTaskType == ToolsTaskType.ExtractRomFS)
+			{
+				keyset = LibHacControl.ProcessKeyset.OpenKeyset();
+			}
+
 			try
 			{
 
 				var TitlekeysOutputFilePath = $"{OutputFolderPath}/titlekeys.txt";
 				var TicketOutputPath = $"{OutputFolderPath}/Tickets";
-				if (!Directory.Exists(TicketOutputPath))
+				if (toolsTaskType == ToolsTaskType.ExtractRomFS && !Directory.Exists(TicketOutputPath))
 				{
 					Directory.CreateDirectory(TicketOutputPath);
 				}
 
 				do
 				{
-					var inFile = (string)ToolsTaskQueue.Items[0];
+					var inFilePath = (string)ToolsTaskQueue.Items[0];
+					var inFile = Path.GetFileName(inFilePath);
 
-					var ToolsTaskText = $"ToolsTask \"{Path.GetFileNameWithoutExtension(inFile)}\" in progress...";
+					var ToolsTaskText = $"ToolsTask \"{inFile}\" in progress...";
 					Out.Event($"{ToolsTaskText}\r\n");
 					Dispatcher.Invoke(() =>
 					{
@@ -436,16 +443,26 @@ namespace nsZip
 					switch(toolsTaskType)
 					{
 						case ToolsTaskType.ExtractTitlekeys:
-							FileTools.File2Titlekey(inFile, extractedTitleKeys, Out);
+							FileTools.File2Titlekey(inFilePath, extractedTitleKeys, Out);
 							break;
 						case ToolsTaskType.ExtractTickets:
-							FileTools.File2Tickets(inFile, TicketOutputPath, extractedTitleKeys, Out);
+							FileTools.File2Tickets(inFilePath, TicketOutputPath, keyset, Out);
 							break;
 						case ToolsTaskType.ExtractPfsHfs:
-							FileTools.ExtractPfsHfs(inFile, TicketOutputPath, extractedTitleKeys, Out);
+							var PfsHfsOutputPath = $"{OutputFolderPath}/{inFile}_Extracted";
+							if (!Directory.Exists(PfsHfsOutputPath))
+							{
+								Directory.CreateDirectory(PfsHfsOutputPath);
+							}
+							FileTools.ExtractPfsHfs(inFilePath, PfsHfsOutputPath, keyset, Out);
 							break;
 						case ToolsTaskType.ExtractRomFS:
-							FileTools.ExtractRomFS(inFile, TicketOutputPath, extractedTitleKeys, Out);
+							var RomFsOutputPath = $"{OutputFolderPath}/{inFile}_Extracted_FS";
+							if (!Directory.Exists(RomFsOutputPath))
+							{
+								Directory.CreateDirectory(RomFsOutputPath);
+							}
+							FileTools.ExtractRomFS(inFilePath, RomFsOutputPath, keyset, Out);
 							break;
 						default:
 							throw new NotImplementedException($"Unknown ToolsTaskType: {toolsTaskType}!");

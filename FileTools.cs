@@ -88,15 +88,16 @@ namespace nsZip
 
 		public static void ExtractRomFS(string inFile, string outDirPath, Keyset keyset, Output Out)
 		{
+			File2Titlekey(inFile, keyset, Out);
 			var inFileExtension = Path.GetExtension(inFile).ToLower();
 
 			switch (inFileExtension)
 			{
 				case ".nsp":
-					//ProcessNsp.ExtractRomFS(inFile, outDirPath, Out);
+					ProcessNsp.ExtractRomFS(inFile, outDirPath, keyset, Out);
 					break;
 				case ".xci":
-					//ProcessXci.ExtractRomFS(inFile, outDirPath, keyset, Out);
+					ProcessXci.ExtractRomFS(inFile, outDirPath, keyset, Out);
 					break;
 				case ".nspz":
 				case ".xciz":
