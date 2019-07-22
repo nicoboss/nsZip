@@ -11,7 +11,7 @@ namespace nsZip.LibHacControl
 	internal static class ProcessNsp
 	{
 
-		public static void Process(string inFile, string outDirPath, Output Out)
+		public static void Extract(string inFile, string outDirPath, Output Out)
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
 			{

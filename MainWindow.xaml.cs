@@ -441,6 +441,12 @@ namespace nsZip
 						case ToolsTaskType.ExtractTickets:
 							FileTools.File2Tickets(inFile, TicketOutputPath, extractedTitleKeys, Out);
 							break;
+						case ToolsTaskType.ExtractPfsHfs:
+							FileTools.ExtractPfsHfs(inFile, TicketOutputPath, extractedTitleKeys, Out);
+							break;
+						case ToolsTaskType.ExtractRomFS:
+							FileTools.ExtractRomFS(inFile, TicketOutputPath, extractedTitleKeys, Out);
+							break;
 						default:
 							throw new NotImplementedException($"Unknown ToolsTaskType: {toolsTaskType}!");
 					}

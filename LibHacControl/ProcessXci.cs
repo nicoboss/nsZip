@@ -9,7 +9,18 @@ namespace nsZip.LibHacControl
 {
 	internal static class ProcessXci
 	{
+
+		public static void Extract(string inputFilePath, string outDirPath, Keyset keyset, Output Out)
+		{
+			Process(inputFilePath, outDirPath, false, true, keyset, Out);
+		}
+
 		public static void Decrypt(string inputFilePath, string outDirPath, bool verifyBeforeDecrypting, Keyset keyset, Output Out)
+		{
+			Process(inputFilePath, outDirPath, true, false, keyset, Out, verifyBeforeDecrypting);
+		}
+
+		private static void Process(string inputFilePath, string outDirPath, bool decrypt, bool folderStructure, Keyset keyset, Output Out, bool verifyBeforeDecrypting = true)
 		{
 			using (var inputFile = new FileStream(inputFilePath, FileMode.Open, FileAccess.Read))
 			using (var outputFile = File.Open($"{outDirPath}/xciMeta.dat", FileMode.Create))
@@ -39,20 +50,21 @@ namespace nsZip.LibHacControl
 				{
 					outputFile.WriteByte(0x0A);
 					outputFile.WriteByte(0x0A);
-					var subDirName = Encoding.ASCII.GetBytes(sub.Name);
-					outputFile.Write(subDirName, 0, subDirName.Length);
+					var subDirNameChar = Encoding.ASCII.GetBytes(sub.Name);
+					outputFile.Write(subDirNameChar, 0, subDirNameChar.Length);
 					var subPfs = new PartitionFileSystem(new FileStorage(root.OpenFile(sub, OpenMode.Read)));
 					foreach (var subPfsFile in subPfs.Files)
 					{
 						outputFile.WriteByte(0x0A);
-						var subPfsFileName = Encoding.ASCII.GetBytes(subPfsFile.Name);
-						outputFile.Write(subPfsFileName, 0, subPfsFileName.Length);
+						var subPfsFileNameChar = Encoding.ASCII.GetBytes(subPfsFile.Name);
+						outputFile.Write(subPfsFileNameChar, 0, subPfsFileNameChar.Length);
 
-						destFs.CreateFile(subPfsFile.Name, subPfsFile.Size, CreateFileOptions.None);
+						var destFileName = folderStructure ? $"{sub.Name}/{subPfsFile.Name}" : subPfsFile.Name;
+						destFs.CreateFile(destFileName, subPfsFile.Size, CreateFileOptions.None);
 						using (IFile srcFile = subPfs.OpenFile(subPfsFile.Name, OpenMode.Read))
-						using (IFile dstFile = destFs.OpenFile(subPfsFile.Name, OpenMode.Write))
+						using (IFile dstFile = destFs.OpenFile(destFileName, OpenMode.Write))
 						{
-							if (subPfsFile.Name.EndsWith(".nca"))
+							if (decrypt && subPfsFile.Name.EndsWith(".nca"))
 							{
 								ProcessNca.Process(srcFile, dstFile, verifyBeforeDecrypting, keyset, Out);
 							}
