@@ -368,7 +368,9 @@ namespace nsZip
 
 		enum ToolsTaskType {
 			ExtractTitlekeys,
-			ExtractTickets
+			ExtractTickets,
+			ExtractPfsHfs,
+			ExtractRomFS
 		}
 
 		private void ExtractTitlekeys_Click(object sender, RoutedEventArgs e)
@@ -379,6 +381,16 @@ namespace nsZip
 		private void ExtractTickets_Click(object sender, RoutedEventArgs e)
 		{
 			var t = Task.Run(() => { RunToolsTask(ToolsTaskType.ExtractTickets); });
+		}
+
+		private void ExtractPfsHfs_Click(object sender, RoutedEventArgs e)
+		{
+			var t = Task.Run(() => { RunToolsTask(ToolsTaskType.ExtractPfsHfs); });
+		}
+
+		private void ExtractRomFS_Click(object sender, RoutedEventArgs e)
+		{
+			var t = Task.Run(() => { RunToolsTask(ToolsTaskType.ExtractRomFS); });
 		}
 
 		private void RunToolsTask(ToolsTaskType toolsTaskType)

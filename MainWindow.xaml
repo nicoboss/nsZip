@@ -54,7 +54,7 @@
 			<Setter Property="Background" Value="#FF80F0C8" />
 			<Style.Triggers>
 				<Trigger Property="IsMouseOver" Value="True">
-					<Setter Property="Background" Value="#FF00FFC8" />
+					<Setter Property="Background" Value="#FF00DFAF" />
 				</Trigger>
 			</Style.Triggers>
 		</Style>
@@ -71,6 +71,22 @@
 			<Style.Triggers>
 				<Trigger Property="IsMouseOver" Value="True">
 					<Setter Property="Background" Value="#FFFFFB00" />
+				</Trigger>
+			</Style.Triggers>
+		</Style>
+		<Style x:Key="Button_ExtractPfsHfs_OnMouseOverStyle" BasedOn="{StaticResource ButtonDefaultStyle}" TargetType="{x:Type Button}">
+			<Setter Property="Background" Value="#FFFFDA8B" />
+			<Style.Triggers>
+				<Trigger Property="IsMouseOver" Value="True">
+					<Setter Property="Background" Value="#FFFDB561" />
+				</Trigger>
+			</Style.Triggers>
+		</Style>
+		<Style x:Key="Button_ExtractRomFS_OnMouseOverStyle" BasedOn="{StaticResource ButtonDefaultStyle}" TargetType="{x:Type Button}">
+			<Setter Property="Background" Value="#FFFFAC8B" />
+			<Style.Triggers>
+				<Trigger Property="IsMouseOver" Value="True">
+					<Setter Property="Background" Value="#FFF97E5C" />
 				</Trigger>
 			</Style.Triggers>
 		</Style>
@@ -280,20 +296,30 @@
 					<Grid Background="#FFE5E5E5">
 						<Grid x:Name="ToolsGrid" Background="#FFE5E5E5">
 							<WrapPanel HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top">
-								<Button x:Name="SelectInputFilesButton" FontSize="36" Height="80" Width="302" Margin="0,0,10,0"
+								<Button x:Name="SelectInputFilesButton" FontSize="36" Height="80" Width="304" Margin="0,0,10,0"
 									Style="{StaticResource Button_SelectInputFiles_OnMouseOverStyle}"
 									Click="SelectInputFilesButton_Click">
-									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="28"><Run Text="Select NSP/XCI"/><Run Text="/NSPZ/XCIZ"/><Run Text=" files to "/><Run Text="Progress"/></TextBlock>
-									</Button>
-								<Button x:Name="ExtractTitlekeysButton" FontSize="36" Height="80" Width="212" Margin="10,0,0,0"
+									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="28" Text="Select NSP/XCI/NSPZ/XCIZ files to progress"/>
+								</Button>
+								<Button x:Name="ExtractTitlekeysButton" FontSize="36" Height="80" Width="100" Margin="10,0,0,0"
 									Style="{StaticResource Button_ExtractTitlekeys_OnMouseOverStyle}"
 									Click="ExtractTitlekeys_Click">
 									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="24" Text="Extract Titlekeys"/>
 								</Button>
-								<Button x:Name="ExtractTicketsButton" FontSize="36" Height="80" Width="212" Margin="10,0,0,0"
+								<Button x:Name="ExtractTicketsButton" FontSize="36" Height="80" Width="100" Margin="10,0,0,0"
 									Style="{StaticResource Button_ExtractTickets_OnMouseOverStyle}"
 									Click="ExtractTickets_Click">
-									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="24"><Run Text="Extract "/><Run Text="Ti"/><Run Text="c"/><Run Text="ket"/><Run Text="s"/></TextBlock>
+									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="24" Text="Extract Tickets"/>
+								</Button>
+								<Button x:Name="ExtractPfsHfsButton" FontSize="36" Height="80" Width="100" Margin="10,0,0,0"
+									Style="{StaticResource Button_ExtractPfsHfs_OnMouseOverStyle}"
+									Click="ExtractPfsHfs_Click">
+									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="24" Text="Extract PFS/HFS"/>
+								</Button>
+								<Button x:Name="ExtractRomFSButton" FontSize="36" Height="80" Width="100" Margin="10,0,0,0"
+									Style="{StaticResource Button_ExtractRomFS_OnMouseOverStyle}"
+									Click="ExtractRomFS_Click">
+									<TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" FontSize="24" Text="Extract RomFS"/>
 								</Button>
 							</WrapPanel>
 							<ListBox x:Name="ToolsTaskQueue" HorizontalAlignment="Left" Height="258" Margin="10,104,0,0" VerticalAlignment="Top"
