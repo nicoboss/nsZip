@@ -30,7 +30,7 @@ namespace nsZip
 			debug.Flush();
 		}
 
-		public void Warn(string text)
+		private void LogImportant(string text)
 		{
 			var time = DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss] ");
 			var timedText = time + text;
@@ -39,14 +39,34 @@ namespace nsZip
 			Log(timedText);
 		}
 
+		public void Warn(string text)
+		{
+			Console.ForegroundColor = ConsoleColor.Yellow;
+			LogImportant(text);
+			Console.ForegroundColor = ConsoleColor.White;
+		}
+
 		public void Event(string text)
 		{
-			Warn(text);
+			Console.ForegroundColor = ConsoleColor.Cyan;
+			LogImportant(text);
+			Console.ForegroundColor = ConsoleColor.White;
 		}
 
 		public void Error(string text)
 		{
-			Warn("Error:\r\n" + text);
+			Console.ForegroundColor = ConsoleColor.Red;
+			LogImportant(text);
+			Console.ForegroundColor = ConsoleColor.White;
+		}
+
+		public void LogException(Exception ex)
+		{
+			Print("\r\n");
+			Error($"{ex.GetType()} StackTrace:\r\n"
+				+ $"{ex.StackTrace}\r\n\r\n"
+				+ $"{ex.GetType()}:\r\n"
+				+ $"{ex.Message}\r\n");
 		}
 
 	}

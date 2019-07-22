@@ -472,9 +472,7 @@ namespace nsZip
 			}
 			catch (Exception ex)
 			{
-				Out.Log(ex.StackTrace + "\r\n");
-				Out.Log(ex.Message);
-				throw ex;
+				Out.LogException(ex);
 			}
 			finally
 			{
