@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using LibHac;
 using LibHac.IO;
+using nsZip.Crypto;
 using nsZip.LibHacExtensions;
 
 namespace nsZip.LibHacControl
@@ -39,7 +41,38 @@ namespace nsZip.LibHacControl
 						Out.Log($"Extracting {entry.Name}...\r\n");
 						using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
 						{
-							ProcessNca.Extract(srcFile, fullOutDirPath, true, keyset, Out);
+							ProcessNca.Extract(srcFile.AsStream(), fullOutDirPath, true, keyset, Out);
+						}
+					}
+					else if (entry.Name.EndsWith(".nca.nsz"))
+					{
+						var fullOutDirPath = $"{outDirPath}/{entry.Name}";
+						Out.Log($"Extracting {entry.Name}...\r\n");
+						using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
+						using (var decompressedFile = new DecompressionStorage(srcFile))
+						{
+							ProcessNca.Extract(decompressedFile.AsStream(), fullOutDirPath, true, keyset, Out, true);
+
+							// Header can't be patched for now due to OpenSection
+							// and ValidateMasterHash needs to know if AesCtrEx
+							// so Nca.cs was patched and now accepts isDecryptedNca
+							// as constructor argument which disables decryption
+							/*
+							var DecryptedHeader = new byte[0xC00];
+							decompressedFile.AsStream().Read(DecryptedHeader, 0, 0xC00);
+							DecryptedHeader[1028] = (int)NcaEncryptionType.None;
+							DecryptedHeader[1540] = (int)NcaEncryptionType.None;
+							DecryptedHeader[2052] = (int)NcaEncryptionType.None;
+							DecryptedHeader[2564] = (int)NcaEncryptionType.None;
+							var HeaderKey1 = new byte[16];
+							var HeaderKey2 = new byte[16];
+							Buffer.BlockCopy(keyset.HeaderKey, 0, HeaderKey1, 0, 16);
+							Buffer.BlockCopy(keyset.HeaderKey, 16, HeaderKey2, 0, 16);
+							var headerEncrypted = CryptoInitialisers.AES_XTS(HeaderKey1, HeaderKey2, 0x200, DecryptedHeader, 0);
+							var ncaStorageList = new List<IStorage>() { new MemoryStorage(headerEncrypted), decompressedFile.Slice(0xC00) };
+							var cleanDecryptedNca = new ConcatenationStorage(ncaStorageList, true);
+							ProcessNca.Extract(cleanDecryptedNca.AsStream(), fullOutDirPath, true, keyset, Out);
+							*/
 						}
 					}
 				}

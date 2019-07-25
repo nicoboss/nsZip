@@ -101,7 +101,7 @@ namespace nsZip
 					break;
 				case ".nspz":
 				case ".xciz":
-					//ProcessNsp.DecompressExtractRomFS(inFile, outDirPath, Out);
+					ProcessNsp.ExtractRomFS(inFile, outDirPath, keyset, Out);
 					break;
 				default:
 					throw new NotImplementedException();

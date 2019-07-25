@@ -75,12 +75,12 @@ namespace nsZip.LibHacControl
 							{
 								var fullOutDirPath = $"{outDirPath}/{sub.Name}/{subPfsFile.Name}";
 								Out.Log($"Extracting {subPfsFile.Name}...\r\n");
-								ProcessNca.Extract(srcFile, fullOutDirPath, verifyBeforeDecrypting, keyset, Out);
+								ProcessNca.Extract(srcFile.AsStream(), fullOutDirPath, verifyBeforeDecrypting, keyset, Out);
 							}
 							else
 							{
 								var destFileName = taskType == XciTaskType.extract
-									? $"{sub.Name}/{subPfsFile.Name}" : subPfsFile.Name;
+									? Path.Combine(sub.Name, subPfsFile.Name) : subPfsFile.Name;
 								destFs.CreateFile(destFileName, subPfsFile.Size, CreateFileOptions.None);
 								using (IFile dstFile = destFs.OpenFile(destFileName, OpenMode.Write))
 								{

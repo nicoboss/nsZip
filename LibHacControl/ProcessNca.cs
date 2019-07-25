@@ -9,11 +9,11 @@ namespace nsZip.LibHacControl
 	internal static class ProcessNca
 	{
 
-		public static void Extract(IFile inFile, string outDir, bool verify, Keyset keyset, Output Out)
+		public static void Extract(Stream inFileStream, string outDir, bool verify, Keyset keyset, Output Out, bool isDecryptedNca = false)
 		{
-			using (var file = new StreamStorage(inFile.AsStream(), false))
+			using (var file = new StreamStorage(inFileStream, false))
 			{
-				var nca = new Nca(keyset, file, false);
+				var nca = new Nca(keyset, file, false, isDecryptedNca);
 				Out.Log(nca.Print());
 				if (verify)
 				{
@@ -30,7 +30,7 @@ namespace nsZip.LibHacControl
 							Out.Log($"VerifySection {i}...\r\n");
 							nca.VerifySection(i);
 						}
-						nca.ExtractSection(i, outDir);
+						nca.ExtractSection(i, Path.Combine(outDir, i.ToString()));
 					}
 				}
 			}

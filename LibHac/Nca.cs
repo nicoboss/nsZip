@@ -20,6 +20,7 @@ namespace LibHac
         private Nca BaseNca { get; set; }
         private IStorage BaseStorage { get; }
         private Keyset Keyset { get; }
+        private bool IsDecryptedNca { get; }
 
         public Npdm.NpdmBinary Npdm { get; private set; }
 
@@ -28,13 +29,23 @@ namespace LibHac
 
         public NcaSection[] Sections { get; } = new NcaSection[4];
 
-        public Nca(Keyset keyset, IStorage storage, bool leaveOpen)
+        public Nca(Keyset keyset, IStorage storage, bool leaveOpen, bool isDecryptedNca = false)
         {
             LeaveOpen = leaveOpen;
             BaseStorage = storage;
             Keyset = keyset;
+            IsDecryptedNca = isDecryptedNca;
 
-            Header = DecryptHeader();
+            if (IsDecryptedNca)
+            {
+				var DecryptedHeader = new byte[0xC00];
+				storage.AsStream().Read(DecryptedHeader, 0, 0xC00);
+				Header = new NcaHeader(new BinaryReader(new MemoryStream(DecryptedHeader)), keyset);
+			}
+            else
+            {
+                Header = DecryptHeader();
+            }
 
             CryptoType = Math.Max(Header.CryptoType, Header.CryptoType2);
             if (CryptoType > 0) CryptoType--;
@@ -119,6 +130,11 @@ namespace LibHac
             //}
 
             IStorage rawStorage = BaseStorage.Slice(offset, size, leaveOpen);
+
+            if (IsDecryptedNca)
+            {
+                return rawStorage;
+            }
 
             switch (sect.Header.EncryptionType)
             {
