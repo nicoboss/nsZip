@@ -140,6 +140,7 @@
     <Compile Include="CompressFolder.cs" />
     <Compile Include="DecompressFs.cs" />
     <Compile Include="DecompressionStorage.cs" />
+    <Compile Include="ConsoleMode.cs" />
     <Compile Include="EncryptNCA.cs" />
     <Compile Include="FileTools.cs" />
     <Compile Include="LibHacControl\ProcessKeyset.cs" />

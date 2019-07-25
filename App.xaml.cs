@@ -1,6 +1,7 @@
 ﻿using CommandLine;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace nsZip
@@ -12,6 +13,24 @@ namespace nsZip
 	{
 		private void Application_Startup(object sender, StartupEventArgs e)
 		{
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				try
+				{
+					if (ConsoleMode.TryDisablingConsoleQuickEdit())
+					{
+						Console.WriteLine("Console's QuickEdit mode disabled successfully");
+					}
+					else
+					{
+						Console.WriteLine("Failed to disable the Console's QuickEdit mode");
+					}
+				}
+				catch (Exception)
+				{
+					Console.WriteLine("Unimportant exception occurred while disabling Console's QuickEdit mode");
+				}
+			}
 			if (e.Args.Length > 0)
 			{
 				var args = Parser.Default.ParseArguments<Options>(e.Args);
