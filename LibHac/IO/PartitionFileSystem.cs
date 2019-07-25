@@ -187,13 +187,13 @@ namespace LibHac.IO
         }
     }
 
-    public class PartitionFileEntry
+     public class PartitionFileEntry
     {
         public int Index;
         public long Offset;
         public long Size;
         public uint StringTableOffset;
-        public long Reserved;
+        public long HashedRegionOffset;
         public int HashedRegionSize;
         public byte[] Hash;
         public string Name;
@@ -207,12 +207,25 @@ namespace LibHac.IO
             if (type == PartitionFileSystemType.Hashed)
             {
                 HashedRegionSize = reader.ReadInt32();
-                Reserved = reader.ReadInt64();
+                HashedRegionOffset = reader.ReadInt64();
                 Hash = reader.ReadBytes(Crypto.Sha256DigestSize);
             }
             else
             {
-                Reserved = reader.ReadUInt32();
+                reader.BaseStream.Position += 4;
+            }
+        }
+
+        public static int GetEntrySize(PartitionFileSystemType type)
+        {
+            switch (type)
+            {
+                case PartitionFileSystemType.Standard:
+                    return 0x18;
+                case PartitionFileSystemType.Hashed:
+                    return 0x40;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
     }

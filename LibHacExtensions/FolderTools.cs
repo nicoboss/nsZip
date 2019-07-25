@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using LibHac;
+using LibHac.IO;
 
 namespace nsZip.LibHacExtensions
 {
@@ -9,33 +10,12 @@ namespace nsZip.LibHacExtensions
 	{
 		public static void FolderToNSP(string inFolder, string nspFile)
 		{
-			var newNSP = new Pfs0Builder();
-			var dirEncrypted = new DirectoryInfo(inFolder);
-			var fileStreamList = new List<FileStream>();
-			FileStream outfile = null;
-
-			try
+			using (var outfile = new FileStream(nspFile, FileMode.Create, FileAccess.Write))
 			{
-				foreach (var file in dirEncrypted.GetFiles())
-				{
-					var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read);
-					fileStreamList.Add(fs);
-					newNSP.AddFile(file.Name, fs);
-				}
-
-				outfile = new FileStream(nspFile, FileMode.Create, FileAccess.Write);
-				newNSP.Build(outfile);
+				var inFolderFs = new LocalFileSystem(inFolder);
+				var newNSP = new PartitionFileSystemBuilder(inFolderFs);
+				newNSP.Build(PartitionFileSystemType.Standard).CopyToStream(outfile);
 			}
-			finally
-			{
-				foreach (var fs in fileStreamList)
-				{
-					fs.Dispose();
-				}
-
-				outfile?.Dispose();
-			}
-
 		}
 
 		public static void ExtractTitlekeys(string inFolder, Keyset keyset, Output Out)

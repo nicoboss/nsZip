@@ -173,11 +173,11 @@ namespace nsZip.LibHacControl
 				return;
 			}
 
-			var builder = new Pfs0Builder();
+			var builder = new PartitionFileSystemBuilder();
 
 			foreach (var nca in title.Ncas)
 			{
-				builder.AddFile(nca.Filename, nca.GetStorage().AsStream());
+				builder.AddFile(nca.Filename, new StorageFile(nca.GetStorage(), OpenMode.Read));
 			}
 
 			var ticket = new Ticket
@@ -192,16 +192,16 @@ namespace nsZip.LibHacControl
 				SectHeaderOffset = 0x2C0
 			};
 			var ticketBytes = ticket.GetBytes();
-			builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new MemoryStream(ticketBytes));
+			builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new StorageFile(new MemoryStorage(ticketBytes), OpenMode.Read));
 
 			var thisAssembly = Assembly.GetExecutingAssembly();
 			var cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
-			builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert);
+			builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", new StreamFile(cert, OpenMode.Read));
 
 
 			using (var outStream = new FileStream(nspFilename, FileMode.Create, FileAccess.ReadWrite))
 			{
-				builder.Build(outStream, logger);
+				builder.Build(PartitionFileSystemType.Standard).CopyToStream(outStream);
 			}
 		}
 

@@ -28,11 +28,17 @@ namespace LibHac.IO
 
         public override void Write(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            ValidateWriteParams(source, offset);
+
+            BaseStorage.Write(source, offset);
         }
 
         public override void Flush()
         {
+            if ((Mode & OpenMode.Write) != 0)
+            {
+                BaseStorage.Flush();
+            }
         }
 
         public override long GetSize()
