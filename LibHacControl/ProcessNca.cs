@@ -27,10 +27,9 @@ namespace nsZip.LibHacControl
 					{
 						if (verify)
 						{
-							Out.Log($"VerifySection {i}...\r\n");
-							nca.VerifySection(i);
+							nca.VerifySection(i, Out);
 						}
-						nca.ExtractSection(i, Path.Combine(outDir, i.ToString()));
+						nca.ExtractSection(i, Path.Combine(outDir, i.ToString()), IntegrityCheckLevel.None, Out);
 					}
 				}
 			}
@@ -51,8 +50,7 @@ namespace nsZip.LibHacControl
 					{
 						if (nca.Sections[i] != null)
 						{
-							Out.Log($"VerifySection {i}...\r\n");
-							nca.VerifySection(i);
+							nca.VerifySection(i, Out);
 						}
 					}
 				}

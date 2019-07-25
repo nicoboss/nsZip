@@ -1,14 +1,20 @@
-﻿using System;
+﻿using LibHac;
+using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace nsZip
 {
-	public class Output
+	public class Output : IProgressReport
 	{
 
 		StreamWriter debug;
 		StreamWriter error;
+		long current;
+		long total;
+		long cooldown = 500;
+		DateTime cooldownStart;
 		
 		public Output()
 		{
@@ -69,5 +75,37 @@ namespace nsZip
 				+ $"{ex.Message}\r\n");
 		}
 
+		public void Report(long value)
+		{
+			current = value;
+			ReportAdd(0);
+		}
+
+		public void ReportAdd(long value)
+		{
+			current += value;
+			var timeNow = DateTime.Now;
+			var timeDiff = timeNow - cooldownStart;
+			if (timeDiff.Milliseconds > cooldown && current < total)
+			{
+				cooldownStart = timeNow;
+				var percentage = ((float)current / (float)total) * 100f;
+				Console.WriteLine(string.Format("{0:00.00}%", percentage));
+			}
+		}
+
+		public void SetTotal(long value)
+		{
+			current = 0;
+			total = value;
+			cooldownStart = DateTime.Now;
+		}
+
+		public void LogMessage(string message)
+		{
+			Console.Write($"{message}\r\n");
+			debug.Write($"{message}\r\n");
+			debug.Flush();
+		}
 	}
 }
