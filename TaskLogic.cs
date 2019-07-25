@@ -1,19 +1,9 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Forms;
-using System.Windows.Navigation;
 using LibHac;
 using LibHac.IO;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
-using nsZip.Properties;
-using CommandLine;
 
 namespace nsZip
 {
