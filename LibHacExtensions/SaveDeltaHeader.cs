@@ -13,7 +13,7 @@ namespace nsZip.LibHacExtensions
 		{
 			var filenameOffset = foundBaseNCA.Split(':');
 
-			if (delta.Length < 0x40)
+			if (delta.GetSize() < 0x40)
 			{
 				throw new InvalidDataException("Delta file is too small.");
 			}
@@ -61,7 +61,7 @@ namespace nsZip.LibHacExtensions
 			var SplitNdv0EndOffsetPos = writer.Position - foundBaseNCAEndOffsetLen;
 
 			long offset = 0;
-			while (reader.Position < delta.Length)
+			while (reader.Position < delta.GetSize())
 			{
 				ReadSegmentHeader(reader, writer, out var size, out var seek);
 				if (seek > 0)
@@ -77,7 +77,7 @@ namespace nsZip.LibHacExtensions
 				reader.Position += size;
 			}
 
-			if (reader.Position == delta.Length)
+			if (reader.Position == delta.GetSize())
 			{
 				if (filenameOffset.Length > 2)
 				{

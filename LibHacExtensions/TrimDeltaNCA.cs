@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using LibHac;
 using LibHac.IO;
+using LibHac.NcaLegacy;
 using nsZip.LibHacExtensions;
 
 namespace nsZip.LibHacControl
@@ -21,7 +22,7 @@ namespace nsZip.LibHacControl
 				return;
 			}
 
-			if (cnmtExtended.DeltaApplyInfos.Length == 0)
+			if (cnmtExtended.FragmentSets.Length == 0)
 			{
 				Out.Log(
 					"[Info] Skiped fragemt trimming as no DeltaApplyInfos in the patch Cnmt were found\r\n");
@@ -29,15 +30,15 @@ namespace nsZip.LibHacControl
 			}
 
 			var DeltaContentID = 0;
-			foreach (var deltaApplyInfo in cnmtExtended.DeltaApplyInfos)
+			foreach (var deltaApplyInfo in cnmtExtended.FragmentSets)
 			{
 				long offset = 0;
-				for (var deltaApplyInfoId = 0; deltaApplyInfoId < deltaApplyInfo.Field2C; ++deltaApplyInfoId)
+				for (var deltaApplyInfoId = 0; deltaApplyInfoId < deltaApplyInfo.FragmentCount; ++deltaApplyInfoId)
 				{
 					var matching = $"{Utils.BytesToString(deltaApplyInfo.NcaIdNew).ToLower()}.nca";
 					var length = new FileInfo(Path.Combine(folderPath, matching)).Length;
 					var hexLen = Math.Ceiling(Math.Log(length, 16.0));
-					if (deltaApplyInfo.Field2C > 1)
+					if (deltaApplyInfo.FragmentCount > 1)
 					{
 						matching += $":{offset.ToString($"X{hexLen}")}:{0.ToString($"X{hexLen}")}";
 					}
@@ -101,7 +102,7 @@ namespace nsZip.LibHacControl
 							var offsetAfter = offsetBefore + fragmentFile.Size;
 							IStorage ncaStorageBeforeFragment = ncaStorage.Slice(0, offsetBefore, false);
 							IStorage ncaStorageAfterFragment =
-								ncaStorage.Slice(offsetAfter, ncaStorage.Length - offsetAfter, false);
+								ncaStorage.Slice(offsetAfter, ncaStorage.GetSize() - offsetAfter, false);
 							ncaStorageBeforeFragment.CopyToStream(writer);
 
 							offset += SaveDeltaHeader.Save(fragmentStorage, writer, matching);

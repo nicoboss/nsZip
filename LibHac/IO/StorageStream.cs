@@ -7,18 +7,22 @@ namespace LibHac.IO
     {
         private IStorage BaseStorage { get; }
         private bool LeaveOpen { get; }
+        private long _length;
 
-        public StorageStream(IStorage baseStorage, bool leaveOpen)
+        public StorageStream(IStorage baseStorage, FileAccess access, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             LeaveOpen = leaveOpen;
-            Length = baseStorage.Length;
+            _length = baseStorage.GetSize();
+
+            CanRead = access.HasFlag(FileAccess.Read);
+            CanWrite = access.HasFlag(FileAccess.Write);
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int toRead = (int) Math.Min(count, Length - Position);
-            BaseStorage.Read(buffer, Position, toRead, offset);
+            int toRead = (int)Math.Min(count, Length - Position);
+            BaseStorage.Read(buffer.AsSpan(offset, toRead), Position);
 
             Position += toRead;
             return toRead;
@@ -26,7 +30,7 @@ namespace LibHac.IO
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            BaseStorage.Write(buffer, Position, count, offset);
+            BaseStorage.Write(buffer.AsSpan(offset, count), Position);
             Position += count;
         }
 
@@ -55,13 +59,15 @@ namespace LibHac.IO
 
         public override void SetLength(long value)
         {
-            throw new NotImplementedException();
+            BaseStorage.SetSize(value);
+
+            _length = BaseStorage.GetSize();
         }
 
-        public override bool CanRead => (BaseStorage as Storage)?.CanRead ?? true;
+        public override bool CanRead { get; }
         public override bool CanSeek => true;
-        public override bool CanWrite => (BaseStorage as Storage)?.CanWrite ?? true;
-        public override long Length { get; }
+        public override bool CanWrite { get; }
+        public override long Length => _length;
         public override long Position { get; set; }
 
         protected override void Dispose(bool disposing)

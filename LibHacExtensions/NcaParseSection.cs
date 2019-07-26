@@ -1,4 +1,4 @@
-﻿using LibHac;
+﻿using LibHac.NcaLegacy;
 
 namespace nsZip.LibHacExtensions
 {

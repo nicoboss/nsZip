@@ -1,15 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace LibHac.IO.Save
 {
     public class SaveDataFileSystem : IFileSystem
     {
+        internal const byte TrimFillValue = 0;
+
         public Header Header { get; }
+        private bool IsFirstHeaderInUse { get; }
+
         public IStorage BaseStorage { get; }
         public bool LeaveOpen { get; }
 
-        public HierarchicalIntegrityVerificationStorage IvfcStorage { get; }
         public SaveDataFileSystemCore SaveDataFileSystemCore { get; }
 
         public RemapStorage DataRemapStorage { get; }
@@ -17,6 +21,9 @@ namespace LibHac.IO.Save
 
         public HierarchicalDuplexStorage DuplexStorage { get; }
         public JournalStorage JournalStorage { get; }
+
+        public HierarchicalIntegrityVerificationStorage CoreDataIvfcStorage { get; }
+        public HierarchicalIntegrityVerificationStorage FatIvfcStorage { get; }
 
         private Keyset Keyset { get; }
 
@@ -26,7 +33,24 @@ namespace LibHac.IO.Save
             LeaveOpen = leaveOpen;
             Keyset = keyset;
 
-            Header = new Header(BaseStorage, keyset);
+            var headerA = new Header(BaseStorage, keyset);
+            var headerB = new Header(BaseStorage.Slice(0x4000), keyset);
+
+            if (headerA.HeaderHashValidity == Validity.Valid)
+            {
+                IsFirstHeaderInUse = true;
+            }
+            else if (headerB.HeaderHashValidity == Validity.Valid)
+            {
+                IsFirstHeaderInUse = false;
+            }
+            else
+            {
+                ThrowHelper.ThrowResult(ResultFs.InvalidSaveDataHeader, "Savedata header is not valid.");
+            }
+
+            Header = IsFirstHeaderInUse ? headerA : headerB;
+
             FsLayout layout = Header.Layout;
 
             IStorage dataRemapBase = BaseStorage.Slice(layout.FileMapDataOffset, layout.FileMapDataSize);
@@ -52,16 +76,17 @@ namespace LibHac.IO.Save
 
             JournalStorage = new JournalStorage(journalData, Header.JournalHeader, journalMapInfo, leaveOpen);
 
-            IvfcStorage = InitJournalIvfcStorage(integrityCheckLevel);
+            CoreDataIvfcStorage = InitJournalIvfcStorage(integrityCheckLevel);
 
             IStorage fatStorage = MetaRemapStorage.Slice(layout.FatOffset, layout.FatSize);
 
             if (Header.Layout.Version >= 0x50000)
             {
-                fatStorage = InitFatIvfcStorage(integrityCheckLevel);
+                FatIvfcStorage = InitFatIvfcStorage(integrityCheckLevel);
+                fatStorage = FatIvfcStorage;
             }
 
-            SaveDataFileSystemCore = new SaveDataFileSystemCore(IvfcStorage, fatStorage, Header.SaveHeader);
+            SaveDataFileSystemCore = new SaveDataFileSystemCore(CoreDataIvfcStorage, fatStorage, Header.SaveHeader);
         }
 
         private static HierarchicalDuplexStorage InitDuplexStorage(IStorage baseStorage, Header header)
@@ -119,59 +144,200 @@ namespace LibHac.IO.Save
 
         public void CreateDirectory(string path)
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                SaveDataFileSystemCore.CreateDirectory(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void CreateFile(string path, long size, CreateFileOptions options)
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                SaveDataFileSystemCore.CreateFile(path, size, options);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void DeleteDirectory(string path)
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                SaveDataFileSystemCore.DeleteDirectory(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
+        }
+
+        public void DeleteDirectoryRecursively(string path)
+        {
+            try
+            {
+                SaveDataFileSystemCore.DeleteDirectoryRecursively(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            try
+            {
+                SaveDataFileSystemCore.CleanDirectoryRecursively(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void DeleteFile(string path)
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                SaveDataFileSystemCore.DeleteFile(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
         {
-            return SaveDataFileSystemCore.OpenDirectory(path, mode);
+            try
+            {
+                return SaveDataFileSystemCore.OpenDirectory(path, mode);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public IFile OpenFile(string path, OpenMode mode)
         {
-            return SaveDataFileSystemCore.OpenFile(path, mode);
+            try
+            {
+                return SaveDataFileSystemCore.OpenFile(path, mode);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void RenameDirectory(string srcPath, string dstPath)
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                SaveDataFileSystemCore.RenameDirectory(srcPath, dstPath);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void RenameFile(string srcPath, string dstPath)
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                SaveDataFileSystemCore.RenameFile(srcPath, dstPath);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
-
-        public bool DirectoryExists(string path) => SaveDataFileSystemCore.DirectoryExists(path);
-        public bool FileExists(string filename) => SaveDataFileSystemCore.FileExists(filename);
 
         public DirectoryEntryType GetEntryType(string path)
         {
-            return SaveDataFileSystemCore.GetEntryType(path);
+            try
+            {
+                return SaveDataFileSystemCore.GetEntryType(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
+        }
+
+        public long GetFreeSpaceSize(string path)
+        {
+            try
+            {
+                return SaveDataFileSystemCore.GetFreeSpaceSize(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            try
+            {
+                return SaveDataFileSystemCore.GetTotalSpaceSize(path);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
 
         public void Commit()
         {
-            Commit(Keyset);
+            try
+            {
+                Commit(Keyset);
+            }
+            catch (HorizonResultException ex)
+            {
+                ConvertResultException(ex);
+                throw;
+            }
         }
+
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
 
         public bool Commit(Keyset keyset)
         {
+            CoreDataIvfcStorage.Flush();
+            FatIvfcStorage?.Flush();
+
             Stream headerStream = BaseStorage.AsStream();
 
             var hashData = new byte[0x3d00];
@@ -200,12 +366,39 @@ namespace LibHac.IO.Save
             return true;
         }
 
+        public void FsTrim()
+        {
+            MetaRemapStorage.FsTrim();
+            DataRemapStorage.FsTrim();
+            DuplexStorage.FsTrim();
+            JournalStorage.FsTrim();
+            CoreDataIvfcStorage.FsTrim();
+            FatIvfcStorage?.FsTrim();
+            SaveDataFileSystemCore.FsTrim();
+
+            int unusedHeaderOffset = IsFirstHeaderInUse ? 0x4000 : 0;
+            BaseStorage.Slice(unusedHeaderOffset, 0x4000).Fill(TrimFillValue);
+        }
+
         public Validity Verify(IProgressReport logger = null)
         {
-            Validity validity = IvfcStorage.Validate(true, logger);
-            IvfcStorage.SetLevelValidities(Header.Ivfc);
+            Validity journalValidity = CoreDataIvfcStorage.Validate(true, logger);
+            CoreDataIvfcStorage.SetLevelValidities(Header.Ivfc);
 
-            return validity;
+            if (FatIvfcStorage == null) return journalValidity;
+
+            Validity fatValidity = FatIvfcStorage.Validate(true, logger);
+            FatIvfcStorage.SetLevelValidities(Header.Ivfc);
+
+            if (journalValidity != Validity.Valid) return journalValidity;
+            if (fatValidity != Validity.Valid) return fatValidity;
+
+            return journalValidity;
+        }
+
+        private void ConvertResultException(HorizonResultException ex)
+        {
+            ex.ResultValue = SaveResults.ConvertToExternalResult(ex.ResultValue);
         }
     }
 }

@@ -77,7 +77,7 @@ namespace nsZip.LibHacControl
 			}
 		}
 
-		public static string PrintXci(Xci xci)
+		public static string PrintXci(this Xci xci)
 		{
 			const int colLen = 36;
 
@@ -87,41 +87,45 @@ namespace nsZip.LibHacControl
 			sb.AppendLine("XCI:");
 
 			PrintItem(sb, colLen, "Magic:", xci.Header.Magic);
-			PrintItem(sb, colLen, $"Header Signature{xci.Header.SignatureValidity.GetValidityString()}:",
-				xci.Header.Signature);
-			PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:",
-				xci.Header.PartitionFsHeaderHash);
+			PrintItem(sb, colLen, $"Header Signature{xci.Header.SignatureValidity.GetValidityString()}:", xci.Header.Signature);
+			PrintItem(sb, colLen, $"Header Hash{xci.Header.PartitionFsHeaderValidity.GetValidityString()}:", xci.Header.RootPartitionHeaderHash);
 			PrintItem(sb, colLen, "Cartridge Type:", GetCartridgeType(xci.Header.RomSize));
 			PrintItem(sb, colLen, "Cartridge Size:", $"0x{Util.MediaToReal(xci.Header.ValidDataEndPage + 1):x12}");
 			PrintItem(sb, colLen, "Header IV:", xci.Header.AesCbcIv);
 
-			foreach (var partition in xci.Partitions.OrderBy(x => x.Offset))
+			PrintPartition(sb, colLen, xci.OpenPartition(XciPartitionType.Root), XciPartitionType.Root);
+
+			foreach (XciPartitionType type in Enum.GetValues(typeof(XciPartitionType)))
 			{
-				PrintPartition(sb, colLen, partition);
+				if (type == XciPartitionType.Root || !xci.HasPartition(type)) continue;
+
+				XciPartition partition = xci.OpenPartition(type);
+				PrintPartition(sb, colLen, partition, type);
 			}
 
 			return sb.ToString();
 		}
 
-		private static void PrintPartition(StringBuilder sb, int colLen, XciPartition partition)
+		private static void PrintPartition(StringBuilder sb, int colLen, XciPartition partition, XciPartitionType type)
 		{
 			const int fileNameLen = 57;
 
-			sb.AppendLine($"{GetDisplayName(partition.Name)} Partition:{partition.HashValidity.GetValidityString()}");
+			sb.AppendLine($"{type.ToString()} Partition:{partition.HashValidity.GetValidityString()}");
 			PrintItem(sb, colLen, "    Magic:", partition.Header.Magic);
 			PrintItem(sb, colLen, "    Offset:", $"{partition.Offset:x12}");
 			PrintItem(sb, colLen, "    Number of files:", partition.Files.Length);
 
-			if (partition.Files.Length > 0)
-			{
-				for (var i = 0; i < partition.Files.Length; i++)
-				{
-					var file = partition.Files[i];
+			string name = type.GetFileName();
 
-					var label = i == 0 ? "    Files:" : "";
-					var offsets =
-						$"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
-					var data = $"{partition.Name}:/{file.Name}".PadRight(fileNameLen) + offsets;
+			if (partition.Files.Length > 0 && partition.Files.Length < 100)
+			{
+				for (int i = 0; i < partition.Files.Length; i++)
+				{
+					PartitionFileEntry file = partition.Files[i];
+
+					string label = i == 0 ? "    Files:" : "";
+					string offsets = $"{file.Offset:x12}-{file.Offset + file.Size:x12}{file.HashValidity.GetValidityString()}";
+					string data = $"{name}:/{file.Name}".PadRight(fileNameLen) + offsets;
 
 					PrintItem(sb, colLen, label, data);
 				}

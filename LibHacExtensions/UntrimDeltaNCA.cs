@@ -2,6 +2,7 @@
 using System.Linq;
 using LibHac;
 using LibHac.IO;
+using LibHac.NcaLegacy;
 using nsZip.LibHacExtensions;
 
 namespace nsZip.LibHacControl
@@ -54,12 +55,12 @@ namespace nsZip.LibHacControl
 						                   fragmentFile.Offset;
 						IStorage ncaStorageBeforeFragment = ncaStorage.Slice(0, offsetBefore, false);
 						IStorage fragmentStorageOverflow = ncaStorage.Slice(offsetBefore,
-							ncaStorage.Length - offsetBefore, false);
+							ncaStorage.GetSize() - offsetBefore, false);
 						ncaStorageBeforeFragment.CopyToStream(writer);
 						var TDV0len = RecreateDelta.Recreate(fragmentStorageOverflow, writer, newBaseFolderFs);
 						var offsetAfter = offsetBefore + TDV0len;
 						IStorage fragmentStorageAfter = ncaStorage.Slice(offsetAfter,
-							ncaStorage.Length - offsetAfter, false);
+							ncaStorage.GetSize() - offsetAfter, false);
 						fragmentStorageAfter.CopyToStream(writer);
 						writer.Position = 0x200;
 						writer.WriteByte(0x4E);

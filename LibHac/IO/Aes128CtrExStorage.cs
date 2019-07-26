@@ -12,10 +12,19 @@ namespace LibHac.IO
 
         private readonly object _locker = new object();
 
-        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeHeader, IStorage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
+        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeData, byte[] key, long counterOffset, byte[] ctrHi, bool leaveOpen)
             : base(baseStorage, key, counterOffset, ctrHi, leaveOpen)
         {
-            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeHeader, bucketTreeData);
+            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeData);
+
+            SubsectionEntries = BucketTree.GetEntryList();
+            SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
+        }
+
+        public Aes128CtrExStorage(IStorage baseStorage, IStorage bucketTreeData, byte[] key, byte[] counter, bool leaveOpen)
+            : base(baseStorage, key, counter, leaveOpen)
+        {
+            BucketTree = new BucketTree<AesSubsectionEntry>(bucketTreeData);
 
             SubsectionEntries = BucketTree.GetEntryList();
             SubsectionOffsets = SubsectionEntries.Select(x => x.Offset).ToList();
@@ -36,8 +45,7 @@ namespace LibHac.IO
                 lock (_locker)
                 {
                     UpdateCounterSubsection(entry.Counter);
-	                //Console.WriteLine(inPos + ": " + ByteArrayToString(Counter));
-					base.ReadImpl(destination.Slice(outPos, bytesToRead), inPos);
+                    base.ReadImpl(destination.Slice(outPos, bytesToRead), inPos);
                 }
 
                 outPos += bytesToRead;
@@ -61,8 +69,6 @@ namespace LibHac.IO
             throw new NotImplementedException();
         }
 
-        public override bool CanWrite => false;
-
         private AesSubsectionEntry GetSubsectionEntry(long offset)
         {
             int index = SubsectionOffsets.BinarySearch(offset);
@@ -76,11 +82,6 @@ namespace LibHac.IO
             Counter[6] = (byte)(value >> 8);
             Counter[5] = (byte)(value >> 16);
             Counter[4] = (byte)(value >> 24);
-		}
-
-	    public static string ByteArrayToString(byte[] ba)
-	    {
-		    return BitConverter.ToString(ba).Replace("-", "");
-	    }
-	}
+        }
+    }
 }

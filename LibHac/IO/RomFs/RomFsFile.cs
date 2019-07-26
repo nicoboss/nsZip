@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LibHac.IO
+namespace LibHac.IO.RomFs
 {
     public class RomFsFile : FileBase
     {
@@ -16,7 +16,7 @@ namespace LibHac.IO
             Size = size;
         }
 
-        public override int Read(Span<byte> destination, long offset)
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
@@ -26,9 +26,9 @@ namespace LibHac.IO
             return toRead;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
-            throw new NotImplementedException();
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFile);
         }
 
         public override void Flush()
@@ -42,7 +42,7 @@ namespace LibHac.IO
 
         public override void SetSize(long size)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyRomFsFile);
         }
     }
 }

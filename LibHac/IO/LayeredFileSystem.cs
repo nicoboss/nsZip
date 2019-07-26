@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace LibHac.IO
 {
@@ -21,7 +20,14 @@ namespace LibHac.IO
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.DirectoryExists(path))
+                DirectoryEntryType type = fs.GetEntryType(path);
+
+                if (type == DirectoryEntryType.File && dirs.Count == 0)
+                {
+                    ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+                }
+
+                if (fs.GetEntryType(path) == DirectoryEntryType.Directory)
                 {
                     dirs.Add(fs.OpenDirectory(path, mode));
                 }
@@ -38,43 +44,21 @@ namespace LibHac.IO
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.FileExists(path))
+                DirectoryEntryType type = fs.GetEntryType(path);
+
+                if (type == DirectoryEntryType.File)
                 {
                     return fs.OpenFile(path, mode);
                 }
-            }
 
-            throw new FileNotFoundException();
-        }
-
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            foreach (IFileSystem fs in Sources)
-            {
-                if (fs.DirectoryExists(path))
+                if (type == DirectoryEntryType.Directory)
                 {
-                    return true;
+                    ThrowHelper.ThrowResult(ResultFs.PathNotFound);
                 }
             }
 
-            return false;
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            foreach (IFileSystem fs in Sources)
-            {
-                if (fs.FileExists(path))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            return default;
         }
 
         public DirectoryEntryType GetEntryType(string path)
@@ -83,27 +67,67 @@ namespace LibHac.IO
 
             foreach (IFileSystem fs in Sources)
             {
-                if (fs.FileExists(path))
-                {
-                    return DirectoryEntryType.File;
-                }
+                DirectoryEntryType type = fs.GetEntryType(path);
 
-                if (fs.DirectoryExists(path))
+                if (type != DirectoryEntryType.NotFound) return type;
+            }
+
+            return DirectoryEntryType.NotFound;
+        }
+
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            foreach (IFileSystem fs in Sources)
+            {
+                if (fs.GetEntryType(path) != DirectoryEntryType.NotFound)
                 {
-                    return DirectoryEntryType.Directory;
+                    return fs.GetFileTimeStampRaw(path);
                 }
             }
 
-            throw new FileNotFoundException(path);
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            return default;
+        }
+
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        {
+            path = PathTools.Normalize(path);
+
+            foreach (IFileSystem fs in Sources)
+            {
+                if (fs.GetEntryType(path) != DirectoryEntryType.NotFound)
+                {
+                    fs.QueryEntry(outBuffer, inBuffer, path, queryId);
+                    return;
+                }
+            }
+
+            ThrowHelper.ThrowResult(ResultFs.PathNotFound);
         }
 
         public void Commit() { }
 
-        public void CreateDirectory(string path) => throw new NotSupportedException();
-        public void CreateFile(string path, long size, CreateFileOptions options) => throw new NotSupportedException();
-        public void DeleteDirectory(string path) => throw new NotSupportedException();
-        public void DeleteFile(string path) => throw new NotSupportedException();
-        public void RenameDirectory(string srcPath, string dstPath) => throw new NotSupportedException();
-        public void RenameFile(string srcPath, string dstPath) => throw new NotSupportedException();
+        public void CreateDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void CreateFile(string path, long size, CreateFileOptions options) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void DeleteDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void DeleteDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void CleanDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void DeleteFile(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void RenameDirectory(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+        public void RenameFile(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+
+        public long GetFreeSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+            return default;
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperation);
+            return default;
+        }
     }
 }

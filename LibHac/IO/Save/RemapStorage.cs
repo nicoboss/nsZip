@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace LibHac.IO.Save
 {
-    public class RemapStorage : Storage
+    public class RemapStorage : StorageBase
     {
+        private const int MapEntryLength = 0x20;
+
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
         private IStorage MapEntryStorage { get; }
@@ -13,8 +16,6 @@ namespace LibHac.IO.Save
         private RemapHeader Header { get; }
         public MapEntry[] MapEntries { get; set; }
         public RemapSegment[] Segments { get; set; }
-
-        public override long Length { get; } = -1;
 
         /// <summary>
         /// Creates a new <see cref="RemapStorage"/>
@@ -47,6 +48,8 @@ namespace LibHac.IO.Save
 
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
+            if (destination.Length == 0) return;
+
             MapEntry entry = GetMapEntry(offset);
 
             long inPos = offset;
@@ -73,6 +76,8 @@ namespace LibHac.IO.Save
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
+            if (source.Length == 0) return;
+
             MapEntry entry = GetMapEntry(offset);
 
             long inPos = offset;
@@ -102,9 +107,11 @@ namespace LibHac.IO.Save
             BaseStorage.Flush();
         }
 
-        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
-        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
-        public IStorage GetMapEntryStorage() => MapEntryStorage.WithAccess(FileAccess.Read);
+        public override long GetSize() => -1;
+
+        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
+        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+        public IStorage GetMapEntryStorage() => MapEntryStorage.AsReadOnly();
 
         private static RemapSegment[] InitSegments(RemapHeader header, MapEntry[] mapEntries)
         {
@@ -177,6 +184,15 @@ namespace LibHac.IO.Save
         private long GetSegmentMask()
         {
             return ~GetOffsetMask();
+        }
+
+        public void FsTrim()
+        {
+            int mapEntriesLength = Header.MapEntryCount * MapEntryLength;
+            long dataEnd = MapEntries.Max(x => x.PhysicalOffsetEnd);
+
+            MapEntryStorage.Slice(mapEntriesLength).Fill(SaveDataFileSystem.TrimFillValue);
+            BaseStorage.Slice(dataEnd).Fill(SaveDataFileSystem.TrimFillValue);
         }
     }
 

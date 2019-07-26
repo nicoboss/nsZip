@@ -1,4 +1,6 @@
-﻿namespace LibHac.IO
+﻿using System;
+
+namespace LibHac.IO
 {
     public class SubdirectoryFileSystem : IFileSystem
     {
@@ -7,8 +9,7 @@
 
         private string ResolveFullPath(string path)
         {
-            //todo
-            return RootPath + path;
+            return PathTools.Combine(RootPath, path);
         }
 
         public SubdirectoryFileSystem(IFileSystem fs, string rootPath)
@@ -36,6 +37,20 @@
             path = PathTools.Normalize(path);
 
             ParentFileSystem.DeleteDirectory(ResolveFullPath(path));
+        }
+
+        public void DeleteDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            ParentFileSystem.DeleteDirectoryRecursively(ResolveFullPath(path));
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            ParentFileSystem.CleanDirectoryRecursively(ResolveFullPath(path));
         }
 
         public void DeleteFile(string path)
@@ -77,20 +92,6 @@
             ParentFileSystem.RenameFile(ResolveFullPath(srcPath), ResolveFullPath(dstPath));
         }
 
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return ParentFileSystem.DirectoryExists(ResolveFullPath(path));
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return ParentFileSystem.FileExists(ResolveFullPath(path));
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
@@ -101,6 +102,34 @@
         public void Commit()
         {
             ParentFileSystem.Commit();
+        }
+
+        public long GetFreeSpaceSize(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            return ParentFileSystem.GetFreeSpaceSize(ResolveFullPath(path));
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            return ParentFileSystem.GetTotalSpaceSize(ResolveFullPath(path));
+        }
+
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            return ParentFileSystem.GetFileTimeStampRaw(ResolveFullPath(path));
+        }
+
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        {
+            path = PathTools.Normalize(path);
+
+            ParentFileSystem.QueryEntry(outBuffer, inBuffer, ResolveFullPath(path), queryId);
         }
     }
 }

@@ -159,25 +159,19 @@ namespace nsZip.LibHacControl
 			return sb.ToString();
 		}
 
-		public static void CreateNsp(ulong TitleId, string nspFilename, SwitchFs switchFs, IProgressReport logger)
+		public static void CreateNsp(SwitchFs switchFs, ulong id, string outPath, IProgressReport logger)
 		{
-			if (TitleId == 0)
+			if (!switchFs.Titles.TryGetValue(id, out Title title))
 			{
-				logger.LogMessage("Title ID must be specified to save title");
-				return;
-			}
-
-			if (!switchFs.Titles.TryGetValue(TitleId, out var title))
-			{
-				logger.LogMessage($"Could not find title {TitleId:X16}");
+				logger.LogMessage($"Could not find title {id:X16}");
 				return;
 			}
 
 			var builder = new PartitionFileSystemBuilder();
 
-			foreach (var nca in title.Ncas)
+			foreach (SwitchFsNca nca in title.Ncas)
 			{
-				builder.AddFile(nca.Filename, new StorageFile(nca.GetStorage(), OpenMode.Read));
+				builder.AddFile(nca.Filename, nca.Nca.BaseStorage.AsFile(OpenMode.Read));
 			}
 
 			var ticket = new Ticket
@@ -186,22 +180,22 @@ namespace nsZip.LibHacControl
 				Signature = new byte[0x200],
 				Issuer = "Root-CA00000003-XS00000020",
 				FormatVersion = 2,
-				RightsId = title.MainNca.Header.RightsId,
-				TitleKeyBlock = title.MainNca.TitleKey,
-				CryptoType = title.MainNca.Header.CryptoType2,
+				RightsId = title.MainNca.Nca.Header.RightsId.ToArray(),
+				TitleKeyBlock = title.MainNca.Nca.GetDecryptedTitleKey(),
+				CryptoType = title.MainNca.Nca.Header.KeyGeneration,
 				SectHeaderOffset = 0x2C0
 			};
-			var ticketBytes = ticket.GetBytes();
-			builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new StorageFile(new MemoryStorage(ticketBytes), OpenMode.Read));
+			byte[] ticketBytes = ticket.GetBytes();
+			builder.AddFile($"{ticket.RightsId.ToHexString()}.tik", new MemoryStream(ticketBytes).AsIFile(OpenMode.ReadWrite));
 
-			var thisAssembly = Assembly.GetExecutingAssembly();
-			var cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
-			builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", new StreamFile(cert, OpenMode.Read));
+			Assembly thisAssembly = Assembly.GetExecutingAssembly();
+			Stream cert = thisAssembly.GetManifestResourceStream("hactoolnet.CA00000003_XS00000020");
+			builder.AddFile($"{ticket.RightsId.ToHexString()}.cert", cert.AsIFile(OpenMode.Read));
 
-
-			using (var outStream = new FileStream(nspFilename, FileMode.Create, FileAccess.ReadWrite))
+			using (var outStream = new FileStream(outPath, FileMode.Create, FileAccess.ReadWrite))
 			{
-				builder.Build(PartitionFileSystemType.Standard).CopyToStream(outStream);
+				IStorage builtPfs = builder.Build(PartitionFileSystemType.Standard);
+				builtPfs.CopyToStream(outStream, builtPfs.GetSize(), logger);
 			}
 		}
 

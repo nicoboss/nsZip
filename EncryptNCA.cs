@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using LibHac;
 using LibHac.IO;
+using LibHac.NcaLegacy;
 using nsZip.Crypto;
 using nsZip.LibHacExtensions;
 using AesSubsectionEntry = nsZip.LibHacExtensions.AesSubsectionEntry;
@@ -81,7 +82,7 @@ namespace nsZip
 			{
 				var titleKey = keyset.TitleKeys[Header.RightsId];
 				var TitleKeyDec = new byte[0x10];
-				LibHac.Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
+				LibHac.Crypto.DecryptEcb(keyset.TitleKeks[CryptoType], titleKey, TitleKeyDec, 0x10);
 				Out.Log($"titleKey: {Utils.BytesToString(titleKey)}\r\n");
 				Out.Log($"TitleKeyDec: {Utils.BytesToString(TitleKeyDec)}\r\n");
 				DecryptedKeys[2] = TitleKeyDec;

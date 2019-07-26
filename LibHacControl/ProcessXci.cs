@@ -53,7 +53,7 @@ namespace nsZip.LibHacControl
 
 				Out.Log(Print.PrintXci(xci));
 
-				var root = xci.RootPartition;
+				var root = xci.OpenPartition(XciPartitionType.Root);
 				if (root == null)
 				{
 					throw new InvalidDataException("Could not find root partition");
@@ -108,7 +108,7 @@ namespace nsZip.LibHacControl
 
 		public static IEnumerable<(PartitionFileSystem subPfs, PartitionFileEntry subPfsFile)> FileIterator(Xci xci, Keyset keyset, Output Out)
 		{
-			var root = xci.RootPartition;
+			var root = xci.OpenPartition(XciPartitionType.Root);
 			if (root == null)
 			{
 				throw new InvalidDataException("Could not find root partition");

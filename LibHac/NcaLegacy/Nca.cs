@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LibHac.IO;
+using LibHac.IO.RomFs;
 
-namespace LibHac
+namespace LibHac.NcaLegacy
 {
     public class Nca : IDisposable
     {
@@ -58,13 +59,13 @@ namespace LibHac
             }
             else if (keyset.TitleKeys.TryGetValue(Header.RightsId, out byte[] titleKey))
             {
-                if (keyset.Titlekeks[CryptoType].IsEmpty())
+                if (keyset.TitleKeks[CryptoType].IsEmpty())
                 {
                     MissingKeyName = $"titlekek_{CryptoType:x2}";
                 }
 
                 TitleKey = titleKey;
-                Crypto.DecryptEcb(keyset.Titlekeks[CryptoType], titleKey, TitleKeyDec, 0x10);
+                Crypto.DecryptEcb(keyset.TitleKeks[CryptoType], titleKey, TitleKeyDec, 0x10);
                 DecryptedKeys[2] = TitleKeyDec;
             }
             else
@@ -86,7 +87,8 @@ namespace LibHac
         /// <returns>The <see cref="IStorage"/> that provides access to the entire raw NCA file.</returns>
         public IStorage GetStorage()
         {
-            return BaseStorage.WithAccess(FileAccess.Read);
+			//ToDo: Make it read only as previously done like BaseStorage.WithAccess(FileAccess.Read);
+			return BaseStorage;
         }
 
         public bool CanOpenSection(int index)
@@ -155,7 +157,7 @@ namespace LibHac
                     IStorage bucketTreeData = new CachedStorage(new Aes128CtrStorage(rawStorage.Slice(bktrOffset, bktrSize, leaveOpen), DecryptedKeys[2], bktrOffset + offset, sect.Header.Ctr, leaveOpen), 4, leaveOpen);
 
                     IStorage encryptionBucketTreeData = bucketTreeData.Slice(info.EncryptionHeader.Offset - bktrOffset);
-                    IStorage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize, leaveOpen), bucketTreeHeader, encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen);
+                    IStorage decStorage = new Aes128CtrExStorage(rawStorage.Slice(0, dataSize, leaveOpen), encryptionBucketTreeData, DecryptedKeys[2], offset, sect.Header.Ctr, leaveOpen);
                     decStorage = new CachedStorage(decStorage, 0x4000, 4, leaveOpen);
 
                     return new ConcatenationStorage(new[] { decStorage, bucketTreeData }, leaveOpen);
@@ -194,7 +196,7 @@ namespace LibHac
                 IStorage bktrHeader = new MemoryStorage(bktrInfo.Header);
                 IStorage bktrData = rawStorage.Slice(bktrInfo.Offset, bktrInfo.Size, leaveOpen);
 
-                rawStorage = new IndirectStorage(bktrHeader, bktrData, leaveOpen, baseStorage, patchStorage);
+                rawStorage = new IndirectStorage(bktrData, leaveOpen, baseStorage, patchStorage);
             }
 
             if (raw || rawStorage == null) return rawStorage;
@@ -348,7 +350,7 @@ namespace LibHac
 	        {
 		        // Support reading headers that are only 0xC00 bytes long, but still return
 		        // the entire header if available.
-				size = BaseStorage.Length >= 0xC00 && BaseStorage.Length < 0x4000 ? 0xC00 : 0x4000;
+				size = BaseStorage.GetSize() >= 0xC00 && BaseStorage.GetSize() < 0x4000 ? 0xC00 : 0x4000;
 			}
 
 			return new CachedStorage(new Aes128XtsStorage(BaseStorage.Slice(0, size), Keyset.HeaderKey, 0x200, true), 1, true);
@@ -521,7 +523,7 @@ namespace LibHac
 
             using (var outFile = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite))
             {
-                storage.CopyToStream(outFile, storage.Length, logger);
+                storage.CopyToStream(outFile, storage.GetSize(), logger);
             }
         }
 

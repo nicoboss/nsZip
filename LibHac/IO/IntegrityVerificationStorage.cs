@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.IO;
 using System.Security.Cryptography;
+using LibHac.IO.Save;
 
 namespace LibHac.IO
 {
@@ -16,7 +17,7 @@ namespace LibHac.IO
         private byte[] Salt { get; }
         private IntegrityStorageType Type { get; }
 
-        private readonly SHA256Cng _hash = new SHA256Cng();
+        private readonly SHA256 _hash = SHA256.Create();
         private readonly object _locker = new object();
 
         public IntegrityVerificationStorage(IntegrityVerificationInfo info, IStorage hashStorage,
@@ -38,31 +39,49 @@ namespace LibHac.IO
             if (count < 0 || count > SectorSize)
                 throw new ArgumentOutOfRangeException(nameof(destination), "Length is invalid.");
 
-            Span<byte> hashBuffer = stackalloc byte[DigestSize];
             long blockIndex = offset / SectorSize;
-            long hashPos = blockIndex * DigestSize;
 
             if (BlockValidities[blockIndex] == Validity.Invalid && integrityCheckLevel == IntegrityCheckLevel.ErrorOnInvalid)
             {
-                throw new InvalidDataException("Hash error!");
+                // Todo: Differentiate between the top and lower layers
+                ThrowHelper.ThrowResult(ResultFs.InvalidHashInIvfc, "Hash error!");
             }
 
+            bool needsHashCheck = integrityCheckLevel != IntegrityCheckLevel.None &&
+                                  BlockValidities[blockIndex] == Validity.Unchecked;
+
+            if (Type != IntegrityStorageType.Save && !needsHashCheck)
+            {
+                BaseStorage.Read(destination, offset);
+                return;
+            }
+
+            Span<byte> hashBuffer = stackalloc byte[DigestSize];
+            long hashPos = blockIndex * DigestSize;
             HashStorage.Read(hashBuffer, hashPos);
 
-            if (Type == IntegrityStorageType.Save && Util.IsEmpty(hashBuffer))
+            if (Type == IntegrityStorageType.Save)
             {
-                destination.Clear();
-                BlockValidities[blockIndex] = Validity.Valid;
-                return;
+                if (Util.IsEmpty(hashBuffer))
+                {
+                    destination.Clear();
+                    BlockValidities[blockIndex] = Validity.Valid;
+                    return;
+                }
+
+                if (!needsHashCheck)
+                {
+                    BaseStorage.Read(destination, offset);
+                    return;
+                }
             }
 
             byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
             try
             {
-                BaseStorage.Read(dataBuffer, offset, count, 0);
-                dataBuffer.AsSpan(0, count).CopyTo(destination);
+                BaseStorage.Read(destination, offset);
+                destination.CopyTo(dataBuffer);
 
-                if (integrityCheckLevel == IntegrityCheckLevel.None) return;
                 if (BlockValidities[blockIndex] != Validity.Unchecked) return;
 
                 int bytesToHash = SectorSize;
@@ -86,7 +105,7 @@ namespace LibHac.IO
 
                 if (validity == Validity.Invalid && integrityCheckLevel == IntegrityCheckLevel.ErrorOnInvalid)
                 {
-                    throw new InvalidDataException("Hash error!");
+                    ThrowHelper.ThrowResult(ResultFs.InvalidHashInIvfc, "Hash error!");
                 }
             }
             finally
@@ -102,14 +121,8 @@ namespace LibHac.IO
 
         public void Read(Span<byte> destination, long offset, IntegrityCheckLevel integrityCheckLevel)
         {
-            ValidateSpanParameters(destination, offset);
+            ValidateParameters(destination, offset);
             ReadImpl(destination, offset, integrityCheckLevel);
-        }
-
-        public void Read(byte[] buffer, long offset, int count, int bufferOffset, IntegrityCheckLevel integrityCheckLevel)
-        {
-            ValidateArrayParameters(buffer, offset, count, bufferOffset);
-            ReadImpl(buffer.AsSpan(bufferOffset, count), offset, integrityCheckLevel);
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
@@ -117,7 +130,7 @@ namespace LibHac.IO
             long blockIndex = offset / SectorSize;
             long hashPos = blockIndex * DigestSize;
 
-            int toWrite = (int)Math.Min(source.Length, Length - offset);
+            int toWrite = (int)Math.Min(source.Length, GetSize() - offset);
 
             byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(SectorSize);
             try
@@ -160,7 +173,7 @@ namespace LibHac.IO
                 if (Type == IntegrityStorageType.Save)
                 {
                     // This bit is set on all save hashes
-                    hash[0x1F] |= 0x80;
+                    hash[0x1F] |= 0b10000000;
                 }
 
                 return hash;
@@ -171,6 +184,24 @@ namespace LibHac.IO
         {
             HashStorage.Flush();
             base.Flush();
+        }
+
+        public void FsTrim()
+        {
+            if (Type != IntegrityStorageType.Save) return;
+
+            Span<byte> digest = stackalloc byte[DigestSize];
+
+            for (int i = 0; i < SectorCount; i++)
+            {
+                long hashPos = i * DigestSize;
+                HashStorage.Read(digest, hashPos);
+
+                if (!Util.IsEmpty(digest)) continue;
+
+                int dataOffset = i * SectorSize;
+                BaseStorage.Fill(SaveDataFileSystem.TrimFillValue, dataOffset, SectorSize);
+            }
         }
     }
 

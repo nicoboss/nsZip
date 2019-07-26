@@ -17,8 +17,7 @@ namespace LibHac
 
         public Kip(IStorage storage)
         {
-            Storage = storage;
-            Header = new KipHeader(Storage);
+            Header = new KipHeader(storage);
 
             Size = HeaderSize;
 
@@ -28,6 +27,8 @@ namespace LibHac
                 SectionOffsets[index] = Size;
                 Size += sectionSize;
             }
+
+            Storage = storage.Slice(0, Size);
         }
 
         public IStorage OpenSection(int index)
@@ -43,7 +44,7 @@ namespace LibHac
         public byte[] DecompressSection(int index)
         {
             IStorage compStream = OpenSection(index);
-            var compressed = new byte[compStream.Length];
+            var compressed = new byte[compStream.GetSize()];
             compStream.Read(compressed, 0);
 
             return DecompressBlz(compressed);
@@ -194,12 +195,8 @@ namespace LibHac
 
             for (int i = 0; i < KipCount; i++)
             {
-                // How to get the KIP's size the lazy way
-                var kip = new Kip(Storage.Slice(offset));
-
-                Kips[i] = new Kip(Storage.Slice(offset, kip.Size));
-
-                offset += kip.Size;
+                Kips[i] = new Kip(Storage.Slice(offset));
+                offset += Kips[i].Size;
             }
         }
     }

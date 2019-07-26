@@ -8,6 +8,7 @@ namespace LibHac.IO
 {
     public class PartitionFileSystem : IFileSystem
     {
+        // todo Re-add way of checking a file hash
         public PartitionFileSystemHeader Header { get; }
         public int HeaderSize { get; }
         public PartitionFileEntry[] Files { get; }
@@ -28,26 +29,6 @@ namespace LibHac.IO
             BaseStorage = storage;
         }
 
-        public void CreateDirectory(string path)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void CreateFile(string path, long size, CreateFileOptions options)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void DeleteDirectory(string path)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void DeleteFile(string path)
-        {
-            throw new NotSupportedException();
-        }
-
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
         {
             return new PartitionDirectory(this, path, mode);
@@ -59,7 +40,7 @@ namespace LibHac.IO
 
             if (!FileDict.TryGetValue(path, out PartitionFileEntry entry))
             {
-                throw new FileNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             return OpenFile(entry, mode);
@@ -70,44 +51,46 @@ namespace LibHac.IO
             return new PartitionFile(BaseStorage, HeaderSize + entry.Offset, entry.Size, mode);
         }
 
-        public void RenameDirectory(string srcPath, string dstPath)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void RenameFile(string srcPath, string dstPath)
-        {
-            throw new NotSupportedException();
-        }
-
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-            return path == "/";
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path).TrimStart('/');
-
-            return FileDict.ContainsKey(path);
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
 
             if (path == "/") return DirectoryEntryType.Directory;
 
-            if (FileDict.ContainsKey(path)) return DirectoryEntryType.File;
+            if (FileDict.ContainsKey(path.TrimStart('/'))) return DirectoryEntryType.File;
 
-            throw new FileNotFoundException(path);
+            return DirectoryEntryType.NotFound;
         }
 
-        public void Commit()
+        public void CreateDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void CreateFile(string path, long size, CreateFileOptions options) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void DeleteDirectory(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void DeleteDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void CleanDirectoryRecursively(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void DeleteFile(string path) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void RenameDirectory(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+        public void RenameFile(string srcPath, string dstPath) => ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationModifyPartitionFileSystem);
+
+        public long GetFreeSpaceSize(string path)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
         }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
+        }
+
+        public void Commit() { }
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) => ThrowHelper.ThrowResult(ResultFs.NotImplemented);
     }
 
     public enum PartitionFileSystemType
@@ -142,10 +125,11 @@ namespace LibHac.IO
                     Type = PartitionFileSystemType.Hashed;
                     break;
                 default:
-                    throw new InvalidDataException($"Invalid Partition FS type \"{Magic}\"");
+                    ThrowHelper.ThrowResult(ResultFs.InvalidPartitionFileSystemMagic, $"Invalid Partition FS type \"{Magic}\"");
+                    break;
             }
 
-            int entrySize = GetFileEntrySize(Type);
+            int entrySize = PartitionFileEntry.GetEntrySize(Type);
             int stringTableOffset = 16 + entrySize * NumFiles;
             HeaderSize = stringTableOffset + StringTableSize;
 
@@ -160,34 +144,10 @@ namespace LibHac.IO
                 reader.BaseStream.Position = stringTableOffset + Files[i].StringTableOffset;
                 Files[i].Name = reader.ReadAsciiZ();
             }
-
-
-            if (Type == PartitionFileSystemType.Hashed)
-            {
-                for (int i = 0; i < NumFiles; i++)
-                {
-                    reader.BaseStream.Position = HeaderSize + Files[i].Offset;
-                    Files[i].HashValidity = Crypto.CheckMemoryHashTable(reader.ReadBytes(Files[i].HashedRegionSize), Files[i].Hash, 0, Files[i].HashedRegionSize);
-                }
-            }
-
-        }
-
-        private static int GetFileEntrySize(PartitionFileSystemType type)
-        {
-            switch (type)
-            {
-                case PartitionFileSystemType.Standard:
-                    return 24;
-                case PartitionFileSystemType.Hashed:
-                    return 0x40;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
-            }
         }
     }
 
-     public class PartitionFileEntry
+    public class PartitionFileEntry
     {
         public int Index;
         public long Offset;

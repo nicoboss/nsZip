@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -13,7 +12,7 @@ namespace LibHac.IO
         public uint Magic { get; }
         public byte[] EncryptedKey1 { get; } = new byte[0x10];
         public byte[] EncryptedKey2 { get; } = new byte[0x10];
-        public long Size { get; }
+        public long Size { get; private set; }
 
         public byte[] DecryptedKey1 { get; } = new byte[0x10];
         public byte[] DecryptedKey2 { get; } = new byte[0x10];
@@ -22,6 +21,11 @@ namespace LibHac.IO
 
         public AesXtsFileHeader(IFile aesXtsFile)
         {
+            if (aesXtsFile.GetSize() < 0x80)
+            {
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderTooShort);
+            }
+
             var reader = new FileReader(aesXtsFile);
 
             reader.ReadBytes(Signature);
@@ -33,21 +37,21 @@ namespace LibHac.IO
 
             if (Magic != AesXtsFileMagic)
             {
-                throw new InvalidDataException("Invalid NAX0 magic value");
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidMagic, "Invalid NAX0 magic value");
             }
         }
 
-        public AesXtsFileHeader(byte[] key1, byte[] key2, long fileSize, string path, byte[] kekSeed, byte[] verificationKey)
+        public AesXtsFileHeader(byte[] key, long fileSize, string path, byte[] kekSeed, byte[] verificationKey)
         {
-            Array.Copy(key1, DecryptedKey1, 0x10);
-            Array.Copy(key2, DecryptedKey2, 0x10);
+            Array.Copy(key, 0, DecryptedKey1, 0, 0x10);
+            Array.Copy(key, 0x10, DecryptedKey2, 0, 0x10);
             Magic = AesXtsFileMagic;
             Size = fileSize;
 
             EncryptHeader(path, kekSeed, verificationKey);
         }
 
-        private void EncryptHeader(string path, byte[] kekSeed, byte[] verificationKey)
+        public void EncryptHeader(string path, byte[] kekSeed, byte[] verificationKey)
         {
             GenerateKek(kekSeed, path);
             EncryptKeys();
@@ -61,6 +65,12 @@ namespace LibHac.IO
 
             byte[] hmac = CalculateHmac(verificationKey);
             return Util.ArraysEqual(hmac, Signature);
+        }
+
+        public void SetSize(long size, byte[] verificationKey)
+        {
+            Size = size;
+            Signature = CalculateHmac(verificationKey);
         }
 
         private void DecryptKeys()
@@ -78,7 +88,7 @@ namespace LibHac.IO
         private void GenerateKek(byte[] kekSeed, string path)
         {
             var hash = new HMACSHA256(kekSeed);
-            byte[] pathBytes = Encoding.ASCII.GetBytes(path);
+            byte[] pathBytes = Encoding.UTF8.GetBytes(path);
 
             byte[] checksum = hash.ComputeHash(pathBytes, 0, pathBytes.Length);
             Array.Copy(checksum, 0, Kek1, 0, 0x10);

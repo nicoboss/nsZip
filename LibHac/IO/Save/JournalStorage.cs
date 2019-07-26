@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.IO;
 
 namespace LibHac.IO.Save
 {
-    public class JournalStorage : Storage
+    public class JournalStorage : StorageBase
     {
         private IStorage BaseStorage { get; }
         private IStorage HeaderStorage { get; }
@@ -12,7 +13,8 @@ namespace LibHac.IO.Save
         public JournalHeader Header { get; }
 
         public int BlockSize { get; }
-        public override long Length { get; }
+
+        private long _length;
 
         public JournalStorage(IStorage baseStorage, IStorage header, JournalMapParams mapInfo, bool leaveOpen)
         {
@@ -24,7 +26,7 @@ namespace LibHac.IO.Save
             Map = new JournalMap(mapHeader, mapInfo);
 
             BlockSize = (int)Header.BlockSize;
-            Length = Header.TotalSize - Header.JournalSize;
+            _length = Header.TotalSize - Header.JournalSize;
 
             if (!leaveOpen) ToDispose.Add(baseStorage);
         }
@@ -80,8 +82,26 @@ namespace LibHac.IO.Save
             BaseStorage.Flush();
         }
 
-        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
-        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
+        public override long GetSize() => _length;
+
+        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
+        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+
+        public void FsTrim()
+        {
+            // todo replace with a bitmap reader class when added
+            BitArray bitmap = new DuplexBitmap(Map.GetFreeBlocksStorage(),
+                Map.Header.JournalBlockCount + Map.Header.MainDataBlockCount).Bitmap;
+
+            for (int i = 0; i < bitmap.Length; i++)
+            {
+                if (!bitmap[i]) continue;
+
+                BaseStorage.Fill(SaveDataFileSystem.TrimFillValue, i * BlockSize, BlockSize);
+            }
+
+            Map.FsTrim();
+        }
     }
 
     public class JournalHeader

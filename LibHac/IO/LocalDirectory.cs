@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace LibHac.IO
 {
@@ -20,25 +21,38 @@ namespace LibHac.IO
             LocalPath = fs.ResolveLocalPath(path);
             Mode = mode;
 
-            DirInfo = new DirectoryInfo(LocalPath);
+            try
+            {
+                DirInfo = new DirectoryInfo(LocalPath);
+            }
+            catch (Exception ex) when (ex is ArgumentNullException || ex is ArgumentException ||
+                                       ex is PathTooLongException)
+            {
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound, ex);
+                throw;
+            }
+
+            if (!DirInfo.Exists)
+            {
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            }
         }
 
         public IEnumerable<DirectoryEntry> Read()
         {
-            if (Mode.HasFlag(OpenDirectoryMode.Directories))
+            foreach (FileSystemInfo entry in DirInfo.EnumerateFileSystemInfos())
             {
-                foreach (DirectoryInfo dir in DirInfo.EnumerateDirectories())
-                {
-                    yield return new DirectoryEntry(dir.Name, FullPath + '/' + dir.Name, DirectoryEntryType.Directory, 0);
-                }
-            }
+                bool isDir = (entry.Attributes & FileAttributes.Directory) != 0;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
-            {
-                foreach (FileInfo file in DirInfo.EnumerateFiles())
+                if (!CanReturnEntry(isDir, Mode)) continue;
+
+                DirectoryEntryType type = isDir ? DirectoryEntryType.Directory : DirectoryEntryType.File;
+                long length = isDir ? 0 : ((FileInfo)entry).Length;
+
+                yield return new DirectoryEntry(entry.Name, PathTools.Combine(FullPath, entry.Name), type, length)
                 {
-                    yield return new DirectoryEntry(file.Name, FullPath + '/' + file.Name, DirectoryEntryType.File, file.Length);
-                }
+                    Attributes = entry.Attributes.ToNxAttributes()
+                };
             }
         }
 
@@ -46,17 +60,21 @@ namespace LibHac.IO
         {
             int count = 0;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Directories))
+            foreach (FileSystemInfo entry in DirInfo.EnumerateFileSystemInfos())
             {
-                count += DirInfo.EnumerateDirectories().Count();
-            }
+                bool isDir = (entry.Attributes & FileAttributes.Directory) != 0;
 
-            if (Mode.HasFlag(OpenDirectoryMode.Files))
-            {
-                count += DirInfo.EnumerateFiles().Count();
+                if (CanReturnEntry(isDir, Mode)) count++;
             }
 
             return count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool CanReturnEntry(bool isDir, OpenDirectoryMode mode)
+        {
+            return isDir && (mode & OpenDirectoryMode.Directories) != 0 ||
+                   !isDir && (mode & OpenDirectoryMode.Files) != 0;
         }
     }
 }

@@ -1,37 +1,105 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+
+#if CROSS_PLATFORM
+using System.Runtime.InteropServices;
+#endif
 
 namespace LibHac.IO
 {
+    /// <summary>
+    /// An <see cref="IFileSystem"/> that stores large files as smaller, separate sub-files.
+    /// </summary>
+    /// <remarks>
+    /// This filesystem is mainly used to allow storing large files on filesystems that have low
+    /// limits on file size such as FAT filesystems. The underlying base filesystem must have
+    /// support for the "Archive" file attribute found in FAT or NTFS filesystems.
+    ///
+    /// A <see cref="ConcatenationFileSystem"/> may contain both standard files or Concatenation files.
+    /// If a directory has the archive attribute set, its contents will be concatenated and treated
+    /// as a single file. These sub-files must follow the naming scheme "00", "01", "02", ...
+    /// Each sub-file except the final one must have the size <see cref="SubFileSize"/> that was specified
+    /// at the creation of the <see cref="ConcatenationFileSystem"/>.
+    /// </remarks>
     public class ConcatenationFileSystem : IFileSystem
     {
-        private const long DefaultSplitFileSize = 0xFFFF0000; // Hard-coded value used by FS
+        private const long DefaultSubFileSize = 0xFFFF0000; // Hard-coded value used by FS
         private IAttributeFileSystem BaseFileSystem { get; }
-        private long SplitFileSize { get; }
+        private long SubFileSize { get; }
 
-        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem) : this(baseFileSystem, DefaultSplitFileSize) { }
+        /// <summary>
+        /// Initializes a new <see cref="ConcatenationFileSystem"/>.
+        /// </summary>
+        /// <param name="baseFileSystem">The base <see cref="IAttributeFileSystem"/> for the
+        /// new <see cref="ConcatenationFileSystem"/>.</param>
+        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem) : this(baseFileSystem, DefaultSubFileSize) { }
 
-        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem, long splitFileSize)
+        /// <summary>
+        /// Initializes a new <see cref="ConcatenationFileSystem"/>.
+        /// </summary>
+        /// <param name="baseFileSystem">The base <see cref="IAttributeFileSystem"/> for the
+        /// new <see cref="ConcatenationFileSystem"/>.</param>
+        /// <param name="subFileSize">The size of each sub-file. Once a file exceeds this size, a new sub-file will be created</param>
+        public ConcatenationFileSystem(IAttributeFileSystem baseFileSystem, long subFileSize)
         {
             BaseFileSystem = baseFileSystem;
-            SplitFileSize = splitFileSize;
+            SubFileSize = subFileSize;
         }
 
-        internal bool IsSplitFile(string path)
+        // .NET Core on platforms other than Windows doesn't support getting the
+        // archive flag in FAT file systems. Try to work around that for now for reading, 
+        // but writing still won't work properly on those platforms
+        internal bool IsConcatenationFile(string path)
         {
-            FileAttributes attributes = BaseFileSystem.GetFileAttributes(path);
+#if CROSS_PLATFORM
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return HasConcatenationFileAttribute(BaseFileSystem.GetFileAttributes(path));
+            }
+            else
+            {
+                return IsConcatenationFileHeuristic(path);
+            }
+#else
+            return HasConcatenationFileAttribute(BaseFileSystem.GetFileAttributes(path));
+#endif
+        }
 
-            return (attributes & FileAttributes.Directory) != 0 && (attributes & FileAttributes.Archive) != 0;
+#if CROSS_PLATFORM
+        private bool IsConcatenationFileHeuristic(string path)
+        {
+            if (BaseFileSystem.GetEntryType(path) != DirectoryEntryType.Directory) return false;
+
+            if (BaseFileSystem.GetEntryType(PathTools.Combine(path, "00")) != DirectoryEntryType.File) return false;
+
+            if (BaseFileSystem.OpenDirectory(path, OpenDirectoryMode.Directories).GetEntryCount() > 0) return false;
+
+            // Should be enough checks to avoid most false positives. Maybe
+            return true;
+        }
+#endif
+
+        internal static bool HasConcatenationFileAttribute(NxFileAttributes attributes)
+        {
+            return (attributes & NxFileAttributes.Directory) != 0 && (attributes & NxFileAttributes.Archive) != 0;
+        }
+
+        private void SetConcatenationFileAttribute(string path)
+        {
+            NxFileAttributes attributes = BaseFileSystem.GetFileAttributes(path);
+            attributes |= NxFileAttributes.Archive;
+            BaseFileSystem.SetFileAttributes(path, attributes);
         }
 
         public void CreateDirectory(string path)
         {
             path = PathTools.Normalize(path);
+            string parent = PathTools.GetParentDirectory(path);
 
-            if (FileExists(path))
+            if (IsConcatenationFile(parent))
             {
-                throw new IOException("Cannot create directory because a file with this name already exists.");
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound,
+                    "Cannot create a directory inside of a concatenation file");
             }
 
             BaseFileSystem.CreateDirectory(path);
@@ -51,18 +119,22 @@ namespace LibHac.IO
 
             // A concatenation file directory can't contain normal files
             string parentDir = PathTools.GetParentDirectory(path);
-            if (IsSplitFile(parentDir)) throw new IOException("Cannot create files inside of a concatenation file");
+
+            if (IsConcatenationFile(parentDir))
+            {
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound,
+                    "Cannot create a concatenation file inside of a concatenation file");
+            }
 
             BaseFileSystem.CreateDirectory(path);
-            FileAttributes attributes = BaseFileSystem.GetFileAttributes(path) | FileAttributes.Archive;
-            BaseFileSystem.SetFileAttributes(path, attributes);
+            SetConcatenationFileAttribute(path);
 
             long remaining = size;
 
             for (int i = 0; remaining > 0; i++)
             {
-                long fileSize = Math.Min(SplitFileSize, remaining);
-                string fileName = GetSplitFilePath(path, i);
+                long fileSize = Math.Min(SubFileSize, remaining);
+                string fileName = GetSubFilePath(path, i);
 
                 BaseFileSystem.CreateFile(fileName, fileSize, CreateFileOptions.None);
 
@@ -74,28 +146,46 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            if (IsSplitFile(path))
+            if (IsConcatenationFile(path))
             {
-                throw new DirectoryNotFoundException(path);
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             BaseFileSystem.DeleteDirectory(path);
+        }
+
+        public void DeleteDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            if (IsConcatenationFile(path)) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+
+            BaseFileSystem.DeleteDirectoryRecursively(path);
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            if (IsConcatenationFile(path)) ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+
+            BaseFileSystem.CleanDirectoryRecursively(path);
         }
 
         public void DeleteFile(string path)
         {
             path = PathTools.Normalize(path);
 
-            if (!IsSplitFile(path))
+            if (!IsConcatenationFile(path))
             {
                 BaseFileSystem.DeleteFile(path);
             }
 
-            int count = GetSplitFileCount(path);
+            int count = GetSubFileCount(path);
 
             for (int i = 0; i < count; i++)
             {
-                BaseFileSystem.DeleteFile(GetSplitFilePath(path, i));
+                BaseFileSystem.DeleteFile(GetSubFilePath(path, i));
             }
 
             BaseFileSystem.DeleteDirectory(path);
@@ -105,9 +195,9 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            if (IsSplitFile(path))
+            if (IsConcatenationFile(path))
             {
-                throw new DirectoryNotFoundException(path);
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             IDirectory parentDir = BaseFileSystem.OpenDirectory(path, OpenDirectoryMode.All);
@@ -119,23 +209,23 @@ namespace LibHac.IO
         {
             path = PathTools.Normalize(path);
 
-            if (!IsSplitFile(path))
+            if (!IsConcatenationFile(path))
             {
                 return BaseFileSystem.OpenFile(path, mode);
             }
 
-            int fileCount = GetSplitFileCount(path);
+            int fileCount = GetSubFileCount(path);
 
             var files = new List<IFile>();
 
             for (int i = 0; i < fileCount; i++)
             {
-                string filePath = GetSplitFilePath(path, i);
+                string filePath = GetSubFilePath(path, i);
                 IFile file = BaseFileSystem.OpenFile(filePath, mode);
                 files.Add(file);
             }
 
-            return new ConcatenationFile(files, SplitFileSize, mode);
+            return new ConcatenationFile(BaseFileSystem, path, files, SubFileSize, mode);
         }
 
         public void RenameDirectory(string srcPath, string dstPath)
@@ -143,9 +233,9 @@ namespace LibHac.IO
             srcPath = PathTools.Normalize(srcPath);
             dstPath = PathTools.Normalize(dstPath);
 
-            if (IsSplitFile(srcPath))
+            if (IsConcatenationFile(srcPath))
             {
-                throw new DirectoryNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
             BaseFileSystem.RenameDirectory(srcPath, dstPath);
@@ -156,7 +246,7 @@ namespace LibHac.IO
             srcPath = PathTools.Normalize(srcPath);
             dstPath = PathTools.Normalize(dstPath);
 
-            if (IsSplitFile(srcPath))
+            if (IsConcatenationFile(srcPath))
             {
                 BaseFileSystem.RenameDirectory(srcPath, dstPath);
             }
@@ -166,27 +256,28 @@ namespace LibHac.IO
             }
         }
 
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return BaseFileSystem.DirectoryExists(path) && !IsSplitFile(path);
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return BaseFileSystem.FileExists(path) || BaseFileSystem.DirectoryExists(path) && IsSplitFile(path);
-        }
-
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
 
-            if (IsSplitFile(path)) return DirectoryEntryType.File;
+            if (IsConcatenationFile(path)) return DirectoryEntryType.File;
 
             return BaseFileSystem.GetEntryType(path);
+        }
+
+        public long GetFreeSpaceSize(string path)
+        {
+            return BaseFileSystem.GetFreeSpaceSize(path);
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            return BaseFileSystem.GetTotalSpaceSize(path);
+        }
+
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
+        {
+            return BaseFileSystem.GetFileTimeStampRaw(path);
         }
 
         public void Commit()
@@ -194,11 +285,18 @@ namespace LibHac.IO
             BaseFileSystem.Commit();
         }
 
-        private int GetSplitFileCount(string dirPath)
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId)
+        {
+            if (queryId != QueryId.MakeConcatFile) ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInConcatFsQueryEntry);
+
+            SetConcatenationFileAttribute(path);
+        }
+
+        private int GetSubFileCount(string dirPath)
         {
             int count = 0;
 
-            while (BaseFileSystem.FileExists(GetSplitFilePath(dirPath, count)))
+            while (BaseFileSystem.FileExists(GetSubFilePath(dirPath, count)))
             {
                 count++;
             }
@@ -206,19 +304,19 @@ namespace LibHac.IO
             return count;
         }
 
-        private static string GetSplitFilePath(string dirPath, int index)
+        internal static string GetSubFilePath(string dirPath, int index)
         {
             return $"{dirPath}/{index:D2}";
         }
 
         internal long GetConcatenationFileSize(string path)
         {
-            int fileCount = GetSplitFileCount(path);
+            int fileCount = GetSubFileCount(path);
             long size = 0;
 
             for (int i = 0; i < fileCount; i++)
             {
-                size += BaseFileSystem.GetFileSize(GetSplitFilePath(path, i));
+                size += BaseFileSystem.GetFileSize(GetSubFilePath(path, i));
             }
 
             return size;

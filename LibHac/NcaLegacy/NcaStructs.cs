@@ -2,7 +2,7 @@
 using System.Linq;
 using LibHac.IO;
 
-namespace LibHac
+namespace LibHac.NcaLegacy
 {
     public class NcaHeader
     {
@@ -306,13 +306,5 @@ namespace LibHac
         Pfs0,
         Romfs,
         Bktr
-    }
-
-    public enum Validity : byte
-    {
-        Unchecked,
-        Invalid,
-        Valid,
-        MissingKey
     }
 }

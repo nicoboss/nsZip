@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 
 namespace LibHac.IO
 {
-    public class CachedStorage : Storage
+    public class CachedStorage : StorageBase
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
+        private long _length;
 
         private LinkedList<CacheBlock> Blocks { get; } = new LinkedList<CacheBlock>();
         private Dictionary<long, LinkedListNode<CacheBlock>> BlockDict { get; } = new Dictionary<long, LinkedListNode<CacheBlock>>();
@@ -16,14 +16,13 @@ namespace LibHac.IO
         {
             BaseStorage = baseStorage;
             BlockSize = blockSize;
-            Length = BaseStorage.Length;
+            _length = BaseStorage.GetSize();
 
             if (!leaveOpen) ToDispose.Add(BaseStorage);
 
             for (int i = 0; i < cacheSize; i++)
             {
-                // todo why is this rented?
-                var block = new CacheBlock { Buffer = ArrayPool<byte>.Shared.Rent(blockSize) };
+                var block = new CacheBlock { Buffer = new byte[blockSize], Index = -1 };
                 Blocks.AddLast(block);
             }
         }
@@ -96,7 +95,14 @@ namespace LibHac.IO
             BaseStorage.Flush();
         }
 
-        public override long Length { get; }
+        public override long GetSize() => _length;
+
+        public override void SetSize(long size)
+        {
+            BaseStorage.SetSize(size);
+
+            _length = BaseStorage.GetSize();
+        }
 
         private CacheBlock GetBlock(long blockIndex)
         {
@@ -116,7 +122,11 @@ namespace LibHac.IO
 
             CacheBlock block = node.Value;
             Blocks.RemoveLast();
-            BlockDict.Remove(block.Index);
+
+            if (block.Index != -1)
+            {
+                BlockDict.Remove(block.Index);
+            }
 
             FlushBlock(block);
             ReadBlock(block, blockIndex);
@@ -132,9 +142,9 @@ namespace LibHac.IO
             long offset = index * BlockSize;
             int length = BlockSize;
 
-            if (Length != -1)
+            if (_length != -1)
             {
-                length = (int)Math.Min(Length - offset, length);
+                length = (int)Math.Min(_length - offset, length);
             }
 
             BaseStorage.Read(block.Buffer.AsSpan(0, length), offset);
@@ -148,7 +158,7 @@ namespace LibHac.IO
             if (!block.Dirty) return;
 
             long offset = block.Index * BlockSize;
-            BaseStorage.Write(block.Buffer, offset, block.Length, 0);
+            BaseStorage.Write(block.Buffer.AsSpan(0, block.Length), offset);
             block.Dirty = false;
         }
 

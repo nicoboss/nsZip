@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.IO;
 
 namespace LibHac.IO.Save
@@ -11,11 +11,7 @@ namespace LibHac.IO.Save
         public AllocationTable AllocationTable { get; }
         private SaveHeader Header { get; }
 
-        public SaveDirectoryEntry RootDirectory { get; private set; }
-        private SaveFileEntry[] Files { get; set; }
-        private SaveDirectoryEntry[] Directories { get; set; }
-        private Dictionary<string, SaveFileEntry> FileDictionary { get; }
-        private Dictionary<string, SaveDirectoryEntry> DirDictionary { get; }
+        public HierarchicalSaveFileTable FileTable { get; }
 
         public SaveDataFileSystemCore(IStorage storage, IStorage allocationTable, IStorage header)
         {
@@ -25,223 +21,199 @@ namespace LibHac.IO.Save
 
             Header = new SaveHeader(HeaderStorage);
 
-            ReadFileInfo();
+            AllocationTableStorage dirTableStorage = OpenFatStorage(AllocationTable.Header.DirectoryTableBlock);
+            AllocationTableStorage fileTableStorage = OpenFatStorage(AllocationTable.Header.FileTableBlock);
 
-            FileDictionary = new Dictionary<string, SaveFileEntry>();
-            foreach (SaveFileEntry entry in Files)
-            {
-                FileDictionary[entry.FullPath] = entry;
-            }
-
-            DirDictionary = new Dictionary<string, SaveDirectoryEntry>();
-            foreach (SaveDirectoryEntry entry in Directories)
-            {
-                DirDictionary[entry.FullPath] = entry;
-            }
-        }
-
-        public IStorage OpenFile(string filename)
-        {
-            if (!FileDictionary.TryGetValue(filename, out SaveFileEntry file))
-            {
-                throw new FileNotFoundException();
-            }
-
-            return OpenFile(file);
-        }
-
-        public IStorage OpenFile(SaveFileEntry file)
-        {
-            if (file.BlockIndex < 0)
-            {
-                // todo
-                return new MemoryStorage(new byte[0]);
-            }
-
-            return OpenFatBlock(file.BlockIndex, file.FileSize);
+            FileTable = new HierarchicalSaveFileTable(dirTableStorage, fileTableStorage);
         }
 
         public void CreateDirectory(string path)
         {
-            throw new System.NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            FileTable.AddDirectory(path);
         }
 
         public void CreateFile(string path, long size, CreateFileOptions options)
         {
-            throw new System.NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            if (size == 0)
+            {
+                var emptyFileEntry = new SaveFileInfo { StartBlock = int.MinValue, Length = size };
+                FileTable.AddFile(path, ref emptyFileEntry);
+
+                return;
+            }
+
+            int blockCount = (int)Util.DivideByRoundUp(size, AllocationTable.Header.BlockSize);
+            int startBlock = AllocationTable.Allocate(blockCount);
+
+            if (startBlock == -1)
+            {
+                ThrowHelper.ThrowResult(ResultFs.AllocationTableInsufficientFreeBlocks,
+                    "Not enough available space to create file.");
+            }
+
+            var fileEntry = new SaveFileInfo { StartBlock = startBlock, Length = size };
+
+            FileTable.AddFile(path, ref fileEntry);
         }
 
         public void DeleteDirectory(string path)
         {
-            throw new System.NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            FileTable.DeleteDirectory(path);
+        }
+
+        public void DeleteDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            CleanDirectoryRecursively(path);
+            DeleteDirectory(path);
+        }
+
+        public void CleanDirectoryRecursively(string path)
+        {
+            path = PathTools.Normalize(path);
+
+            IDirectory dir = OpenDirectory(path, OpenDirectoryMode.All);
+            FileSystemExtensions.CleanDirectoryRecursivelyGeneric(dir);
         }
 
         public void DeleteFile(string path)
         {
-            throw new System.NotImplementedException();
+            path = PathTools.Normalize(path);
+
+            if (!FileTable.TryOpenFile(path, out SaveFileInfo fileInfo))
+            {
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
+            }
+
+            if (fileInfo.StartBlock != int.MinValue)
+            {
+                AllocationTable.Free(fileInfo.StartBlock);
+            }
+
+            FileTable.DeleteFile(path);
         }
 
         public IDirectory OpenDirectory(string path, OpenDirectoryMode mode)
         {
             path = PathTools.Normalize(path);
 
-            if (!DirDictionary.TryGetValue(path, out SaveDirectoryEntry dir))
+            if (!FileTable.TryOpenDirectory(path, out SaveFindPosition position))
             {
-                throw new DirectoryNotFoundException(path);
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
-            return new SaveDataDirectory(this, path, dir, mode);
+            return new SaveDataDirectory(this, path, position, mode);
         }
 
         public IFile OpenFile(string path, OpenMode mode)
         {
             path = PathTools.Normalize(path);
 
-            if (!FileDictionary.TryGetValue(path, out SaveFileEntry file))
+            if (!FileTable.TryOpenFile(path, out SaveFileInfo file))
             {
-                throw new FileNotFoundException();
+                ThrowHelper.ThrowResult(ResultFs.PathNotFound);
             }
 
-            if (file.BlockIndex < 0)
-            {
-                // todo
-                return new StorageFile(new MemoryStorage(new byte[0]), OpenMode.ReadWrite);
-            }
+            AllocationTableStorage storage = OpenFatStorage(file.StartBlock);
 
-            AllocationTableStorage storage = OpenFatBlock(file.BlockIndex, file.FileSize);
-
-            return new SaveDataFile(storage, 0, file.FileSize, mode);
+            return new SaveDataFile(storage, path, FileTable, file.Length, mode);
         }
 
         public void RenameDirectory(string srcPath, string dstPath)
         {
-            throw new System.NotImplementedException();
+            srcPath = PathTools.Normalize(srcPath);
+            dstPath = PathTools.Normalize(dstPath);
+
+            FileTable.RenameDirectory(srcPath, dstPath);
         }
 
         public void RenameFile(string srcPath, string dstPath)
         {
-            throw new System.NotImplementedException();
-        }
+            srcPath = PathTools.Normalize(srcPath);
+            dstPath = PathTools.Normalize(dstPath);
 
-        public bool DirectoryExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return DirDictionary.ContainsKey(path);
-        }
-
-        public bool FileExists(string path)
-        {
-            path = PathTools.Normalize(path);
-
-            return FileDictionary.ContainsKey(path);
+            FileTable.RenameFile(srcPath, dstPath);
         }
 
         public DirectoryEntryType GetEntryType(string path)
         {
             path = PathTools.Normalize(path);
 
-            if (DirDictionary.ContainsKey(path)) return DirectoryEntryType.Directory;
-            if (FileDictionary.ContainsKey(path)) return DirectoryEntryType.File;
+            if (FileTable.TryOpenFile(path, out SaveFileInfo _))
+            {
+                return DirectoryEntryType.File;
+            }
 
-            throw new FileNotFoundException(path);
+            if (FileTable.TryOpenDirectory(path, out SaveFindPosition _))
+            {
+                return DirectoryEntryType.Directory;
+            }
+
+            return DirectoryEntryType.NotFound;
+        }
+
+        public long GetFreeSpaceSize(string path)
+        {
+            int freeBlockCount = AllocationTable.GetFreeListLength();
+            return Header.BlockSize * freeBlockCount;
+        }
+
+        public long GetTotalSpaceSize(string path)
+        {
+            return Header.BlockSize * Header.BlockCount;
         }
 
         public void Commit()
         {
-            throw new System.NotImplementedException();
+
         }
 
-        public IStorage GetBaseStorage() => BaseStorage.WithAccess(FileAccess.Read);
-        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
-
-        private void ReadFileInfo()
+        public FileTimeStampRaw GetFileTimeStampRaw(string path)
         {
-            // todo: Query the FAT for the file size when none is given
-            AllocationTableStorage dirTableStream = OpenFatBlock(AllocationTable.Header.DirectoryTableBlock, 1000000);
-            AllocationTableStorage fileTableStream = OpenFatBlock(AllocationTable.Header.FileTableBlock, 1000000);
-
-            SaveDirectoryEntry[] dirEntries = ReadDirEntries(dirTableStream);
-            SaveFileEntry[] fileEntries = ReadFileEntries(fileTableStream);
-
-            foreach (SaveDirectoryEntry dir in dirEntries)
-            {
-                if (dir.NextSiblingIndex != 0) dir.NextSibling = dirEntries[dir.NextSiblingIndex];
-                if (dir.FirstChildIndex != 0) dir.FirstChild = dirEntries[dir.FirstChildIndex];
-                if (dir.FirstFileIndex != 0) dir.FirstFile = fileEntries[dir.FirstFileIndex];
-                if (dir.NextInChainIndex != 0) dir.NextInChain = dirEntries[dir.NextInChainIndex];
-                if (dir.ParentDirIndex != 0 && dir.ParentDirIndex < dirEntries.Length)
-                    dir.ParentDir = dirEntries[dir.ParentDirIndex];
-            }
-
-            foreach (SaveFileEntry file in fileEntries)
-            {
-                if (file.NextSiblingIndex != 0) file.NextSibling = fileEntries[file.NextSiblingIndex];
-                if (file.NextInChainIndex != 0) file.NextInChain = fileEntries[file.NextInChainIndex];
-                if (file.ParentDirIndex != 0 && file.ParentDirIndex < dirEntries.Length)
-                    file.ParentDir = dirEntries[file.ParentDirIndex];
-            }
-
-            RootDirectory = dirEntries[2];
-
-            SaveFileEntry fileChain = fileEntries[1].NextInChain;
-            var files = new List<SaveFileEntry>();
-            while (fileChain != null)
-            {
-                files.Add(fileChain);
-                fileChain = fileChain.NextInChain;
-            }
-
-            SaveDirectoryEntry dirChain = dirEntries[1].NextInChain;
-            var dirs = new List<SaveDirectoryEntry>();
-            while (dirChain != null)
-            {
-                dirs.Add(dirChain);
-                dirChain = dirChain.NextInChain;
-            }
-
-            Files = files.ToArray();
-            Directories = dirs.ToArray();
-
-            SaveFsEntry.ResolveFilenames(Files);
-            SaveFsEntry.ResolveFilenames(Directories);
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+            return default;
         }
 
-        private SaveFileEntry[] ReadFileEntries(IStorage storage)
+        public void QueryEntry(Span<byte> outBuffer, ReadOnlySpan<byte> inBuffer, string path, QueryId queryId) =>
+            ThrowHelper.ThrowResult(ResultFs.NotImplemented);
+
+        public IStorage GetBaseStorage() => BaseStorage.AsReadOnly();
+        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+
+        public void FsTrim()
         {
-            var reader = new BinaryReader(storage.AsStream());
-            int count = reader.ReadInt32();
+            AllocationTable.FsTrim();
 
-            reader.BaseStream.Position -= 4;
-
-            var entries = new SaveFileEntry[count];
-            for (int i = 0; i < count; i++)
+            foreach (DirectoryEntry file in this.EnumerateEntries("*", SearchOptions.RecurseSubdirectories))
             {
-                entries[i] = new SaveFileEntry(reader);
+                if (FileTable.TryOpenFile(file.FullPath, out SaveFileInfo fileInfo) && fileInfo.StartBlock >= 0)
+                {
+                    AllocationTable.FsTrimList(fileInfo.StartBlock);
+
+                    OpenFatStorage(fileInfo.StartBlock).Slice(fileInfo.Length).Fill(SaveDataFileSystem.TrimFillValue);
+                }
             }
 
-            return entries;
+            int freeIndex = AllocationTable.GetFreeListBlockIndex();
+            if (freeIndex == 0) return;
+
+            AllocationTable.FsTrimList(freeIndex);
+
+            OpenFatStorage(freeIndex).Fill(SaveDataFileSystem.TrimFillValue);
+
+            FileTable.TrimFreeEntries();
         }
 
-        private SaveDirectoryEntry[] ReadDirEntries(IStorage storage)
+        private AllocationTableStorage OpenFatStorage(int blockIndex)
         {
-            var reader = new BinaryReader(storage.AsStream());
-            int count = reader.ReadInt32();
-
-            reader.BaseStream.Position -= 4;
-
-            var entries = new SaveDirectoryEntry[count];
-            for (int i = 0; i < count; i++)
-            {
-                entries[i] = new SaveDirectoryEntry(reader);
-            }
-
-            return entries;
-        }
-
-        private AllocationTableStorage OpenFatBlock(int blockIndex, long size)
-        {
-            return new AllocationTableStorage(BaseStorage, AllocationTable, (int)Header.BlockSize, blockIndex, size);
+            return new AllocationTableStorage(BaseStorage, AllocationTable, (int)Header.BlockSize, blockIndex);
         }
     }
 

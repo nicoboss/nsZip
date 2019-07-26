@@ -14,12 +14,12 @@ namespace LibHac.IO
 
             foreach (DirectoryEntry entry in source.Read())
             {
-                string subSrcPath = PathTools.Normalize(source.FullPath + '/' + entry.Name);
-                string subDstPath = PathTools.Normalize(dest.FullPath + '/' + entry.Name);
+                string subSrcPath = PathTools.Normalize(PathTools.Combine(source.FullPath, entry.Name));
+                string subDstPath = PathTools.Normalize(PathTools.Combine(dest.FullPath, entry.Name));
 
                 if (entry.Type == DirectoryEntryType.Directory)
                 {
-                    destFs.CreateDirectory(subDstPath);
+                    destFs.EnsureDirectoryExists(subDstPath);
                     IDirectory subSrcDir = sourceFs.OpenDirectory(subSrcPath, OpenDirectoryMode.All);
                     IDirectory subDstDir = destFs.OpenDirectory(subDstPath, OpenDirectoryMode.All);
 
@@ -28,10 +28,10 @@ namespace LibHac.IO
 
                 if (entry.Type == DirectoryEntryType.File)
                 {
-                    destFs.CreateFile(subDstPath, entry.Size, options);
+                    destFs.CreateOrOverwriteFile(subDstPath, entry.Size, options);
 
                     using (IFile srcFile = sourceFs.OpenFile(subSrcPath, OpenMode.Read))
-                    using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write))
+                    using (IFile dstFile = destFs.OpenFile(subDstPath, OpenMode.Write | OpenMode.Append))
                     {
                         logger?.LogMessage(subSrcPath);
                         srcFile.CopyTo(dstFile, logger);
@@ -57,7 +57,17 @@ namespace LibHac.IO
 
         public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem)
         {
-            return fileSystem.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries("*", SearchOptions.RecurseSubdirectories);
+            return fileSystem.EnumerateEntries("*");
+        }
+
+        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem, string searchPattern)
+        {
+            return fileSystem.EnumerateEntries(searchPattern, SearchOptions.RecurseSubdirectories);
+        }
+
+        public static IEnumerable<DirectoryEntry> EnumerateEntries(this IFileSystem fileSystem, string searchPattern, SearchOptions searchOptions)
+        {
+            return fileSystem.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries(searchPattern, searchOptions);
         }
 
         public static IEnumerable<DirectoryEntry> EnumerateEntries(this IDirectory directory)
@@ -74,14 +84,14 @@ namespace LibHac.IO
 
             foreach (DirectoryEntry entry in directory.Read())
             {
-                if (MatchesPattern(searchPattern, entry.Name, ignoreCase))
+                if (PathTools.MatchesPattern(searchPattern, entry.Name, ignoreCase))
                 {
                     yield return entry;
                 }
 
                 if (entry.Type != DirectoryEntryType.Directory || !recurse) continue;
 
-                IDirectory subDir = fs.OpenDirectory(directory.FullPath + '/' + entry.Name, OpenDirectoryMode.All);
+                IDirectory subDir = fs.OpenDirectory(PathTools.Combine(directory.FullPath, entry.Name), OpenDirectoryMode.All);
 
                 foreach (DirectoryEntry subEntry in subDir.EnumerateEntries(searchPattern, searchOptions))
                 {
@@ -115,6 +125,7 @@ namespace LibHac.IO
             }
         }
 
+        public static IStorage AsStorage(this IFile file) => new FileStorage(file);
         public static Stream AsStream(this IFile file) => new NxFileStream(file, true);
         public static Stream AsStream(this IFile file, bool keepOpen) => new NxFileStream(file, keepOpen);
 
@@ -141,14 +152,110 @@ namespace LibHac.IO
             return count;
         }
 
-        public static bool MatchesPattern(string searchPattern, string name, bool ignoreCase)
+        public static NxFileAttributes ToNxAttributes(this FileAttributes attributes)
         {
-#if NETFRAMEWORK
-            return Compatibility.FileSystemName.MatchesSimpleExpression(searchPattern.AsSpan(),
-                name.AsSpan(), ignoreCase);
-#else
-            return FileSystemName.MatchesSimpleExpression(searchPattern, name, ignoreCase);
-#endif
+            return (NxFileAttributes)(((int)attributes >> 4) & 3);
+        }
+
+        public static FileAttributes ApplyNxAttributes(this FileAttributes attributes, NxFileAttributes nxAttributes)
+        {
+            var nxAttributeBits = (FileAttributes)(((int)nxAttributes & 3) << 4);
+            return attributes | nxAttributeBits;
+        }
+
+        public static void SetConcatenationFileAttribute(this IFileSystem fs, string path)
+        {
+            fs.QueryEntry(Span<byte>.Empty, Span<byte>.Empty, path, QueryId.MakeConcatFile);
+        }
+
+        public static void CleanDirectoryRecursivelyGeneric(IDirectory directory)
+        {
+            IFileSystem fs = directory.ParentFileSystem;
+
+            foreach (DirectoryEntry entry in directory.Read())
+            {
+                string subPath = PathTools.Combine(directory.FullPath, entry.Name);
+
+                if (entry.Type == DirectoryEntryType.Directory)
+                {
+                    IDirectory subDir = fs.OpenDirectory(subPath, OpenDirectoryMode.All);
+
+                    CleanDirectoryRecursivelyGeneric(subDir);
+                    fs.DeleteDirectory(subPath);
+                }
+                else if (entry.Type == DirectoryEntryType.File)
+                {
+                    fs.DeleteFile(subPath);
+                }
+            }
+        }
+
+        public static int Read(this IFile file, Span<byte> destination, long offset)
+        {
+            return file.Read(destination, offset, ReadOption.None);
+        }
+
+        public static void Write(this IFile file, ReadOnlySpan<byte> source, long offset)
+        {
+            file.Write(source, offset, WriteOption.None);
+        }
+
+        public static bool DirectoryExists(this IFileSystem fs, string path)
+        {
+            return fs.GetEntryType(path) == DirectoryEntryType.Directory;
+        }
+
+        public static bool FileExists(this IFileSystem fs, string path)
+        {
+            return fs.GetEntryType(path) == DirectoryEntryType.File;
+        }
+
+        public static void EnsureDirectoryExists(this IFileSystem fs, string path)
+        {
+            path = PathTools.Normalize(path);
+            if (fs.DirectoryExists(path)) return;
+
+            // Find the first subdirectory in the chain that doesn't exist
+            int i;
+            for (i = path.Length - 1; i > 0; i--)
+            {
+                if (path[i] == '/')
+                {
+                    string subPath = path.Substring(0, i);
+
+                    if (fs.DirectoryExists(subPath))
+                    {
+                        break;
+                    }
+                } 
+            }
+            
+            // path[i] will be a '/', so skip that character
+            i++;
+
+            for (; i < path.Length; i++)
+            {
+                if (path[i] == '/')
+                {
+                    string subPath = path.Substring(0, i);
+
+                    fs.CreateDirectory(subPath);
+                }
+            }
+        }
+
+        public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size)
+        {
+            fs.CreateOrOverwriteFile(path, size, CreateFileOptions.None);
+        }
+
+        public static void CreateOrOverwriteFile(this IFileSystem fs, string path, long size, CreateFileOptions options)
+        {
+            path = PathTools.Normalize(path);
+
+            if (fs.FileExists(path)) fs.DeleteFile(path);
+
+            fs.CreateFile(path, size, CreateFileOptions.None);
         }
     }
 

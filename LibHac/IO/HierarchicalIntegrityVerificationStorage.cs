@@ -6,7 +6,7 @@ using System.Text;
 
 namespace LibHac.IO
 {
-    public class HierarchicalIntegrityVerificationStorage : Storage
+    public class HierarchicalIntegrityVerificationStorage : StorageBase
     {
         public IStorage[] Levels { get; }
         public IStorage DataLevel { get; }
@@ -16,7 +16,8 @@ namespace LibHac.IO
         /// An array of the hash statuses of every block in each level.
         /// </summary>
         public Validity[][] LevelValidities { get; }
-        public override long Length { get; }
+
+        private long _length;
 
         private IntegrityVerificationStorage[] IntegrityStorages { get; }
 
@@ -33,13 +34,15 @@ namespace LibHac.IO
             {
                 var levelData = new IntegrityVerificationStorage(levelInfo[i], Levels[i - 1], integrityCheckLevel, leaveOpen);
 
-                Levels[i] = new CachedStorage(levelData, 4, leaveOpen);
+                int cacheCount = Math.Min((int)Util.DivideByRoundUp(levelData.GetSize(), levelInfo[i].BlockSize), 4);
+
+                Levels[i] = new CachedStorage(levelData, cacheCount, leaveOpen);
                 LevelValidities[i - 1] = levelData.BlockValidities;
                 IntegrityStorages[i - 1] = levelData;
             }
 
             DataLevel = Levels[Levels.Length - 1];
-            Length = DataLevel.Length;
+            _length = DataLevel.GetSize();
 
             if (!leaveOpen) ToDispose.Add(DataLevel);
         }
@@ -104,6 +107,8 @@ namespace LibHac.IO
             DataLevel.Flush();
         }
 
+        public override long GetSize() => _length;
+
         /// <summary>
         /// Checks the hashes of any unchecked blocks and returns the <see cref="Validity"/> of the data.
         /// </summary>
@@ -116,7 +121,7 @@ namespace LibHac.IO
             IntegrityVerificationStorage storage = IntegrityStorages[IntegrityStorages.Length - 1];
 
             long blockSize = storage.SectorSize;
-            int blockCount = (int)Util.DivideByRoundUp(Length, blockSize);
+            int blockCount = (int)Util.DivideByRoundUp(_length, blockSize);
 
             var buffer = new byte[blockSize];
             var result = Validity.Valid;
@@ -127,8 +132,8 @@ namespace LibHac.IO
             {
                 if (validities[i] == Validity.Unchecked)
                 {
-                    int toRead = (int)Math.Min(storage.Length - blockSize * i, buffer.Length);
-                    storage.Read(buffer, blockSize * i, toRead, 0, IntegrityCheckLevel.IgnoreOnInvalid);
+                    int toRead = (int)Math.Min(storage.GetSize() - blockSize * i, buffer.Length);
+                    storage.Read(buffer.AsSpan(0, toRead), blockSize * i, IntegrityCheckLevel.IgnoreOnInvalid);
                 }
 
                 if (validities[i] == Validity.Invalid)
@@ -142,6 +147,14 @@ namespace LibHac.IO
 
             logger?.SetTotal(0);
             return result;
+        }
+
+        public void FsTrim()
+        {
+            foreach (IntegrityVerificationStorage level in IntegrityStorages)
+            {
+                level.FsTrim();
+            }
         }
 
         private static readonly string[] SaltSources =
@@ -209,6 +222,9 @@ namespace LibHac.IO
             }
 
             SaltSource = reader.ReadBytes(0x20);
+
+            if (reader.BaseStream.Position + 0x20 >= reader.BaseStream.Length) return;
+
             MasterHash = reader.ReadBytes(0x20);
         }
 

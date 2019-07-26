@@ -4,6 +4,7 @@ namespace LibHac.IO.Save
 {
     public class JournalMap
     {
+        private int MapEntryLength = 8;
         public JournalMapHeader Header { get; }
         private JournalMapEntry[] Entries { get; }
 
@@ -50,11 +51,26 @@ namespace LibHac.IO.Save
             return map;
         }
 
-        public IStorage GetMapStorage() => MapStorage.WithAccess(FileAccess.Read);
-        public IStorage GetHeaderStorage() => HeaderStorage.WithAccess(FileAccess.Read);
-        public IStorage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.WithAccess(FileAccess.Read);
-        public IStorage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.WithAccess(FileAccess.Read);
-        public IStorage GetFreeBlocksStorage() => FreeBlocks.WithAccess(FileAccess.Read);
+        public IStorage GetMapStorage() => MapStorage.AsReadOnly();
+        public IStorage GetHeaderStorage() => HeaderStorage.AsReadOnly();
+        public IStorage GetModifiedPhysicalBlocksStorage() => ModifiedPhysicalBlocks.AsReadOnly();
+        public IStorage GetModifiedVirtualBlocksStorage() => ModifiedVirtualBlocks.AsReadOnly();
+        public IStorage GetFreeBlocksStorage() => FreeBlocks.AsReadOnly();
+
+        public void FsTrim()
+        {
+            int virtualBlockCount = Header.MainDataBlockCount;
+            int physicalBlockCount = virtualBlockCount + Header.JournalBlockCount;
+
+            int blockMapLength = virtualBlockCount * MapEntryLength;
+            int physicalBitmapLength = Util.AlignUp(physicalBlockCount, 32) / 8;
+            int virtualBitmapLength = Util.AlignUp(virtualBlockCount, 32) / 8;
+
+            MapStorage.Slice(blockMapLength).Fill(SaveDataFileSystem.TrimFillValue);
+            FreeBlocks.Slice(physicalBitmapLength).Fill(SaveDataFileSystem.TrimFillValue);
+            ModifiedPhysicalBlocks.Slice(physicalBitmapLength).Fill(SaveDataFileSystem.TrimFillValue);
+            ModifiedVirtualBlocks.Slice(virtualBitmapLength).Fill(SaveDataFileSystem.TrimFillValue);
+        }
     }
 
     public class JournalMapHeader

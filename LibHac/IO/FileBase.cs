@@ -5,11 +5,11 @@ namespace LibHac.IO
 {
     public abstract class FileBase : IFile
     {
-        private bool _isDisposed;
+        protected bool IsDisposed { get; private set; }
         internal List<IDisposable> ToDispose { get; } = new List<IDisposable>();
 
-        public abstract int Read(Span<byte> destination, long offset);
-        public abstract void Write(ReadOnlySpan<byte> source, long offset);
+        public abstract int Read(Span<byte> destination, long offset, ReadOption options);
+        public abstract void Write(ReadOnlySpan<byte> source, long offset, WriteOption options);
         public abstract void Flush();
         public abstract long GetSize();
         public abstract void SetSize(long size);
@@ -18,28 +18,28 @@ namespace LibHac.IO
 
         protected int ValidateReadParamsAndGetSize(ReadOnlySpan<byte> span, long offset)
         {
-            if (_isDisposed) throw new ObjectDisposedException(null);
+            if (IsDisposed) throw new ObjectDisposedException(null);
 
-            if ((Mode & OpenMode.Read) == 0) throw new NotSupportedException("File does not allow reading.");
+            if ((Mode & OpenMode.Read) == 0) ThrowHelper.ThrowResult(ResultFs.InvalidOpenModeForRead, "File does not allow reading.");
             if (span == null) throw new ArgumentNullException(nameof(span));
-            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
+            if (offset < 0) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be non-negative.");
 
             long fileSize = GetSize();
             int size = span.Length;
 
-            if (offset > fileSize) throw new ArgumentOutOfRangeException(nameof(offset), "Offset must be less than the file size.");
+            if (offset > fileSize) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be less than the file size.");
 
             return (int)Math.Min(fileSize - offset, size);
         }
 
         protected void ValidateWriteParams(ReadOnlySpan<byte> span, long offset)
         {
-            if (_isDisposed) throw new ObjectDisposedException(null);
+            if (IsDisposed) throw new ObjectDisposedException(null);
 
-            if ((Mode & OpenMode.Write) == 0) throw new NotSupportedException("File does not allow writing.");
+            if ((Mode & OpenMode.Write) == 0) ThrowHelper.ThrowResult(ResultFs.InvalidOpenModeForWrite, "File does not allow writing.");
 
             if (span == null) throw new ArgumentNullException(nameof(span));
-            if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "Argument must be non-negative.");
+            if (offset < 0) ThrowHelper.ThrowResult(ResultFs.ValueOutOfRange, "Offset must be non-negative.");
 
             long fileSize = GetSize();
             int size = span.Length;
@@ -48,7 +48,7 @@ namespace LibHac.IO
             {
                 if ((Mode & OpenMode.Append) == 0)
                 {
-                    throw new NotSupportedException("File does not allow appending.");
+                    ThrowHelper.ThrowResult(ResultFs.AllowAppendRequiredForImplicitExtension);
                 }
 
                 SetSize(offset + size);
@@ -63,7 +63,7 @@ namespace LibHac.IO
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_isDisposed) return;
+            if (IsDisposed) return;
 
             if (disposing)
             {
@@ -75,10 +75,13 @@ namespace LibHac.IO
                 }
             }
 
-            _isDisposed = true;
+            IsDisposed = true;
         }
     }
 
+    /// <summary>
+    /// Specifies which operations are available on an <see cref="IFile"/>.
+    /// </summary>
     [Flags]
     public enum OpenMode
     {
@@ -86,5 +89,18 @@ namespace LibHac.IO
         Write = 2,
         Append = 4,
         ReadWrite = Read | Write
+    }
+
+    [Flags]
+    public enum ReadOption
+    {
+        None = 0
+    }
+
+    [Flags]
+    public enum WriteOption
+    {
+        None = 0,
+        Flush = 1
     }
 }

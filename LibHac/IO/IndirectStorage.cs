@@ -4,31 +4,37 @@ using System.Linq;
 
 namespace LibHac.IO
 {
-    public class IndirectStorage : Storage
+    public class IndirectStorage : StorageBase
     {
         private List<RelocationEntry> RelocationEntries { get; }
         private List<long> RelocationOffsets { get; }
 
         private List<IStorage> Sources { get; } = new List<IStorage>();
         private BucketTree<RelocationEntry> BucketTree { get; }
+        private long _length;
 
-        public IndirectStorage(IStorage bucketTreeHeader, IStorage bucketTreeData, bool leaveOpen, params IStorage[] sources)
+        public IndirectStorage(IStorage bucketTreeData, bool leaveOpen, params IStorage[] sources)
         {
             Sources.AddRange(sources);
 
             if (!leaveOpen) ToDispose.AddRange(sources);
 
-            BucketTree = new BucketTree<RelocationEntry>(bucketTreeHeader, bucketTreeData);
+            BucketTree = new BucketTree<RelocationEntry>(bucketTreeData);
 
             RelocationEntries = BucketTree.GetEntryList();
             RelocationOffsets = RelocationEntries.Select(x => x.Offset).ToList();
 
-            Length = BucketTree.BucketOffsets.OffsetEnd;
+            _length = BucketTree.BucketOffsets.OffsetEnd;
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
             RelocationEntry entry = GetRelocationEntry(offset);
+
+            if (entry.SourceIndex > Sources.Count)
+            {
+                ThrowHelper.ThrowResult(ResultFs.InvalidIndirectStorageSource);
+            }
 
             long inPos = offset;
             int outPos = 0;
@@ -54,17 +60,17 @@ namespace LibHac.IO
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
-            throw new NotImplementedException();
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInIndirectStorageWrite);
         }
 
-        public override void Flush()
+        public override void Flush() { }
+
+        public override long GetSize() => _length;
+
+        public override void SetSize(long size)
         {
-            throw new NotImplementedException();
+            ThrowHelper.ThrowResult(ResultFs.UnsupportedOperationInIndirectStorageSetSize);
         }
-
-        public override bool CanWrite => false;
-
-        public override long Length { get; }
 
         private RelocationEntry GetRelocationEntry(long offset)
         {

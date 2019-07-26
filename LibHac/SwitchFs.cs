@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using LibHac.IO;
+using LibHac.IO.NcaUtils;
 using LibHac.IO.Save;
 
 namespace LibHac
@@ -14,7 +15,7 @@ namespace LibHac
         public IFileSystem ContentFs { get; }
         public IFileSystem SaveFs { get; }
 
-        public Dictionary<string, Nca> Ncas { get; } = new Dictionary<string, Nca>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, SwitchFsNca> Ncas { get; } = new Dictionary<string, SwitchFsNca>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, SaveDataFileSystem> Saves { get; } = new Dictionary<string, SaveDataFileSystem>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<ulong, Title> Titles { get; } = new Dictionary<ulong, Title>();
         public Dictionary<ulong, Application> Applications { get; } = new Dictionary<ulong, Application>();
@@ -35,10 +36,15 @@ namespace LibHac
         public static SwitchFs OpenSdCard(Keyset keyset, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
-            var saveDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/save");
             var contentDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/Contents");
 
-            var encSaveFs = new AesXtsFileSystem(saveDirFs, keyset.SdCardKeys[0], 0x4000);
+            AesXtsFileSystem encSaveFs = null;
+            if (fileSystem.DirectoryExists("/Nintendo/save"))
+            {
+                var saveDirFs = new SubdirectoryFileSystem(concatFs, "/Nintendo/save");
+                encSaveFs = new AesXtsFileSystem(saveDirFs, keyset.SdCardKeys[0], 0x4000);
+            }
+
             var encContentFs = new AesXtsFileSystem(contentDirFs, keyset.SdCardKeys[1], 0x4000);
 
             return new SwitchFs(keyset, encContentFs, encSaveFs);
@@ -47,7 +53,7 @@ namespace LibHac
         public static SwitchFs OpenNandPartition(Keyset keyset, IAttributeFileSystem fileSystem)
         {
             var concatFs = new ConcatenationFileSystem(fileSystem);
-            var saveDirFs = new SubdirectoryFileSystem(concatFs, "/save");
+            IFileSystem saveDirFs = concatFs.DirectoryExists("/save") ? new SubdirectoryFileSystem(concatFs, "/save") : null;
             var contentDirFs = new SubdirectoryFileSystem(concatFs, "/Contents");
 
             return new SwitchFs(keyset, contentDirFs, saveDirFs);
@@ -60,19 +66,22 @@ namespace LibHac
 
         private void OpenAllNcas()
         {
-            IEnumerable<DirectoryEntry> files = ContentFs.OpenDirectory("/", OpenDirectoryMode.All).EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories);
+            // Todo: give warning if directories named "*.nca" are found or manually fix the archive bit
+            IEnumerable<DirectoryEntry> files = ContentFs.OpenDirectory("/", OpenDirectoryMode.All)
+                .EnumerateEntries("*.nca", SearchOptions.RecurseSubdirectories)
+                .Where(x => x.Type == DirectoryEntryType.File);
 
             foreach (DirectoryEntry fileEntry in files)
             {
-                Nca nca = null;
+                SwitchFsNca nca = null;
                 try
                 {
-                    var storage = new FileStorage(ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read));
+                    IStorage storage = ContentFs.OpenFile(fileEntry.FullPath, OpenMode.Read).AsStorage();
 
-                    nca = new Nca(Keyset, storage, false);
+                    nca = new SwitchFsNca(new Nca(Keyset, storage));
 
                     nca.NcaId = Path.GetFileNameWithoutExtension(fileEntry.Name);
-                    string extension = nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
+                    string extension = nca.Nca.Header.ContentType == ContentType.Meta ? ".cnmt.nca" : ".nca";
                     nca.Filename = nca.NcaId + extension;
                 }
                 catch (MissingKeyException ex)
@@ -106,7 +115,7 @@ namespace LibHac
                 try
                 {
                     IFile file = SaveFs.OpenFile(fileEntry.FullPath, OpenMode.Read);
-                    save = new SaveDataFileSystem(Keyset, new FileStorage(file), IntegrityCheckLevel.None, true);
+                    save = new SaveDataFileSystem(Keyset, file.AsStorage(), IntegrityCheckLevel.None, true);
                 }
                 catch (Exception ex)
                 {
@@ -122,44 +131,51 @@ namespace LibHac
 
         private void ReadTitles()
         {
-            foreach (Nca nca in Ncas.Values.Where(x => x.Header.ContentType == ContentType.Meta))
+            foreach (SwitchFsNca nca in Ncas.Values.Where(x => x.Nca.Header.ContentType == ContentType.Meta))
             {
-                var title = new Title();
-
-                // Meta contents always have 1 Partition FS section with 1 file in it
-                IStorage sect = nca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true);
-                var pfs0 = new PartitionFileSystem(sect);
-                IFile file = pfs0.OpenFile(pfs0.Files[0], OpenMode.Read);
-
-                var metadata = new Cnmt(new FileStorage(file).AsStream());
-                title.Id = metadata.TitleId;
-                title.Version = metadata.TitleVersion;
-                title.Metadata = metadata;
-                title.MetaNca = nca;
-                title.Ncas.Add(nca);
-
-                foreach (CnmtContentEntry content in metadata.ContentEntries)
+                try
                 {
-                    string ncaId = content.NcaId.ToHexString();
+                    var title = new Title();
 
-                    if (Ncas.TryGetValue(ncaId, out Nca contentNca))
+                    IFileSystem fs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
+                    string cnmtPath = fs.EnumerateEntries("*.cnmt").Single().FullPath;
+
+                    IFile file = fs.OpenFile(cnmtPath, OpenMode.Read);
+
+                    var metadata = new Cnmt(file.AsStream());
+                    title.Id = metadata.TitleId;
+                    title.Version = metadata.TitleVersion;
+                    title.Metadata = metadata;
+                    title.MetaNca = nca;
+                    title.Ncas.Add(nca);
+
+                    foreach (CnmtContentEntry content in metadata.ContentEntries)
                     {
-                        title.Ncas.Add(contentNca);
+                        string ncaId = content.NcaId.ToHexString();
+
+                        if (Ncas.TryGetValue(ncaId, out SwitchFsNca contentNca))
+                        {
+                            title.Ncas.Add(contentNca);
+                        }
+
+                        switch (content.Type)
+                        {
+                            case CnmtContentType.Program:
+                            case CnmtContentType.Data:
+                                title.MainNca = contentNca;
+                                break;
+                            case CnmtContentType.Control:
+                                title.ControlNca = contentNca;
+                                break;
+                        }
                     }
 
-                    switch (content.Type)
-                    {
-                        case CnmtContentType.Program:
-                        case CnmtContentType.Data:
-                            title.MainNca = contentNca;
-                            break;
-                        case CnmtContentType.Control:
-                            title.ControlNca = contentNca;
-                            break;
-                    }
+                    Titles[title.Id] = title;
                 }
-
-                Titles[title.Id] = title;
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{ex.Message} File: {nca.Filename}");
+                }
             }
         }
 
@@ -167,8 +183,8 @@ namespace LibHac
         {
             foreach (Title title in Titles.Values.Where(x => x.ControlNca != null))
             {
-                var romfs = new RomFsFileSystem(title.ControlNca.OpenSection(0, false, IntegrityCheckLevel.ErrorOnInvalid, true));
-                IStorage control = new FileStorage(romfs.OpenFile("control.nacp", OpenMode.Read));
+                IFileSystem romfs = title.ControlNca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
+                IFile control = romfs.OpenFile("control.nacp", OpenMode.Read);
 
                 title.Control = new Nacp(control.AsStream());
 
@@ -201,22 +217,22 @@ namespace LibHac
 
             foreach (Application app in Applications.Values)
             {
-                Nca main = app.Main?.MainNca;
-                Nca patch = app.Patch?.MainNca;
+                SwitchFsNca main = app.Main?.MainNca;
+                SwitchFsNca patch = app.Patch?.MainNca;
 
-                if (main != null)
+                if (main != null && patch != null)
                 {
-                    patch?.SetBaseNca(main);
+                    patch.BaseNca = main.Nca;
                 }
             }
         }
 
         private void DisposeNcas()
         {
-            foreach (Nca nca in Ncas.Values)
-            {
-                nca.Dispose();
-            }
+            //foreach (SwitchFsNca nca in Ncas.Values)
+            //{
+            //    nca.Dispose();
+            //}
             Ncas.Clear();
             Titles.Clear();
         }
@@ -227,23 +243,72 @@ namespace LibHac
         }
     }
 
+    public class SwitchFsNca
+    {
+        public Nca Nca { get; set; }
+        public Nca BaseNca { get; set; }
+        public string NcaId { get; set; }
+        public string Filename { get; set; }
+
+        public SwitchFsNca(Nca nca)
+        {
+            Nca = nca;
+        }
+
+        public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            if (BaseNca != null) return BaseNca.OpenStorageWithPatch(Nca, index, integrityCheckLevel);
+
+            return Nca.OpenStorage(index, integrityCheckLevel);
+        }
+
+        public IFileSystem OpenFileSystem(int index, IntegrityCheckLevel integrityCheckLevel)
+        {
+            if (BaseNca != null) return BaseNca.OpenFileSystemWithPatch(Nca, index, integrityCheckLevel);
+
+            return Nca.OpenFileSystem(index, integrityCheckLevel);
+        }
+
+        public IStorage OpenStorage(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenStorage(Nca.GetSectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
+        }
+
+        public IFileSystem OpenFileSystem(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+        {
+            return OpenFileSystem(Nca.GetSectionIndexFromType(type, Nca.Header.ContentType), integrityCheckLevel);
+        }
+
+        public Validity VerifyNca(IProgressReport logger = null, bool quiet = false)
+        {
+            if (BaseNca != null)
+            {
+                return BaseNca.VerifyNca(Nca, logger, quiet);
+            }
+            else
+            {
+                return Nca.VerifyNca(logger, quiet);
+            }
+        }
+    }
+
     [DebuggerDisplay("{" + nameof(Name) + "}")]
     public class Title
     {
         public ulong Id { get; internal set; }
         public TitleVersion Version { get; internal set; }
-        public List<Nca> Ncas { get; } = new List<Nca>();
+        public List<SwitchFsNca> Ncas { get; } = new List<SwitchFsNca>();
         public Cnmt Metadata { get; internal set; }
 
         public string Name { get; internal set; }
         public Nacp Control { get; internal set; }
-        public Nca MetaNca { get; internal set; }
-        public Nca MainNca { get; internal set; }
-        public Nca ControlNca { get; internal set; }
+        public SwitchFsNca MetaNca { get; internal set; }
+        public SwitchFsNca MainNca { get; internal set; }
+        public SwitchFsNca ControlNca { get; internal set; }
 
         public long GetSize()
         {
-            return Ncas.Sum(x => x.Header.NcaSize);
+            return Ncas.Sum(x => x.Nca.Header.NcaSize);
         }
     }
 

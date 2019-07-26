@@ -2,10 +2,11 @@
 
 namespace LibHac.IO.Save
 {
-    public class HierarchicalDuplexStorage : Storage
+    public class HierarchicalDuplexStorage : StorageBase
     {
         private DuplexStorage[] Layers { get; }
         private DuplexStorage DataLayer { get; }
+        private long _length;
 
         public HierarchicalDuplexStorage(DuplexFsLayerInfo[] layers, bool masterBit)
         {
@@ -28,7 +29,7 @@ namespace LibHac.IO.Save
             }
 
             DataLayer = Layers[Layers.Length - 1];
-            Length = DataLayer.Length;
+            _length = DataLayer.GetSize();
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
@@ -46,7 +47,15 @@ namespace LibHac.IO.Save
             DataLayer.Flush();
         }
 
-        public override long Length { get; }
+        public override long GetSize() => _length;
+
+        public void FsTrim()
+        {
+            foreach (DuplexStorage layer in Layers)
+            {
+                layer.FsTrim();
+            }
+        }
     }
 
     public class DuplexFsLayerInfo

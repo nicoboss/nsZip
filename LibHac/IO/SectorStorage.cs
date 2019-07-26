@@ -2,19 +2,21 @@
 
 namespace LibHac.IO
 {
-    public class SectorStorage : Storage
+    public class SectorStorage : StorageBase
     {
         protected IStorage BaseStorage { get; }
 
         public int SectorSize { get; }
-        public int SectorCount { get; }
+        public int SectorCount { get; private set; }
+
+        private long _length;
 
         public SectorStorage(IStorage baseStorage, int sectorSize, bool leaveOpen)
         {
             BaseStorage = baseStorage;
             SectorSize = sectorSize;
-            SectorCount = (int)Util.DivideByRoundUp(BaseStorage.Length, sectorSize);
-            Length = baseStorage.Length;
+            SectorCount = (int)Util.DivideByRoundUp(BaseStorage.GetSize(), SectorSize);
+            _length = BaseStorage.GetSize();
 
             if (!leaveOpen) ToDispose.Add(BaseStorage);
         }
@@ -36,7 +38,15 @@ namespace LibHac.IO
             BaseStorage.Flush();
         }
 
-        public override long Length { get; }
+        public override long GetSize() => _length;
+
+        public override void SetSize(long size)
+        {
+            BaseStorage.SetSize(size);
+
+            SectorCount = (int)Util.DivideByRoundUp(BaseStorage.GetSize(), SectorSize);
+            _length = BaseStorage.GetSize();
+        }
 
         /// <summary>
         /// Validates that the size is a multiple of the sector size

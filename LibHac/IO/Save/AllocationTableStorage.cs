@@ -1,23 +1,25 @@
 ﻿using System;
+using System.IO;
 
 namespace LibHac.IO.Save
 {
-    public class AllocationTableStorage : Storage
+    public class AllocationTableStorage : StorageBase
     {
         private IStorage BaseStorage { get; }
         private int BlockSize { get; }
-        private int InitialBlock { get; }
+        internal int InitialBlock { get; private set; }
         private AllocationTable Fat { get; }
 
-        public override long Length { get; }
+        private long _length;
 
-        public AllocationTableStorage(IStorage data, AllocationTable table, int blockSize, int initialBlock, long length)
+        public AllocationTableStorage(IStorage data, AllocationTable table, int blockSize, int initialBlock)
         {
             BaseStorage = data;
             BlockSize = blockSize;
-            Length = length;
             Fat = table;
             InitialBlock = initialBlock;
+
+            _length = initialBlock == -1 ? 0 : table.GetListLength(initialBlock) * blockSize;
         }
 
         protected override void ReadImpl(Span<byte> destination, long offset)
@@ -77,6 +79,51 @@ namespace LibHac.IO.Save
         public override void Flush()
         {
             BaseStorage.Flush();
+        }
+
+        public override long GetSize() => _length;
+
+        public override void SetSize(long size)
+        {
+            int oldBlockCount = (int)Util.DivideByRoundUp(_length, BlockSize);
+            int newBlockCount = (int)Util.DivideByRoundUp(size, BlockSize);
+
+            if (oldBlockCount == newBlockCount) return;
+
+            if (oldBlockCount == 0)
+            {
+                InitialBlock = Fat.Allocate(newBlockCount);
+                if (InitialBlock == -1) throw new IOException("Not enough space to resize file.");
+
+                _length = newBlockCount * BlockSize;
+
+                return;
+            }
+
+            if (newBlockCount == 0)
+            {
+                Fat.Free(InitialBlock);
+
+                InitialBlock = int.MinValue;
+                _length = 0;
+
+                return;
+            }
+
+            if (newBlockCount > oldBlockCount)
+            {
+                int newBlocks = Fat.Allocate(newBlockCount - oldBlockCount);
+                if (InitialBlock == -1) throw new IOException("Not enough space to resize file.");
+
+                Fat.Join(InitialBlock, newBlocks);
+            }
+            else
+            {
+                int oldBlocks = Fat.Trim(InitialBlock, newBlockCount);
+                Fat.Free(oldBlocks);
+            }
+
+            _length = newBlockCount * BlockSize;
         }
     }
 }

@@ -13,7 +13,7 @@ namespace nsZip.LibHacExtensions
 		public static long Recreate(IStorage fragmentMeta, FileStream writer, IFileSystem newBaseFolderFs)
 		{
 			var Segments = new List<DeltaFragmentSegment>();
-			if (fragmentMeta.Length < 0x40)
+			if (fragmentMeta.GetSize() < 0x40)
 			{
 				throw new InvalidDataException("Delta file is too small.");
 			}

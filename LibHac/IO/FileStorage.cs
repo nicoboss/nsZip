@@ -2,7 +2,7 @@
 
 namespace LibHac.IO
 {
-    public class FileStorage : Storage
+    public class FileStorage : StorageBase
     {
         private IFile BaseFile { get; }
 
@@ -26,6 +26,11 @@ namespace LibHac.IO
             BaseFile.Flush();
         }
 
-        public override long Length => BaseFile.GetSize();
+        public override long GetSize() => BaseFile.GetSize();
+
+        public override void SetSize(long size)
+        {
+            BaseFile.SetSize(size);
+        }
     }
 }

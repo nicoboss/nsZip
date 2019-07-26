@@ -3,17 +3,25 @@ using System.IO;
 
 namespace LibHac.IO
 {
-    public class SubStorage : Storage
+    public class SubStorage : StorageBase
     {
         private IStorage BaseStorage { get; }
         private long Offset { get; }
-        public override long Length { get; }
+        private FileAccess Access { get; } = FileAccess.ReadWrite;
+        private long _length;
 
         public SubStorage(IStorage baseStorage, long offset, long length)
         {
             BaseStorage = baseStorage;
             Offset = offset;
-            Length = length;
+            _length = length;
+        }
+
+        public SubStorage(SubStorage baseStorage, long offset, long length)
+        {
+            BaseStorage = baseStorage.BaseStorage;
+            Offset = baseStorage.Offset + offset;
+            _length = length;
         }
 
         public SubStorage(IStorage baseStorage, long offset, long length, bool leaveOpen)
@@ -30,11 +38,13 @@ namespace LibHac.IO
 
         protected override void ReadImpl(Span<byte> destination, long offset)
         {
+            if ((Access & FileAccess.Read) == 0) throw new InvalidOperationException("Storage is not readable");
             BaseStorage.Read(destination, offset + Offset);
         }
 
         protected override void WriteImpl(ReadOnlySpan<byte> source, long offset)
         {
+            if ((Access & FileAccess.Write) == 0) throw new InvalidOperationException("Storage is not writable");
             BaseStorage.Write(source, offset + Offset);
         }
 
@@ -43,12 +53,24 @@ namespace LibHac.IO
             BaseStorage.Flush();
         }
 
-        public override Storage Slice(long start, long length, bool leaveOpen)
-        {
-            Storage storage = BaseStorage.Slice(Offset + start, length, true);
-            if (!leaveOpen) storage.ToDispose.Add(this);
+        public override long GetSize() => _length;
 
-            return storage;
+        public override void SetSize(long size)
+        {
+            //if (!IsResizable)
+            //    return 0x313802;
+
+            //if (Offset < 0 || size < 0)
+            //    return 0x2F5C02;
+
+            if (BaseStorage.GetSize() != Offset + _length)
+            {
+                throw new NotSupportedException("SubStorage cannot be resized unless it is located at the end of the base storage.");
+            }
+
+            BaseStorage.SetSize(Offset + size);
+
+            _length = size;
         }
     }
 }

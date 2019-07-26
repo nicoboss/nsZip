@@ -1,5 +1,9 @@
 ﻿using System.Collections.Generic;
 
+#if CROSS_PLATFORM
+using System.Runtime.InteropServices;
+#endif
+
 namespace LibHac.IO
 {
     public class ConcatenationDirectory : IDirectory
@@ -23,19 +27,18 @@ namespace LibHac.IO
         {
             foreach (DirectoryEntry entry in ParentDirectory.Read())
             {
-                bool isSplit = ParentFileSystem.IsSplitFile(entry.FullPath);
+                bool isSplit = IsConcatenationFile(entry);
 
                 if (!CanReturnEntry(entry, isSplit)) continue;
 
-                if (!isSplit)
+                if (isSplit)
                 {
-                    yield return entry;
+                    entry.Type = DirectoryEntryType.File;
+                    entry.Size = ParentFileSystem.GetConcatenationFileSize(entry.FullPath);
+                    entry.Attributes = NxFileAttributes.None;
                 }
-                else
-                {
-                    long size = ParentFileSystem.GetConcatenationFileSize(entry.FullPath);
-                    yield return new DirectoryEntry(entry.Name, entry.FullPath, DirectoryEntryType.File, size);
-                }
+
+                yield return entry;
             }
         }
 
@@ -45,7 +48,7 @@ namespace LibHac.IO
 
             foreach (DirectoryEntry entry in ParentDirectory.Read())
             {
-                bool isSplit = ParentFileSystem.IsSplitFile(entry.FullPath);
+                bool isSplit = IsConcatenationFile(entry);
 
                 if (CanReturnEntry(entry, isSplit)) count++;
             }
@@ -57,6 +60,22 @@ namespace LibHac.IO
         {
             return Mode.HasFlag(OpenDirectoryMode.Files) && (entry.Type == DirectoryEntryType.File || isSplit) ||
                    Mode.HasFlag(OpenDirectoryMode.Directories) && entry.Type == DirectoryEntryType.Directory && !isSplit;
+        }
+
+        private bool IsConcatenationFile(DirectoryEntry entry)
+        {
+#if CROSS_PLATFORM
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
+            }
+            else
+            {
+                return ParentFileSystem.IsConcatenationFile(entry.FullPath);
+            }
+#else
+            return ConcatenationFileSystem.HasConcatenationFileAttribute(entry.Attributes);
+#endif
         }
     }
 }

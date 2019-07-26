@@ -28,14 +28,28 @@ namespace LibHac.IO
 
             if (!Header.TryDecryptHeader(Path, KekSeed, VerificationKey))
             {
-                throw new ArgumentException("NAX0 key derivation failed.");
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileHeaderInvalidKeys, "NAX0 key derivation failed.");
             }
 
-            Storage encStorage = new FileStorage(BaseFile).Slice(HeaderLength, Header.Size);
+            if (HeaderLength + Util.AlignUp(Header.Size, 0x10) > baseFile.GetSize())
+            {
+                ThrowHelper.ThrowResult(ResultFs.AesXtsFileTooShort, "NAX0 key derivation failed.");
+            }
+
+            IStorage encStorage = BaseFile.AsStorage().Slice(HeaderLength, Util.AlignUp(Header.Size, 0x10));
             BaseStorage = new CachedStorage(new Aes128XtsStorage(encStorage, Header.DecryptedKey1, Header.DecryptedKey2, BlockSize, true), 4, true);
         }
 
-        public override int Read(Span<byte> destination, long offset)
+        public byte[] GetKey()
+        {
+            var key = new byte[0x20];
+            Array.Copy(Header.DecryptedKey1, 0, key, 0, 0x10);
+            Array.Copy(Header.DecryptedKey2, 0, key, 0x10, 0x10);
+
+            return key;
+        }
+
+        public override int Read(Span<byte> destination, long offset, ReadOption options)
         {
             int toRead = ValidateReadParamsAndGetSize(destination, offset);
 
@@ -44,11 +58,16 @@ namespace LibHac.IO
             return toRead;
         }
 
-        public override void Write(ReadOnlySpan<byte> source, long offset)
+        public override void Write(ReadOnlySpan<byte> source, long offset, WriteOption options)
         {
             ValidateWriteParams(source, offset);
 
             BaseStorage.Write(source, offset);
+
+            if ((options & WriteOption.Flush) != 0)
+            {
+                Flush();
+            }
         }
 
         public override void Flush()
@@ -63,7 +82,11 @@ namespace LibHac.IO
 
         public override void SetSize(long size)
         {
-            throw new NotImplementedException();
+            Header.SetSize(size, VerificationKey);
+
+            BaseFile.Write(Header.ToBytes(false), 0);
+
+            BaseStorage.SetSize(size);
         }
     }
 }

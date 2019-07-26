@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text;
 using LibHac;
 using LibHac.IO;
+using LibHac.NcaLegacy;
 
 namespace nsZip.LibHacControl
 {

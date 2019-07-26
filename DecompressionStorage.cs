@@ -7,13 +7,10 @@ using Zstandard.Net;
 
 namespace nsZip
 {
-	class DecompressionStorage : Storage
+	class DecompressionStorage : StorageBase
 	{
-
-		public override long Length => length;
-
 		private int bs;
-		private Storage[] compressedBlocks;
+		private IStorage[] compressedBlocks;
 		private int[] compressionAlgorithm;
 		private int amountOfBlocks;
 		private long length = 0;
@@ -76,7 +73,7 @@ namespace nsZip
 				currentOffset += compressedBlockSize[currentBlockID];
 			}
 
-			compressedBlocks = new Storage[amountOfBlocks];
+			compressedBlocks = new IStorage[amountOfBlocks];
 			var compressedData = new FileStorage(inputFile).Slice(inputFileStream.Position);
 			for(int i = 0; i < amountOfBlocks; ++i)
 			{
@@ -92,7 +89,7 @@ namespace nsZip
 			switch (compressionAlgorithm[amountOfBlocks - 1])
 			{
 				case 0:
-					var rawBS = (int)compressedBlocks[amountOfBlocks - 1].Length;
+					var rawBS = (int)compressedBlocks[amountOfBlocks - 1].GetSize();
 					return rawBS; //DON'T return bs here as the last block will be smaller!
 				case 1:
 					return DecompressBlock(compressedBlocks[amountOfBlocks - 1]).Length;
@@ -142,7 +139,7 @@ namespace nsZip
 				{
 					case 0:
 						//Console.WriteLine("memcpy");
-						var rawBS = compressedBlocks[currentBlockID].Length;
+						var rawBS = compressedBlocks[currentBlockID].GetSize();
 
 						//This safety check doesn't work for the last block and so must be excluded!
 						if (rawBS != bs && currentBlockID < amountOfBlocks - 1)
@@ -178,7 +175,7 @@ namespace nsZip
 		{
 		}
 
-		private Span<byte> DecompressBlock(Storage input)
+		private Span<byte> DecompressBlock(IStorage input)
 		{
 			// decompress
 			using (var decompressionStream = new ZstandardStream(input.AsStream(), CompressionMode.Decompress))
@@ -186,6 +183,11 @@ namespace nsZip
 				decompressionStream.Read(decompressBuff, 0, bs);
 				return new Span<byte>(decompressBuff);
 			}
+		}
+
+		public override long GetSize()
+		{
+			return length;
 		}
 	}
 }

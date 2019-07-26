@@ -2,6 +2,7 @@
 using System.Linq;
 using LibHac;
 using LibHac.IO;
+using LibHac.NcaLegacy;
 
 namespace nsZip.LibHacExtensions
 {
