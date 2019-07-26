@@ -18,6 +18,16 @@ namespace nsZip.LibHacExtensions
 			}
 		}
 
+		public static void FolderToXCI(string inFolder, string nspFile)
+		{
+			using (var outfile = new FileStream(nspFile, FileMode.Create, FileAccess.Write))
+			{
+				var inFolderFs = new LocalFileSystem(inFolder);
+				var newNSP = new PartitionFileSystemBuilder(inFolderFs);
+				newNSP.Build(PartitionFileSystemType.Hashed).CopyToStream(outfile);
+			}
+		}
+
 		public static void ExtractTitlekeys(string inFolder, Keyset keyset, Output Out)
 		{
 			var dirExtracted = new DirectoryInfo(inFolder);

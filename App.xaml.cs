@@ -65,7 +65,7 @@ namespace nsZip
 							}
 							else if (infileLowerCase.EndsWith("xciz"))
 							{
-								tl.DecompressNSPZ(inFile);
+								tl.DecompressXCIZ(inFile);
 							}
 							else
 							{

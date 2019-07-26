@@ -171,6 +171,18 @@ namespace nsZip
 			Out.Event($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
 		}
 
+		public void DecompressXCIZ(string nspzFile)
+		{
+			var nspzFileNoExtension = Path.GetFileNameWithoutExtension(nspzFile);
+			Out.Event($"Task DecompressXCIZ \"{nspzFileNoExtension}\" started\r\n");
+			var keyset = ProcessKeyset.OpenKeyset();
+			ProcessNsp.Decompress(nspzFile, decryptedDir, Out);
+			UntrimAndEncrypt(keyset);
+			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
+			FolderTools.FolderToXCI(encryptedDir, $"{nspOutPath}.nsp");
+			Out.Event($"Task DecompressXCIZ \"{nspzFileNoExtension}\" completed!\r\n");
+		}
+
 		public void UntrimAndEncrypt(Keyset keyset)
 		{
 			FolderTools.ExtractTitlekeys(decryptedDir, keyset, Out);
