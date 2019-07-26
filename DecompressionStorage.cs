@@ -92,7 +92,8 @@ namespace nsZip
 			switch (compressionAlgorithm[amountOfBlocks - 1])
 			{
 				case 0:
-					return bs;
+					var rawBS = (int)compressedBlocks[amountOfBlocks - 1].Length;
+					return rawBS; //DON'T return bs here as the last block will be smaller!
 				case 1:
 					return DecompressBlock(compressedBlocks[amountOfBlocks - 1]).Length;
 				default:
