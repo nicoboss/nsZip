@@ -420,7 +420,7 @@ namespace nsZip
 
 				var TitlekeysOutputFilePath = $"{OutputFolderPath}/titlekeys.txt";
 				var TicketOutputPath = $"{OutputFolderPath}/Tickets";
-				if (toolsTaskType == ToolsTaskType.ExtractRomFS && !Directory.Exists(TicketOutputPath))
+				if (toolsTaskType == ToolsTaskType.ExtractTickets && !Directory.Exists(TicketOutputPath))
 				{
 					Directory.CreateDirectory(TicketOutputPath);
 				}
@@ -430,7 +430,7 @@ namespace nsZip
 					var inFilePath = (string)ToolsTaskQueue.Items[0];
 					var inFile = Path.GetFileName(inFilePath);
 
-					var ToolsTaskText = $"ToolsTask \"{inFile}\" in progress...";
+					var ToolsTaskText = $"ToolsTask {toolsTaskType.ToString()} \"{inFile}\" in progress...";
 					Out.Event($"{ToolsTaskText}\r\n");
 					Dispatcher.Invoke(() =>
 					{
@@ -439,6 +439,10 @@ namespace nsZip
 							$"Please take a look at the console window for more information.";
 						ToolsTaskQueue.Items.RemoveAt(0);
 					});
+
+					// Sleep 10 ms for the BusyTextBlock be longer visible for a large amount of very short tasks like ExtractTitlekeys
+					// It’s here so he sleeps even if the ToolsTask was skipped
+					Thread.Sleep(10);
 
 					switch(toolsTaskType)
 					{
@@ -453,21 +457,32 @@ namespace nsZip
 							if (!Directory.Exists(PfsHfsOutputPath))
 							{
 								Directory.CreateDirectory(PfsHfsOutputPath);
+								FileTools.ExtractPfsHfs(inFilePath, PfsHfsOutputPath, keyset, Out);
 							}
-							FileTools.ExtractPfsHfs(inFilePath, PfsHfsOutputPath, keyset, Out);
+							else
+							{
+								Out.Event($"ToolsTask {toolsTaskType.ToString()} \"{inFile}\" skipped as it already exists in the output directory\r\n");
+								continue;
+							}
 							break;
 						case ToolsTaskType.ExtractRomFS:
-							var RomFsOutputPath = $"{OutputFolderPath}/{inFile}_Extracted_FS";
+							var RomFsOutputPath = $"{OutputFolderPath}/{inFile}_RomFS";
 							if (!Directory.Exists(RomFsOutputPath))
 							{
 								Directory.CreateDirectory(RomFsOutputPath);
+								FileTools.ExtractRomFS(inFilePath, RomFsOutputPath, keyset, Out);
 							}
-							FileTools.ExtractRomFS(inFilePath, RomFsOutputPath, keyset, Out);
+							else
+							{
+								Out.Event($"ToolsTask {toolsTaskType.ToString()} \"{inFile}\" skipped as it already exists in the output directory\r\n");
+								continue;
+							}
 							break;
 						default:
 							throw new NotImplementedException($"Unknown ToolsTaskType: {toolsTaskType}!");
 					}
-					Thread.Sleep(10);
+
+					Out.Event($"ToolsTask {toolsTaskType.ToString()} \"{inFile}\" completed!\r\n");
 
 				} while (ToolsTaskQueue.Items.Count > 0);
 
@@ -485,7 +500,7 @@ namespace nsZip
 					}
 				}
 
-				Out.Event("ToolsTask done!\r\n");
+				Out.Event($"All ToolsTasks completed!\r\n");
 			}
 			catch (Exception ex)
 			{
