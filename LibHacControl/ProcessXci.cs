@@ -33,7 +33,7 @@ namespace nsZip.LibHacControl
 
 		private static void Process(string inputFilePath, string outDirPath, XciTaskType taskType, Keyset keyset, Output Out, bool verifyBeforeDecrypting = true)
 		{
-			using (var inputFile = new FileStream(inputFilePath, FileMode.Open, FileAccess.Read))
+			using (var inputFile = File.Open(inputFilePath, FileMode.Open, FileAccess.Read).AsStorage())
 			using (var outputFile = File.Open($"{outDirPath}/xciMeta.dat", FileMode.Create))
 			{
 				var OutDirFs = new LocalFileSystem(outDirPath);
@@ -43,10 +43,13 @@ namespace nsZip.LibHacControl
 				var header = new byte[] { 0x6e, 0x73, 0x5a, 0x69, 0x70, 0x4d, 0x65, 0x74, 0x61, 0x58, 0x43, 0x49, 0x00 };
 				outputFile.Write(header, 0, header.Length);
 
-				var xci = new Xci(keyset, inputFile.AsStorage());
-				var xciHeaderData = new byte[0x400];
-				inputFile.Read(xciHeaderData, 0, 0x400);
-				outputFile.Write(xciHeaderData, 0, 0x400);
+				var xci = new Xci(keyset, inputFile);
+				var xciHeaderData = new byte[0x200];
+				var xciCertData = new byte[0x200];
+				inputFile.Read(xciHeaderData, 0);
+				inputFile.Read(xciCertData, 0x7000);
+				outputFile.Write(xciHeaderData, 0, 0x200);
+				outputFile.Write(xciCertData, 0, 0x200);
 
 				Out.Log(Print.PrintXci(xci));
 
