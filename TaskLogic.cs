@@ -179,7 +179,7 @@ namespace nsZip
 			ProcessNsp.Decompress(nspzFile, decryptedDir, Out);
 			UntrimAndEncrypt(keyset);
 			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
-			FolderTools.FolderToXCI(encryptedDir, $"{nspOutPath}.nsp");
+			FolderTools.FolderToXCI(encryptedDir, $"{nspOutPath}.xci", keyset);
 			Out.Event($"Task DecompressXCIZ \"{nspzFileNoExtension}\" completed!\r\n");
 		}
 
