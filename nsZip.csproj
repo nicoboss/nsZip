@@ -25,8 +25,8 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <UpdateUrl>http://www.nicobosshard.ch/nsZip/</UpdateUrl>
-    <ApplicationRevision>22</ApplicationRevision>
+    <UpdateUrl>http://www.nicobosshard.ch/nsZip/Issue3/</UpdateUrl>
+    <ApplicationRevision>24</ApplicationRevision>
     <ApplicationVersion>2.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
