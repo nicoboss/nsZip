@@ -13,10 +13,11 @@ namespace nsZip.LibHacExtensions
 			using (var outfile = new FileStream(nspFile, FileMode.Create, FileAccess.Write))
 			{
 				var inFolderFs = new LocalFileSystem(inFolder);
-				var nspBuilder = new PartitionFileSystemBuilder(inFolderFs);
-				var newNSP = nspBuilder.Build(PartitionFileSystemType.Standard);
-				newNSP.CopyToStream(outfile);
-				newNSP.Dispose();
+				using (var nspBuilder = new PartitionFileSystemBuilder(inFolderFs))
+				using (var newNSP = nspBuilder.Build(PartitionFileSystemType.Standard))
+				{
+					newNSP.CopyToStream(outfile);
+				}
 			}
 		}
 
@@ -50,25 +51,28 @@ namespace nsZip.LibHacExtensions
 					var xciCertData = new byte[0x200];
 
 					metaFile.Read(xciHeaderData, 0xD);
-					xciHeader = new XciHeader(keyset, new MemoryStream(xciHeaderData));
-					outfile.Write(xciHeaderData, 0, 0x200);
+					using (var memoryStream = new MemoryStream(xciHeaderData))
+					{
+						xciHeader = new XciHeader(keyset, memoryStream);
+						outfile.Write(xciHeaderData, 0, 0x200);
 
-					metaFile.Read(xciCertData, 0x20D);
-					outfile.Seek(0x7000, SeekOrigin.Begin);
-					outfile.Write(xciCertData, 0, 0x200);
+						metaFile.Read(xciCertData, 0x20D);
+						outfile.Seek(0x7000, SeekOrigin.Begin);
+						outfile.Write(xciCertData, 0, 0x200);
 
-					var fillLeangth = xciHeader.RootPartitionOffset - 0x7200;
-					var fillData = new byte[fillLeangth];
-					fillData.AsSpan().Fill(0xFF);
-					outfile.Write(fillData, 0, (int)fillLeangth);
-					metaFile.Dispose();
+						var fillLeangth = xciHeader.RootPartitionOffset - 0x7200;
+						var fillData = new byte[fillLeangth];
+						fillData.AsSpan().Fill(0xFF);
+						outfile.Write(fillData, 0, (int)fillLeangth);
+					}
 				}
 
 				var xciMetaFileInfo = new FileInfo($"{inFolder}/xciMeta.dat");
 				xciMetaFileInfo.Delete();
-				var hfs0Storage = FolderToHFS0(inFolder);
-				hfs0Storage.CopyToStream(outfile);
-				hfs0Storage.Dispose();
+				using (var hfs0Storage = FolderToHFS0(inFolder))
+				{
+					hfs0Storage.CopyToStream(outfile);
+				}
 			}
 		}
 
