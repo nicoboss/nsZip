@@ -92,8 +92,9 @@ namespace nsZip
 			Out.Event($"Task CompressNSP \"{nspFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
 			using (var inputFile = new FileStream(nspFile, FileMode.Open, FileAccess.Read))
+			using (var inputFileStorage = inputFile.AsStorage())
 			{
-				var pfs = new PartitionFileSystem(inputFile.AsStorage());
+				var pfs = new PartitionFileSystem(inputFileStorage);
 				ProcessNsp.Decrypt(pfs, decryptedDir, VerifyHashes, keyset, Out);
 				TrimDeltaNCA.Process(decryptedDir, keyset, Out);
 				CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);

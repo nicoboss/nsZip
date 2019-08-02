@@ -97,8 +97,9 @@ namespace nsZip.LibHacControl
 		public static void Decompress(string inFile, string outDirPath, Output Out)
 		{
 			using (var file = new FileStream(inFile, FileMode.Open, FileAccess.Read))
+			using (var fileStorage = file.AsStorage())
 			{
-				var pfs = new PartitionFileSystem(file.AsStorage());
+				var pfs = new PartitionFileSystem(fileStorage);
 				Out.Log(pfs.Print());
 				DecompressFs.ProcessFs(pfs, outDirPath, Out);				
 			}

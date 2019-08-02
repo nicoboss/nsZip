@@ -7,7 +7,7 @@ using System.Text;
 
 namespace LibHac.IO
 {
-    public class PartitionFileSystemBuilder
+    public class PartitionFileSystemBuilder : IDisposable
     {
         private const int HeaderSize = 0x10;
 
@@ -155,7 +155,15 @@ namespace LibHac.IO
             }
         }
 
-        private class Entry
+		public void Dispose()
+		{
+			foreach (var item in Entries)
+			{
+				item.File.Dispose();
+			}
+		}
+
+		private class Entry
         {
             public string Name;
             public IFile File;
