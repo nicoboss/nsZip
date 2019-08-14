@@ -253,8 +253,7 @@ namespace nsZip
 							subsectionEntryCounter[5] = (byte)(entry.Counter >> 16);
 							subsectionEntryCounter[4] = (byte)(entry.Counter >> 24);
 
-							//bs = (int)Math.Min((sect.Offset + entry.OffsetEnd) - Input.Position, maxBS);
-							bs = (int)(entry.OffsetEnd - entry.Offset);
+							bs = (int)Math.Min((sect.Offset + entry.OffsetEnd) - Input.Position, maxBS);
 							var DecryptedSectionBlockLUL = new byte[bs];
 							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
 							Out.Log($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
