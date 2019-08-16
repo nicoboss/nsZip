@@ -83,7 +83,7 @@ namespace nsZip
 				sha256Compressed = new SHA256Cng();
 
 
-				var maxPos = inputFile.Length;
+				long maxPos = inputFile.Length;
 				int blocksLeft;
 				int blocksInThisChunk;
 
@@ -99,17 +99,19 @@ namespace nsZip
 					Parallel.For(0, blocksInThisChunk, index =>
 					{
 						var currentBlockID = chunkIndex * blocksPerChunk + index;
-						var startPos = currentBlockID * bs;
 						var startPosRelative = index * bs;
 
 						//Don't directly cast bytesLeft to int or sectors over 2 GB will overflow into negative size
-						var bytesLeft = (long)(maxPos - startPos);
+						long startPos = (long)currentBlockID * (long)bs;
+						long bytesLeft = maxPos - startPos;
 						var blockSize = bs < bytesLeft ? bs : (int)bytesLeft;
 
 						Out.Print($"Block: {currentBlockID+1}/{amountOfBlocks}\r\n");
 
 						CompressionAlgorithm compressionAlgorithm;
 						outputLen[index] = CompressBlock(ref CompressionIO, startPosRelative, blockSize, out compressionAlgorithm);
+						//Out.Log($"inputLen[{currentBlockID}]: {blockSize}\r\n");
+						//Out.Log($"outputLen[{currentBlockID}]: {outputLen[index]} bytesLeft={bytesLeft}\r\n");
 
 						var offset = currentBlockID * (sizeOfSize + 1);
 						switch (compressionAlgorithm)
