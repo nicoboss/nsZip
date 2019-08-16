@@ -35,8 +35,8 @@ namespace nsZip.LibHacControl
 
 					if (fragmentTrimmed)
 					{
-						Out.Log(
-							"Warning: Multiple fragments in NCA found! Skip trimming this fragment.\r\n");
+						Out.Warn(
+							"Multiple fragments in NCA found! Skip trimming this fragment.\r\n");
 						continue;
 					}
 
