@@ -13,6 +13,11 @@ namespace nsZip
 	{
 		private void Application_Startup(object sender, StartupEventArgs e)
 		{
+			//var outDebug = new Output();
+			//var tl1 = new TaskLogic(@"T:\OUT", @"T:\", true, 262144, 18, outDebug);
+			//tl1.VerifyCompressedFolder(@"T:\NSP\input.nsp");
+			//return;
+
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			{
 				try

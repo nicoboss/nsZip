@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading;
 using LibHac;
 using LibHac.IO;
@@ -84,6 +85,35 @@ namespace nsZip
 			cleanFolder(decryptedDir);
 			cleanFolder(encryptedDir);
 			cleanFolder(compressedDir);
+		}
+
+		public void VerifyCompressedFolder(string nspFile)
+		{
+			var nspFileNoExtension = Path.GetFileNameWithoutExtension(nspFile);
+			Out.Event($"Task VerifyCompressedFolder \"{nspFileNoExtension}\" started\r\n");
+			var keyset = ProcessKeyset.OpenKeyset();
+			using (var inputFile = new FileStream(nspFile, FileMode.Open, FileAccess.Read))
+			using (var inputFileStorage = inputFile.AsStorage())
+			{
+				var pfs = new PartitionFileSystem(inputFileStorage);
+				ProcessNsp.GetTitlekey(pfs, keyset, Out);
+
+				var dirDecryptedReal = new DirectoryInfo(decryptedDir);
+				var dirDecryptedRealCount = dirDecryptedReal.GetFiles().Length;
+				cleanFolder(decryptedDir);
+				var compressedFs = new LocalFileSystem(compressedDir);
+				DecompressFs.ProcessFs(compressedFs, decryptedDir, Out);
+				UntrimDeltaNCA.Process(decryptedDir, pfs, keyset, Out);
+
+				var dirDecrypted = new DirectoryInfo(decryptedDir);
+
+				foreach (var file in dirDecrypted.GetFiles("*.nca"))
+				{
+					EncryptNCA.Encrypt(file.FullName, encryptedDir, false, true, keyset, Out);
+				}
+			}
+
+			Out.Event($"Task VerifyCompressedFolder \"{nspFileNoExtension}\" completed!\r\n");
 		}
 
 		public void CompressNSP(string nspFile)
