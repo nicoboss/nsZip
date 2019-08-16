@@ -92,7 +92,12 @@ namespace nsZip
 					var rawBS = (int)compressedBlocks[amountOfBlocks - 1].GetSize();
 					return rawBS; //DON'T return bs here as the last block will be smaller!
 				case 1:
-					return DecompressBlock(compressedBlocks[amountOfBlocks - 1]).Length;
+					using (var decompressionStream = new ZstandardStream(compressedBlocks[amountOfBlocks - 1].AsStream(), CompressionMode.Decompress))
+					using (var memoryStream = new MemoryStream())
+					{
+						decompressionStream.CopyTo(memoryStream);
+						return (int)memoryStream.Length;
+					}
 				default:
 					throw new NotImplementedException(
 						"The specified compression algorithm isn't implemented yet!");
