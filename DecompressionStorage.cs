@@ -13,6 +13,7 @@ namespace nsZip
 		private IStorage[] compressedBlocks;
 		private int[] compressionAlgorithm;
 		private int amountOfBlocks;
+		private int lastBlockSize = -1;
 		private long length = 0;
 		private byte[] decompressBuff;
 
@@ -81,11 +82,18 @@ namespace nsZip
 			}
 
 			// Cast to long is VERY important or files larger than 2 GB will have a negative size!
-			length = ((long)(amountOfBlocks-1) * bs) + getSizeOfLastBlock();
+			lastBlockSize = getSizeOfLastBlock();
+			length = ((long)(amountOfBlocks-1) * bs) + lastBlockSize;
+			Console.WriteLine($"length={length} lastBlockSize={lastBlockSize}");
 		}
 
 		private int getSizeOfLastBlock()
 		{
+			if (lastBlockSize > -1)
+			{
+				return lastBlockSize;
+			}
+
 			switch (compressionAlgorithm[amountOfBlocks - 1])
 			{
 				case 0:
@@ -140,6 +148,11 @@ namespace nsZip
 					readSize = bs;
 				}
 
+				if (currentBlockID == amountOfBlocks - 1 && lastBlockSize < readSize)
+				{
+					readSize = lastBlockSize;
+				}
+
 				switch (compressionAlgorithm[currentBlockID])
 				{
 					case 0:
@@ -157,7 +170,6 @@ namespace nsZip
 					case 1:
 						//Console.WriteLine("ZStandard");
 						var cachedBlock = DecompressBlock(compressedBlocks[currentBlockID]);
-
 						cachedBlock.Slice(relativeOffset, readSize).CopyTo(destination.Slice(destinationOffset));
 						//Console.Out.WriteLine(System.Text.Encoding.ASCII.GetString(destination.ToArray()));
 						break;
