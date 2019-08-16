@@ -246,29 +246,33 @@ namespace nsZip
 						Array.Copy(initialCounter, subsectionEntryCounter, 0x10);
 						foreach (var entry in SubsectionEntries)
 						{
-							//Array.Copy(initialCounter, subsectionEntryCounter, 0x10);
-							SetCtrOffset(subsectionEntryCounter, Input.Position);
-							subsectionEntryCounter[7] = (byte)entry.Counter;
-							subsectionEntryCounter[6] = (byte)(entry.Counter >> 8);
-							subsectionEntryCounter[5] = (byte)(entry.Counter >> 16);
-							subsectionEntryCounter[4] = (byte)(entry.Counter >> 24);
-
-							bs = (int)Math.Min((sect.Offset + entry.OffsetEnd) - Input.Position, maxBS);
-							var DecryptedSectionBlockLUL = new byte[bs];
-							Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
-							Out.Log($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
-							Input.Read(DecryptedSectionBlockLUL, 0, bs);
-							AesCtrEncrypter.Counter = subsectionEntryCounter;
-							AesCtrEncrypter.TransformBlock(DecryptedSectionBlockLUL);
-							if (Output != null)
+							do
 							{
-								Output.Write(DecryptedSectionBlockLUL, 0, bs);
-							}
+								bs = (int)Math.Min((sect.Offset + entry.OffsetEnd) - Input.Position, maxBS);
 
-							if (verifyEncrypted)
-							{
-								sha256NCA.TransformBlock(DecryptedSectionBlockLUL, 0, bs, null, 0);
-							}
+								SetCtrOffset(subsectionEntryCounter, Input.Position);
+								subsectionEntryCounter[7] = (byte)entry.Counter;
+								subsectionEntryCounter[6] = (byte)(entry.Counter >> 8);
+								subsectionEntryCounter[5] = (byte)(entry.Counter >> 16);
+								subsectionEntryCounter[4] = (byte)(entry.Counter >> 24);
+
+								var DecryptedSectionBlockLUL = new byte[bs];
+								Out.Print($"Encrypted: {Input.Position / 0x100000} MB\r\n");
+								Out.Log($"{Input.Position}: {Utils.BytesToString(subsectionEntryCounter)}\r\n");
+								Input.Read(DecryptedSectionBlockLUL, 0, bs);
+								AesCtrEncrypter.Counter = subsectionEntryCounter;
+								AesCtrEncrypter.TransformBlock(DecryptedSectionBlockLUL);
+								if (Output != null)
+								{
+									Output.Write(DecryptedSectionBlockLUL, 0, bs);
+								}
+
+								if (verifyEncrypted)
+								{
+									sha256NCA.TransformBlock(DecryptedSectionBlockLUL, 0, bs, null, 0);
+								}
+
+							} while (Input.Position < entry.OffsetEnd);
 						}
 
 						while (Input.Position < sectOffsetEnd)
