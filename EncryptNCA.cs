@@ -308,7 +308,7 @@ namespace nsZip
 				}
 				else
 				{
-					throw new Exception($"[INVALID HASH] {sha256NCAHashString}\r\n");
+					throw new Exception($"[INVALID HASH] sha256({Path.GetFileName(ncaPath)}) = {sha256NCAHashString}\r\n");
 				}
 			}
 		}
