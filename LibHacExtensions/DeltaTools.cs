@@ -9,14 +9,14 @@ namespace nsZip.LibHacExtensions
 		public const string Cdv0Magic = "CDV0";
 		public static readonly byte[] LCA3Macic = {0x4c, 0x43, 0x41, 0x33};
 
-		public static int ReadInt(FileReader reader, int bytes)
+		public static long ReadInt(FileReader reader, int bytes)
 		{
 			switch (bytes)
 			{
 				case 1: return reader.ReadUInt8();
 				case 2: return reader.ReadUInt16();
 				case 3: return reader.ReadUInt24();
-				case 4: return reader.ReadInt32();
+				case 4: return reader.ReadUInt32();
 				default: return 0;
 			}
 		}
@@ -25,7 +25,7 @@ namespace nsZip.LibHacExtensions
 	internal class DeltaFragmentSegment
 	{
 		public long SourceOffset { get; set; }
-		public int Size { get; set; }
+		public long Size { get; set; }
 		public bool IsInOriginal { get; set; }
 	}
 

@@ -97,7 +97,7 @@ namespace nsZip.LibHacExtensions
 			throw new InvalidDataException("Fragment file seems to be corrupted!");
 		}
 
-		private static void ReadSegmentHeader(FileReader reader, FileStream writer, out int size, out int seek)
+		private static void ReadSegmentHeader(FileReader reader, FileStream writer, out long size, out long seek)
 		{
 			var pos = reader.Position;
 			var type = reader.ReadUInt8();

@@ -75,7 +75,7 @@ namespace LibHac.IO
 
             while (offset < Header.NewSize)
             {
-                ReadSegmentHeader(reader, out int size, out int seek);
+                ReadSegmentHeader(reader, out long size, out long seek);
 
                 if (seek > 0)
                 {
@@ -107,7 +107,7 @@ namespace LibHac.IO
             }
         }
 
-        private static void ReadSegmentHeader(FileReader reader, out int size, out int seek)
+        private static void ReadSegmentHeader(FileReader reader, out long size, out long seek)
         {
             byte type = reader.ReadUInt8();
 
@@ -118,14 +118,14 @@ namespace LibHac.IO
             seek = ReadInt(reader, seekBytes);
         }
 
-        private static int ReadInt(FileReader reader, int bytes)
+        private static long ReadInt(FileReader reader, int bytes)
         {
             switch (bytes)
             {
                 case 1: return reader.ReadUInt8();
                 case 2: return reader.ReadUInt16();
                 case 3: return reader.ReadUInt24();
-                case 4: return reader.ReadInt32();
+                case 4: return reader.ReadUInt32();
                 default: return 0;
             }
         }
@@ -134,7 +134,7 @@ namespace LibHac.IO
     internal class DeltaFragmentSegment
     {
         public long SourceOffset { get; set; }
-        public int Size { get; set; }
+        public long Size { get; set; }
         public bool IsInOriginal { get; set; }
     }
 

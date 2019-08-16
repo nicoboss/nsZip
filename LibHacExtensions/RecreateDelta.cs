@@ -74,7 +74,9 @@ namespace nsZip.LibHacExtensions
 
 			while (offset < endOffset)
 			{
+				Console.WriteLine($"ReadSegmentHeader on {offset}");
 				ReadSegmentHeader(reader, writer, out var size, out var seek);
+				Console.WriteLine($"size: {size}, seek: {seek}, readerPos: {reader.Position}, writerPos: {writer.Position}");
 				if (seek > 0)
 				{
 					var segment = new DeltaFragmentSegment
@@ -115,11 +117,12 @@ namespace nsZip.LibHacExtensions
 			return reader.Position;
 		}
 
-		private static void ReadSegmentHeader(FileReader reader, FileStream writer, out int size, out int seek)
+		private static void ReadSegmentHeader(FileReader reader, FileStream writer, out long size, out long seek)
 		{
 			var pos = reader.Position;
 			var type = reader.ReadUInt8();
 
+			Console.WriteLine($"type: {type}");
 			var seekBytes = (type & 3) + 1;
 			var sizeBytes = ((type >> 3) & 3) + 1;
 
