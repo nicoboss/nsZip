@@ -61,9 +61,13 @@ namespace nsZip.LibHacExtensions
 			var SplitNdv0EndOffsetPos = writer.Position - foundBaseNCAEndOffsetLen;
 
 			long offset = 0;
-			while (reader.Position < delta.GetSize())
+			long deltaSize = delta.GetSize();
+
+			Console.WriteLine($"reader={reader.Position} writer={writer.Position}");
+			while (reader.Position < deltaSize)
 			{
 				ReadSegmentHeader(reader, writer, out var size, out var seek);
+
 				if (seek > 0)
 				{
 					offset += seek;
@@ -77,7 +81,7 @@ namespace nsZip.LibHacExtensions
 				reader.Position += size;
 			}
 
-			if (reader.Position == delta.GetSize())
+			if (reader.Position == deltaSize)
 			{
 				if (filenameOffset.Length > 2)
 				{
@@ -101,14 +105,20 @@ namespace nsZip.LibHacExtensions
 		{
 			var pos = reader.Position;
 			var type = reader.ReadUInt8();
-			var seekBytes = (type & 3) + 1;
-			var sizeBytes = ((type >> 3) & 3) + 1;
+			
+			var seekBytes = (type & 7) + 1;
+			var sizeBytes = (type >> 3) + 1;
+			Console.WriteLine($"pos={pos + 49216} type={type} seekBytes={seekBytes} sizeBytes={sizeBytes}");
 
 			size = DeltaTools.ReadInt(reader, sizeBytes);
 			seek = DeltaTools.ReadInt(reader, seekBytes);
+			var len = 1 + sizeBytes + seekBytes;
 
 			reader.Position = pos;
-			var len = 1 + sizeBytes + seekBytes;
+			var bytesRead = reader.ReadBytes(pos, len);
+
+			reader.Position = pos;
+			Console.WriteLine($"pos={pos+49216} type={type} seekBytes={seekBytes} sizeBytes={sizeBytes} size={size} seek={seek} len={len} bytesRead={Utils.ToHexString(bytesRead)}");
 			writer.Write(reader.ReadBytes(len), 0, len);
 		}
 	}

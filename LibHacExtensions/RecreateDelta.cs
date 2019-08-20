@@ -123,8 +123,8 @@ namespace nsZip.LibHacExtensions
 			var type = reader.ReadUInt8();
 
 			Console.WriteLine($"type: {type}");
-			var seekBytes = (type & 3) + 1;
-			var sizeBytes = ((type >> 3) & 3) + 1;
+			var seekBytes = (type & 7) + 1;
+			var sizeBytes = (type >> 3) + 1;
 
 			size = DeltaTools.ReadInt(reader, sizeBytes);
 			seek = DeltaTools.ReadInt(reader, seekBytes);

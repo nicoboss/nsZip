@@ -1,4 +1,5 @@
-﻿using LibHac.IO;
+﻿using System;
+using LibHac.IO;
 
 namespace nsZip.LibHacExtensions
 {
@@ -11,14 +12,8 @@ namespace nsZip.LibHacExtensions
 
 		public static long ReadInt(FileReader reader, int bytes)
 		{
-			switch (bytes)
-			{
-				case 1: return reader.ReadUInt8();
-				case 2: return reader.ReadUInt16();
-				case 3: return reader.ReadUInt24();
-				case 4: return reader.ReadUInt32();
-				default: return 0;
-			}
+			Console.WriteLine($"bytes: {bytes}");
+			return (long)reader.ReadBytesToUInt64(bytes);
 		}
 	}
 

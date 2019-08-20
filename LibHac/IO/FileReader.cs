@@ -98,6 +98,17 @@ namespace LibHac.IO
             return MemoryMarshal.Read<ulong>(_buffer);
         }
 
+        public ulong ReadBytesToUInt64(long offset, int length, bool updatePosition)
+        {
+            if (length > sizeof(ulong))
+            {
+                throw new IndexOutOfRangeException($"length exceeds sizeof(ulong): {length} > {sizeof(ulong)} ");
+            }
+
+            FillBuffer(offset, length, updatePosition);
+            return MemoryMarshal.Read<ulong>(_buffer) & ((2uL << (length*8)-1)-1uL);
+        }
+
         public long ReadInt64(long offset, bool updatePosition)
         {
             FillBuffer(offset, sizeof(long), updatePosition);
@@ -153,6 +164,7 @@ namespace LibHac.IO
         public uint ReadUInt32(long offset) => ReadUInt32(offset, true);
         public int ReadInt32(long offset) => ReadInt32(offset, true);
         public ulong ReadUInt64(long offset) => ReadUInt64(offset, true);
+        public ulong ReadBytesToUInt64(long offset, int length) => ReadBytesToUInt64(offset, length, true);
         public long ReadInt64(long offset) => ReadInt64(offset, true);
         public float ReadSingle(long offset) => ReadSingle(offset, true);
         public double ReadDouble(long offset) => ReadDouble(offset, true);
@@ -169,6 +181,7 @@ namespace LibHac.IO
         public uint ReadUInt32() => ReadUInt32(Position, true);
         public int ReadInt32() => ReadInt32(Position, true);
         public ulong ReadUInt64() => ReadUInt64(Position, true);
+        public ulong ReadBytesToUInt64(int length) => ReadBytesToUInt64(Position, length, true);
         public long ReadInt64() => ReadInt64(Position, true);
         public float ReadSingle() => ReadSingle(Position, true);
         public double ReadDouble() => ReadDouble(Position, true);
