@@ -8,7 +8,7 @@ namespace nsZip.LibHacExtensions
 	{
 		private const int BucketAlignment = 0x4000;
 
-		public MyBucketTree(Stream header, FileStream data, long EncryptionHeaderAbsolutOffset)
+		public MyBucketTree(Stream header, Stream data, long EncryptionHeaderAbsolutOffset)
 		{
 			var realDataPos = data.Position;
 			data.Position = EncryptionHeaderAbsolutOffset;

@@ -1,9 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using LibHac;
+using LibHac.IO;
+using nsZip.LibHacExtensions;
 using Zstandard.Net;
 
 namespace nsZip
@@ -39,6 +42,11 @@ namespace nsZip
 			new CompressFolder(OutArg, inFolderPathArg, outFolderPathArg, bsArg, ZstdLevel);
 		}
 
+		private static String GetFullPathWithoutExtension(String path)
+		{
+			return Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path));
+		}
+
 		private void CompressFunct()
 		{
 			var threadsUsedToCompress = Environment.ProcessorCount;
@@ -50,17 +58,20 @@ namespace nsZip
 
 			var CompressionIO = new byte[104857600];
 			var blocksPerChunk = CompressionIO.Length / bs + (CompressionIO.Length % bs > 0 ? 1 : 0);
-			var dirDecrypted = new DirectoryInfo(inFolderPath);
-			foreach (var file in dirDecrypted.GetFiles())
+			var sourceFs = new LocalFileSystem(inFolderPath);
+			var destFs = new LocalFileSystem(outFolderPath);
+			foreach (var file in sourceFs.EnumerateEntries().Where(item => item.Type == DirectoryEntryType.File))
 			{
+				Out.Log($"{file.FullPath}\r\n");
 				var doneFlag = false;
-				var outputFile = File.Open($"{outFolderPath}/{file.Name}.nsz", FileMode.Create);
-				var inputFile = File.Open(file.FullName, FileMode.Open);
-				amountOfBlocks = (int) Math.Ceiling((decimal) inputFile.Length / bs);
+				var outFileName = $"{file.Name.Substring(0, file.Name.LastIndexOf('.'))}.nsz";
+				var outputFile = FolderTools.createAndOpen(file, destFs, outFileName);
+				var inputFile = sourceFs.OpenFile(file.FullPath, OpenMode.Read);
+				amountOfBlocks = (int) Math.Ceiling((decimal) inputFile.GetSize() / bs);
 				sizeOfSize = (int) Math.Ceiling(Math.Log(bs, 2) / 8);
 				var perBlockHeaderSize = sizeOfSize + 1;
 				var headerSize = 0x15 + perBlockHeaderSize * amountOfBlocks;
-				outputFile.Position = headerSize;
+				long outputFilePosition = headerSize;
 				var nsZipMagic = new byte[] {0x6e, 0x73, 0x5a, 0x69, 0x70};
 				var nsZipMagicRandomKey = new byte[5];
 				secureRNG.GetBytes(nsZipMagicRandomKey);
@@ -83,14 +94,14 @@ namespace nsZip
 				sha256Compressed = new SHA256Cng();
 
 
-				long maxPos = inputFile.Length;
+				long maxPos = inputFile.GetSize();
 				int blocksLeft;
 				int blocksInThisChunk;
 
 				do
 				{
 					var outputLen = new int[blocksPerChunk]; //Filled with 0
-					inputFile.Read(CompressionIO, 0, CompressionIO.Length);
+					inputFile.Read(CompressionIO, 0);
 
 					blocksLeft = amountOfBlocks - chunkIndex * blocksPerChunk;
 					blocksInThisChunk = Math.Min(blocksPerChunk, blocksLeft);
@@ -139,14 +150,16 @@ namespace nsZip
 					{
 						var startPos = index * bs;
 						sha256Compressed.TransformBlock(CompressionIO, startPos, outputLen[index], null, 0);
-						outputFile.Write(CompressionIO, startPos, outputLen[index]);
+						var dataToWrite = CompressionIO.AsSpan().Slice(startPos, outputLen[index]);
+						outputFile.SetSize(outputFilePosition + dataToWrite.Length);
+						outputFile.Write(dataToWrite, outputFilePosition);
+						outputFilePosition += dataToWrite.Length;
 					}
 
 					++chunkIndex;
 				} while (blocksLeft - blocksInThisChunk > 0);
 
-				outputFile.Position = 0;
-				outputFile.Write(nsZipHeader, 0, headerSize);
+				outputFile.Write(nsZipHeader, 0);
 				sha256Header = new SHA256Cng();
 				sha256Header.ComputeHash(nsZipHeader);
 				var sha256Hash = new byte[0x20];
@@ -155,8 +168,9 @@ namespace nsZip
 				Util.XorArrays(sha256Hash, sha256Compressed.Hash);
 				//Console.WriteLine(sha256Header.Hash.ToHexString());
 				//Console.WriteLine(sha256Compressed.Hash.ToHexString());
-				outputFile.Seek(0, SeekOrigin.End);
-				outputFile.Write(sha256Hash, 0, 0x10);
+				outputFile.SetSize(outputFilePosition + sha256Hash.Length);
+				outputFile.Write(sha256Hash, outputFilePosition);
+				outputFilePosition += sha256Hash.Length;
 				outputFile.Dispose();
 				inputFile.Dispose();
 				//break;

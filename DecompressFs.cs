@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using LibHac;
 using LibHac.IO;
+using nsZip.LibHacExtensions;
 using Zstandard.Net;
 
 namespace nsZip
@@ -11,37 +13,26 @@ namespace nsZip
 	public static class DecompressFs
 	{
 
-		public static IEnumerable<DirectoryEntry> FileIterator(IFileSystem sourceFs)
+		public static void ProcessFs(IFileSystem sourceFs, IFileSystem destFs, Output Out)
 		{
-			IDirectory sourceRoot = sourceFs.OpenDirectory("/", OpenDirectoryMode.All);
-			foreach (var entry in sourceRoot.Read())
+			foreach (var file in sourceFs.EnumerateEntries().Where(item => item.Type == DirectoryEntryType.File))
 			{
-				if (entry.Type == DirectoryEntryType.Directory)
-				{
-					throw new InvalidDataException("Error: Directory inside NSPZ/XCIZ!");
-				}
-
-				yield return entry;
-			}
-		}
-
-		public static void ProcessFs(IFileSystem sourceFs, string outDirPath, Output Out)
-		{
-			foreach (var entry in FileIterator(sourceFs))
-			{
-				var outFilePath = Path.Combine(outDirPath, Path.GetFileNameWithoutExtension(entry.Name));
-				using (IFile srcFile = sourceFs.OpenFile(entry.Name, OpenMode.Read))
+				using (IFile srcFile = sourceFs.OpenFile(file.FullPath, OpenMode.Read))
 				using (var decStorage = new DecompressionStorage(srcFile))
-				using (FileStream outputFile = File.OpenWrite(outFilePath))
 				{
-					decStorage.CopyToStream(outputFile);
+					var destName = $"{file.Name.Substring(0, file.Name.LastIndexOf('.'))}.nca";
+					using (IFile outputFile = FolderTools.createAndOpen(file, destFs, destName, decStorage.GetSize()))
+					{
+
+						decStorage.CopyTo(outputFile.AsStorage());
+					}
 				}
 			}
 		}
 
 		public static void GetTitleKeys(IFileSystem sourceFs, Keyset keyset, Output Out)
 		{
-			foreach (var entry in FileIterator(sourceFs))
+			foreach (var entry in sourceFs.EnumerateEntries().Where(item => item.Type == DirectoryEntryType.File))
 			{
 				if (entry.Name.EndsWith(".tik.nsz"))
 				{
@@ -59,7 +50,7 @@ namespace nsZip
 			var OutDirFs = new LocalFileSystem(outDirPath);
 			IDirectory destRoot = OutDirFs.OpenDirectory("/", OpenDirectoryMode.All);
 
-			foreach (var entry in FileIterator(sourceFs))
+			foreach (var entry in sourceFs.EnumerateEntries().Where(item => item.Type == DirectoryEntryType.File))
 			{
 				if (entry.Name.EndsWith(".tik.nsz") || entry.Name.EndsWith(".cert.nsz"))
 				{

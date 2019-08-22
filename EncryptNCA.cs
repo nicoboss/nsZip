@@ -16,29 +16,32 @@ namespace nsZip
 	{
 		internal static readonly string[] KakNames = {"application", "ocean", "system"};
 
-		public static void Encrypt(string ncaPath, string outDir, bool writeEncrypted, bool verifyEncrypted, Keyset keyset,
+		public static void Encrypt(IFileSystem sourceFs, IFileSystem destFs, bool verifyEncrypted, Keyset keyset,
 			Output Out)
 		{
-			Out.Log($"Input: {Path.GetFileName(ncaPath)}\r\n");
-			using (FileStream Input = File.Open(ncaPath, FileMode.Open))
+			foreach (var decryptedNcaEntry in sourceFs.EnumerateEntries().Where(item => item.Name.EndsWith(".nca")))
 			{
-				if (writeEncrypted)
+				Out.Log($"Input: {decryptedNcaEntry.Name}\r\n");
+				using (var decryptedNca = sourceFs.OpenFile(decryptedNcaEntry.FullPath, OpenMode.Read))
 				{
-					Out.Log("Opened NCA for writing...\r\n");
-					using (Stream Output = File.Open(Path.Combine(outDir, Path.GetFileName(ncaPath)), FileMode.Create))
+					if (destFs != null)
 					{
-						EncryptFunct(Input, Output, ncaPath, verifyEncrypted, keyset, Out);
+						Out.Log("Opened NCA for writing...\r\n");
+						using (IFile outputFile = FolderTools.createAndOpen(decryptedNcaEntry, destFs, decryptedNcaEntry.Name, decryptedNca.GetSize()))
+						{
+							EncryptFunct(decryptedNca.AsStream(), outputFile.AsStream(), decryptedNcaEntry.Name, verifyEncrypted, keyset, Out);
+						}
 					}
-				}
-				else
-				{
-					EncryptFunct(Input, null, ncaPath, verifyEncrypted, keyset, Out);
+					else
+					{
+						EncryptFunct(decryptedNca.AsStream(), null, decryptedNcaEntry.Name, verifyEncrypted, keyset, Out);
+					}
 				}
 			}
 		}
 
 		public static void EncryptFunct(
-			FileStream Input, Stream Output, string ncaPath,
+			Stream Input, Stream Output, string ncaFilename,
 			bool verifyEncrypted, Keyset keyset, Output Out)
 		{
 			var DecryptedKeys = Utils.CreateJaggedArray<byte[][]>(4, 0x10);
@@ -306,13 +309,13 @@ namespace nsZip
 			{
 				sha256NCA.TransformFinalBlock(new byte[0], 0, 0);
 				var sha256NCAHashString = Utils.BytesToString(sha256NCA.Hash).ToLower();
-				if (sha256NCAHashString.StartsWith(Path.GetFileName(ncaPath).Split('.')[0].ToLower()))
+				if (sha256NCAHashString.StartsWith(ncaFilename.Split('.')[0].ToLower()))
 				{
 					Out.Log($"[VERIFIED] {sha256NCAHashString}\r\n");
 				}
 				else
 				{
-					throw new Exception($"[INVALID HASH] sha256({Path.GetFileName(ncaPath)}) = {sha256NCAHashString}\r\n");
+					throw new Exception($"[INVALID HASH] sha256({ncaFilename}) = {sha256NCAHashString}\r\n");
 				}
 			}
 		}

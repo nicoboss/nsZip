@@ -101,7 +101,8 @@ namespace nsZip.LibHacControl
 			{
 				var pfs = new PartitionFileSystem(fileStorage);
 				Out.Log(pfs.Print());
-				DecompressFs.ProcessFs(pfs, outDirPath, Out);				
+				var decompressedFs = new LocalFileSystem(outDirPath);
+				DecompressFs.ProcessFs(pfs, decompressedFs, Out);				
 			}
 		}
 

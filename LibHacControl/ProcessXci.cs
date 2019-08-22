@@ -82,8 +82,7 @@ namespace nsZip.LibHacControl
 							}
 							else
 							{
-								var destFileName = taskType == XciTaskType.extract
-									? Path.Combine(sub.Name, subPfsFile.Name) : subPfsFile.Name;
+								var destFileName = Path.Combine(sub.Name, subPfsFile.Name);
 								if (!destFs.DirectoryExists(sub.Name))
 								{
 									destFs.CreateDirectory(sub.Name);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using LibHac;
 using LibHac.IO;
@@ -102,15 +103,10 @@ namespace nsZip
 				var dirDecryptedRealCount = dirDecryptedReal.GetFiles().Length;
 				cleanFolder(decryptedDir);
 				var compressedFs = new LocalFileSystem(compressedDir);
-				DecompressFs.ProcessFs(compressedFs, decryptedDir, Out);
+				var decryptedFs = new LocalFileSystem(decryptedDir);
+				DecompressFs.ProcessFs(compressedFs, decryptedFs, Out);
 				UntrimDeltaNCA.Process(decryptedDir, pfs, keyset, Out);
-
-				var dirDecrypted = new DirectoryInfo(decryptedDir);
-
-				foreach (var file in dirDecrypted.GetFiles("*.nca"))
-				{
-					EncryptNCA.Encrypt(file.FullName, encryptedDir, false, true, keyset, Out);
-				}
+				EncryptNCA.Encrypt(decryptedFs, null, true, keyset, Out);
 			}
 
 			Out.Event($"Task VerifyCompressedFolder \"{nspFileNoExtension}\" completed!\r\n");
@@ -135,7 +131,8 @@ namespace nsZip
 					var dirDecryptedRealCount = dirDecryptedReal.GetFiles().Length;
 					cleanFolder(decryptedDir);
 					var compressedFs = new LocalFileSystem(compressedDir);
-					DecompressFs.ProcessFs(compressedFs, decryptedDir, Out);
+					var decryptedFs = new LocalFileSystem(decryptedDir);
+					DecompressFs.ProcessFs(compressedFs, decryptedFs, Out);
 					UntrimDeltaNCA.Process(decryptedDir, pfs, keyset, Out);
 
 					var dirDecrypted = new DirectoryInfo(decryptedDir);
@@ -145,10 +142,7 @@ namespace nsZip
 						throw new FileNotFoundException();
 					}
 
-					foreach (var file in dirDecrypted.GetFiles("*.nca"))
-					{
-						EncryptNCA.Encrypt(file.FullName, encryptedDir, false, true, keyset, Out);
-					}
+					EncryptNCA.Encrypt(compressedFs, null, true, keyset, Out);
 				}
 			}
 			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
@@ -166,27 +160,23 @@ namespace nsZip
 
 			if (VerifyHashes)
 			{
-				var dirDecryptedReal = new DirectoryInfo(decryptedDir);
-				var dirDecryptedRealCount = dirDecryptedReal.GetFiles().Length;
+				var decryptedFs = new LocalFileSystem(decryptedDir);
+				var dirDecryptedRealCount = decryptedFs.GetEntryCount(OpenDirectoryMode.Files);
 				cleanFolder(decryptedDir);
 				var compressedFs = new LocalFileSystem(compressedDir);
-				DecompressFs.ProcessFs(compressedFs, decryptedDir, Out);
+				DecompressFs.ProcessFs(compressedFs, decryptedFs, Out);
 
-				var dirDecrypted = new DirectoryInfo(decryptedDir);
-				var dirDecryptedCount = dirDecrypted.GetFiles().Length;
+				var dirDecryptedCount = decryptedFs.GetEntryCount(OpenDirectoryMode.Files);
 				if (dirDecryptedRealCount != dirDecryptedCount)
 				{
 					throw new FileNotFoundException();
 				}
 
-				foreach (var file in dirDecrypted.GetFiles("*.nca"))
-				{
-					EncryptNCA.Encrypt(file.FullName, encryptedDir, false, true, keyset, Out);
-				}
+				EncryptNCA.Encrypt(decryptedFs, null, true, keyset, Out);
 			}
 
-			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
-			FolderTools.FolderToNSP(compressedDir, $"{xciOutPath}.xciz");
+			//var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
+			//FolderTools.FolderToNSP(compressedDir, $"{xciOutPath}.xciz");
 			Out.Event($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
 		}
 
@@ -218,32 +208,28 @@ namespace nsZip
 		{
 			FolderTools.ExtractTitlekeys(decryptedDir, keyset, Out);
 
-			var dirDecrypted = new DirectoryInfo(decryptedDir);
-			foreach (var file in dirDecrypted.GetFiles())
-			{
-				if (file.Name.EndsWith(".tca"))
-				{
-					continue;
-				}
-
-				if (file.Name.EndsWith(".nca"))
-				{
-					EncryptNCA.Encrypt(file.FullName, encryptedDir, true, VerifyHashes, keyset, Out);
-					file.Delete();
-				}
-				else
-				{
-					file.MoveTo(Path.Combine(encryptedDir, file.Name));
-				}
-			}
-
+			var decryptedFs = new LocalFileSystem(decryptedDir);
 			var encryptedFs = new LocalFileSystem(encryptedDir);
-			UntrimDeltaNCA.Process(decryptedDir, encryptedFs, keyset, Out);
+			EncryptNCA.Encrypt(decryptedFs, encryptedFs, VerifyHashes, keyset, Out);
 
-			foreach (var file in dirDecrypted.GetFiles("*.nca"))
+			var dirDecrypted = new DirectoryInfo(decryptedDir);
+
+			foreach (var file in decryptedFs.EnumerateEntries().Where(item => !item.Name.EndsWith(".tca")))
 			{
-				EncryptNCA.Encrypt(file.FullName, encryptedDir, true, VerifyHashes, keyset, Out);
+				if (!file.Name.EndsWith(".nca"))
+				{
+					using (var srcFile = decryptedFs.OpenFile(file.FullPath, OpenMode.Read))
+					using (var destFile = FolderTools.createAndOpen(file, encryptedFs, file.Name, file.Size))
+					{
+						srcFile.CopyTo(destFile);
+					}
+				}
+
+				decryptedFs.DeleteFile(file.FullPath);
 			}
+
+			UntrimDeltaNCA.Process(decryptedDir, encryptedFs, keyset, Out);
+			EncryptNCA.Encrypt(decryptedFs, encryptedFs, VerifyHashes, keyset, Out);
 		}
 	}
 }

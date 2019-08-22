@@ -95,5 +95,14 @@ namespace nsZip.LibHacExtensions
 				}
 			}
 		}
+
+		public static IFile createAndOpen(DirectoryEntry srcFile, IFileSystem destFs, string filename, long size = 0)
+		{
+			var baseDir = srcFile.FullPath.Substring(0, srcFile.FullPath.LastIndexOf('/') + 1);
+			destFs.EnsureDirectoryExists(baseDir);
+			var outFilePath = $"{baseDir}{filename}";
+			destFs.CreateFile(outFilePath, size, CreateFileOptions.None);
+			return destFs.OpenFile(outFilePath, OpenMode.Write);
+		}
 	}
 }
