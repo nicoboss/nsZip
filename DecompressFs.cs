@@ -20,10 +20,9 @@ namespace nsZip
 				using (IFile srcFile = sourceFs.OpenFile(file.FullPath, OpenMode.Read))
 				using (var decStorage = new DecompressionStorage(srcFile))
 				{
-					var destName = $"{file.Name.Substring(0, file.Name.LastIndexOf('.'))}.nca";
+					var destName = $"{file.Name.Substring(0, file.Name.LastIndexOf('.'))}";
 					using (IFile outputFile = FolderTools.createAndOpen(file, destFs, destName, decStorage.GetSize()))
 					{
-
 						decStorage.CopyTo(outputFile.AsStorage());
 					}
 				}

@@ -63,15 +63,14 @@ namespace nsZip
 			foreach (var file in sourceFs.EnumerateEntries().Where(item => item.Type == DirectoryEntryType.File))
 			{
 				Out.Log($"{file.FullPath}\r\n");
-				var doneFlag = false;
-				var outFileName = $"{file.Name.Substring(0, file.Name.LastIndexOf('.'))}.nsz";
-				var outputFile = FolderTools.createAndOpen(file, destFs, outFileName);
-				var inputFile = sourceFs.OpenFile(file.FullPath, OpenMode.Read);
+				var outFileName = $"{file.Name}.nsz";
+				var outputFile = new FilePositionStorage(FolderTools.createAndOpen(file, destFs, outFileName));
+				var inputFile = new FilePositionStorage(sourceFs.OpenFile(file.FullPath, OpenMode.Read));
 				amountOfBlocks = (int) Math.Ceiling((decimal) inputFile.GetSize() / bs);
 				sizeOfSize = (int) Math.Ceiling(Math.Log(bs, 2) / 8);
 				var perBlockHeaderSize = sizeOfSize + 1;
 				var headerSize = 0x15 + perBlockHeaderSize * amountOfBlocks;
-				long outputFilePosition = headerSize;
+				outputFile.Seek(headerSize);
 				var nsZipMagic = new byte[] {0x6e, 0x73, 0x5a, 0x69, 0x70};
 				var nsZipMagicRandomKey = new byte[5];
 				secureRNG.GetBytes(nsZipMagicRandomKey);
@@ -101,7 +100,7 @@ namespace nsZip
 				do
 				{
 					var outputLen = new int[blocksPerChunk]; //Filled with 0
-					inputFile.Read(CompressionIO, 0);
+					inputFile.Read(CompressionIO);
 
 					blocksLeft = amountOfBlocks - chunkIndex * blocksPerChunk;
 					blocksInThisChunk = Math.Min(blocksPerChunk, blocksLeft);
@@ -151,9 +150,7 @@ namespace nsZip
 						var startPos = index * bs;
 						sha256Compressed.TransformBlock(CompressionIO, startPos, outputLen[index], null, 0);
 						var dataToWrite = CompressionIO.AsSpan().Slice(startPos, outputLen[index]);
-						outputFile.SetSize(outputFilePosition + dataToWrite.Length);
-						outputFile.Write(dataToWrite, outputFilePosition);
-						outputFilePosition += dataToWrite.Length;
+						outputFile.Write(dataToWrite);
 					}
 
 					++chunkIndex;
@@ -168,9 +165,8 @@ namespace nsZip
 				Util.XorArrays(sha256Hash, sha256Compressed.Hash);
 				//Console.WriteLine(sha256Header.Hash.ToHexString());
 				//Console.WriteLine(sha256Compressed.Hash.ToHexString());
-				outputFile.SetSize(outputFilePosition + sha256Hash.Length);
-				outputFile.Write(sha256Hash, outputFilePosition);
-				outputFilePosition += sha256Hash.Length;
+				outputFile.Seek(0, SeekOrigin.End);
+				outputFile.Write(sha256Hash.AsSpan().Slice(0, 0x10));
 				outputFile.Dispose();
 				inputFile.Dispose();
 				//break;
