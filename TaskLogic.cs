@@ -175,8 +175,8 @@ namespace nsZip
 				EncryptNCA.Encrypt(decryptedFs, null, true, keyset, Out);
 			}
 
-			//var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
-			//FolderTools.FolderToNSP(compressedDir, $"{xciOutPath}.xciz");
+			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
+			FolderTools.FolderToXCI(compressedDir, $"{xciOutPath}.xciz", keyset);
 			Out.Event($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
 		}
 
@@ -214,7 +214,8 @@ namespace nsZip
 
 			var dirDecrypted = new DirectoryInfo(decryptedDir);
 
-			foreach (var file in decryptedFs.EnumerateEntries().Where(item => !item.Name.EndsWith(".tca")))
+			foreach (var file in decryptedFs.EnumerateEntries()
+				.Where(item => item.Type == DirectoryEntryType.File && !item.Name.EndsWith(".tca")))
 			{
 				if (!file.Name.EndsWith(".nca"))
 				{
