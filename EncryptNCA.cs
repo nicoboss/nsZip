@@ -27,7 +27,7 @@ namespace nsZip
 					if (destFs != null)
 					{
 						Out.Log("Opened NCA for writing...\r\n");
-						using (IFile outputFile = FolderTools.createAndOpen(decryptedNcaEntry, destFs, decryptedNcaEntry.Name, decryptedNca.GetSize()))
+						using (IFile outputFile = FolderTools.CreateAndOpen(decryptedNcaEntry, destFs, decryptedNcaEntry.Name, decryptedNca.GetSize()))
 						{
 							EncryptFunct(decryptedNca.AsStream(), outputFile.AsStream(), decryptedNcaEntry.Name, verifyEncrypted, keyset, Out);
 						}

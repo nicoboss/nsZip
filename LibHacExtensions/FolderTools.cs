@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using LibHac;
 using LibHac.IO;
 
@@ -8,21 +9,31 @@ namespace nsZip.LibHacExtensions
 {
 	public static class FolderTools
 	{
-		public static void FolderToNSP(string inFolder, string nspFile)
+		public static void FolderToNSP(IFileSystem inFolderFs, IFile outFile)
 		{
-			using (var outfile = new FileStream(nspFile, FileMode.Create, FileAccess.Write))
+			using (var nspBuilder = new PartitionFileSystemBuilder(inFolderFs))
+			using (var newNSP = nspBuilder.Build(PartitionFileSystemType.Standard))
+			using (var outFileWriter = new FilePositionStorage(outFile))
 			{
-				var inFolderFs = new LocalFileSystem(inFolder);
-				using (var nspBuilder = new PartitionFileSystemBuilder(inFolderFs))
-				using (var newNSP = nspBuilder.Build(PartitionFileSystemType.Standard))
-				{
-					newNSP.CopyToStream(outfile);
-				}
+				newNSP.CopyTo(outFileWriter);
 			}
 		}
 
-		public static void FolderToXCI(string inFolder, string nspFile, Keyset keyset)
+		public static void FolderToXCI(IFileSystem inFolder, string nspFile, Keyset keyset)
 		{
+			foreach (var folder in inFolder.OpenDirectory("/", OpenDirectoryMode.Directories).Read())
+			{
+				Console.WriteLine(folder.FullPath);
+				using (var outfile = new FileStream(folder.Name, FileMode.Create, FileAccess.Write))
+				{
+					using (var hfs0Storage = FolderToHFS0(new SubdirectoryFileSystem(inFolder, folder.FullPath)))
+					{
+						hfs0Storage.CopyToStream(outfile);
+					}
+				}
+			}
+
+			return;
 			using (var outfile = new FileStream(nspFile, FileMode.Create, FileAccess.Write))
 			{
 				XciHeader xciHeader;
@@ -76,9 +87,8 @@ namespace nsZip.LibHacExtensions
 			}
 		}
 
-		public static IStorage FolderToHFS0(string inFolder)
+		public static IStorage FolderToHFS0(IFileSystem inFolderFs)
 		{
-			var inFolderFs = new LocalFileSystem(inFolder);
 			var hfs0Builder = new PartitionFileSystemBuilder(inFolderFs);
 			return hfs0Builder.Build(PartitionFileSystemType.Hashed);
 		}
@@ -96,7 +106,7 @@ namespace nsZip.LibHacExtensions
 			}
 		}
 
-		public static IFile createAndOpen(DirectoryEntry srcFile, IFileSystem destFs, string filename, long size = 0)
+		public static IFile CreateAndOpen(DirectoryEntry srcFile, IFileSystem destFs, string filename, long size = 0)
 		{
 			var baseDir = srcFile.FullPath.Substring(0, srcFile.FullPath.LastIndexOf('/') + 1);
 			destFs.EnsureDirectoryExists(baseDir);
@@ -104,5 +114,14 @@ namespace nsZip.LibHacExtensions
 			destFs.CreateFile(outFilePath, size, CreateFileOptions.None);
 			return destFs.OpenFile(outFilePath, OpenMode.Write);
 		}
+
+		public static IFile CreateOrOverwriteFileOpen(IFileSystem destFs, string filename, long size = 0)
+		{
+			var baseDir = filename.Substring(0, filename.LastIndexOf('/') + 1);
+			destFs.EnsureDirectoryExists(baseDir);
+			destFs.CreateOrOverwriteFile(filename, 0);
+			return destFs.OpenFile(filename, OpenMode.Write);
+		}
+
 	}
 }

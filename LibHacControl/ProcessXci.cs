@@ -109,6 +109,31 @@ namespace nsZip.LibHacControl
 			}
 		}
 
+		private static void ExtractRoot(IFile inputFileBase, IFileSystem destFs, Keyset keyset, Output Out)
+		{
+			using (var inputFile = new FilePositionStorage(inputFileBase))
+			{
+				var xci = new Xci(keyset, inputFile);
+				ProcessXci.GetTitleKeys(xci, keyset, Out);
+				var root = xci.OpenPartition(XciPartitionType.Root);
+				if (root == null)
+				{
+					throw new InvalidDataException("Could not find root partition");
+				}
+				foreach (var sub in root.Files)
+				{
+					using (IFile srcFile = root.OpenFile(sub.Name, OpenMode.Read))
+					{
+						destFs.CreateFile(sub.Name, srcFile.GetSize(), CreateFileOptions.None);
+						using (IFile dstFile = destFs.OpenFile(sub.Name, OpenMode.Write))
+						{
+							srcFile.CopyTo(dstFile);
+						}
+					}
+				}
+			}
+		}
+
 		public static IEnumerable<(PartitionFileSystem subPfs, PartitionFileEntry subPfsFile)> FileIterator(Xci xci, Keyset keyset, Output Out)
 		{
 			var root = xci.OpenPartition(XciPartitionType.Root);

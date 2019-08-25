@@ -64,7 +64,7 @@ namespace nsZip
 			{
 				Out.Log($"{file.FullPath}\r\n");
 				var outFileName = $"{file.Name}.nsz";
-				using (var outputFileBase = FolderTools.createAndOpen(file, destFs, outFileName))
+				using (var outputFileBase = FolderTools.CreateAndOpen(file, destFs, outFileName))
 				using (var outputFile = new FilePositionStorage(outputFileBase))
 				using (var inputFileBase = sourceFs.OpenFile(file.FullPath, OpenMode.Read))
 				using (var inputFile = new FilePositionStorage(inputFileBase))

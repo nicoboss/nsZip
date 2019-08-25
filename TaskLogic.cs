@@ -145,8 +145,16 @@ namespace nsZip
 					EncryptNCA.Encrypt(compressedFs, null, true, keyset, Out);
 				}
 			}
-			var nspzOutPath = Path.Combine(OutputFolderPath, nspFileNoExtension);
-			FolderTools.FolderToNSP(compressedDir, $"{nspzOutPath}.nspz");
+
+			var compressedDirFs = new LocalFileSystem(compressedDir);
+			var OutputFolderPathFs = new LocalFileSystem(OutputFolderPath);
+
+			using (var outFile =
+				FolderTools.CreateOrOverwriteFileOpen(OutputFolderPathFs, $"{nspFileNoExtension}.nspz"))
+			{
+				FolderTools.FolderToNSP(compressedDirFs, outFile);
+			}
+				
 			Out.Event($"Task CompressNSP \"{nspFileNoExtension}\" completed!\r\n");
 		}
 
@@ -175,8 +183,9 @@ namespace nsZip
 				EncryptNCA.Encrypt(decryptedFs, null, true, keyset, Out);
 			}
 
+			var compressedDirFs = new LocalFileSystem(compressedDir);
 			var xciOutPath = Path.Combine(OutputFolderPath, xciFileNoExtension);
-			FolderTools.FolderToXCI(compressedDir, $"{xciOutPath}.xciz", keyset);
+			FolderTools.FolderToXCI(compressedDirFs, $"{xciOutPath}.xciz", keyset);
 			Out.Event($"Task CompressXCI \"{xciFileNoExtension}\" completed!\r\n");
 		}
 
@@ -188,7 +197,16 @@ namespace nsZip
 			ProcessNsp.Decompress(nspzFile, decryptedDir, Out);
 			UntrimAndEncrypt(keyset);
 			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
-			FolderTools.FolderToNSP(encryptedDir, $"{nspOutPath}.nsp");
+
+			var encryptedDirFs = new LocalFileSystem(encryptedDir);
+			var OutputFolderPathFs = new LocalFileSystem(OutputFolderPath);
+
+			using (var outFile =
+				FolderTools.CreateOrOverwriteFileOpen(OutputFolderPathFs, $"{nspzFileNoExtension}.nsp"))
+			{
+				FolderTools.FolderToNSP(encryptedDirFs, outFile);
+			}
+
 			Out.Event($"Task DecompressNSPZ \"{nspzFileNoExtension}\" completed!\r\n");
 		}
 
@@ -200,7 +218,8 @@ namespace nsZip
 			ProcessNsp.Decompress(nspzFile, decryptedDir, Out);
 			UntrimAndEncrypt(keyset);
 			var nspOutPath = Path.Combine(OutputFolderPath, nspzFileNoExtension);
-			FolderTools.FolderToXCI(encryptedDir, $"{nspOutPath}.xci", keyset);
+			var encryptedDirFs = new LocalFileSystem(encryptedDir);
+			FolderTools.FolderToXCI(encryptedDirFs, $"{nspOutPath}.xci", keyset);
 			Out.Event($"Task DecompressXCIZ \"{nspzFileNoExtension}\" completed!\r\n");
 		}
 
@@ -220,7 +239,7 @@ namespace nsZip
 				if (!file.Name.EndsWith(".nca"))
 				{
 					using (var srcFile = decryptedFs.OpenFile(file.FullPath, OpenMode.Read))
-					using (var destFile = FolderTools.createAndOpen(file, encryptedFs, file.Name, file.Size))
+					using (var destFile = FolderTools.CreateAndOpen(file, encryptedFs, file.Name, file.Size))
 					{
 						srcFile.CopyTo(destFile);
 					}

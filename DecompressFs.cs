@@ -21,7 +21,7 @@ namespace nsZip
 				using (var decStorage = new DecompressionStorage(srcFile))
 				{
 					var destName = $"{file.Name.Substring(0, file.Name.LastIndexOf('.'))}";
-					using (IFile outputFile = FolderTools.createAndOpen(file, destFs, destName, decStorage.GetSize()))
+					using (IFile outputFile = FolderTools.CreateAndOpen(file, destFs, destName, decStorage.GetSize()))
 					{
 						decStorage.CopyTo(outputFile.AsStorage());
 					}
