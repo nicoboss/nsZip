@@ -26,7 +26,7 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <UpdateUrl>http://www.nicobosshard.ch/nsZip/</UpdateUrl>
-    <ApplicationRevision>22</ApplicationRevision>
+    <ApplicationRevision>24</ApplicationRevision>
     <ApplicationVersion>2.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -142,6 +142,7 @@
     <Compile Include="DecompressionStorage.cs" />
     <Compile Include="ConsoleMode.cs" />
     <Compile Include="EncryptNCA.cs" />
+    <Compile Include="FilePositionStorage.cs" />
     <Compile Include="FileTools.cs" />
     <Compile Include="LibHacControl\ProcessKeyset.cs" />
     <Compile Include="LibHacControl\ProcessXci.cs" />
