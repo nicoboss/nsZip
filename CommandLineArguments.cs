@@ -18,5 +18,8 @@ namespace nsZip
 
 		[Option('b', "bs", Required = false, Default = 262144, HelpText = "Block Size in bytes (default: 262144)")]
 		public int BlockSize { get; set; }
-	}
+
+        [Option("mt", Required = false, Default = 0, HelpText = "Number of threads to use for compression (default: logical CPUs)")]
+        public int MaxDegreeOfParallelism { get; set; }
+    }
 }

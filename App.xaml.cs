@@ -44,7 +44,7 @@ namespace nsZip
 					args.WithParsed(opts => {
 						var Out = new Output();
 						Directory.CreateDirectory(opts.OutputFolderPath);
-						var tl = new TaskLogic(opts.OutputFolderPath, opts.TempFolderPath, true, opts.BlockSize, opts.ZstdLevel, Out);
+						var tl = new TaskLogic(opts.OutputFolderPath, opts.TempFolderPath, true, opts.BlockSize, opts.ZstdLevel, opts.MaxDegreeOfParallelism, Out);
 						var inFile = opts.InputFile;
 						if (tl.checkIfAlreadyExist(inFile))
 						{

@@ -14,13 +14,19 @@ namespace nsZip
 		Output Out;
 		int BlockSize = 262144;
 		int ZstdLevel = 18;
-		string OutputFolderPath;
+        int MaxDegreeOfParallelism = 0;
+        string OutputFolderPath;
 		string decryptedDir;
 		string encryptedDir;
 		string compressedDir;
 		bool VerifyHashes = true;
 
-		public TaskLogic(string OutputFolderPathArg, string TempFolderPathArg, bool VerifyHashesArg, int bs, int lv, Output OutArg)
+        public TaskLogic(string OutputFolderPathArg, string TempFolderPathArg, bool VerifyHashesArg, int bs, int lv, Output OutArg)
+            : this(OutputFolderPathArg, TempFolderPathArg, VerifyHashesArg, bs, lv, 0, OutArg)
+        {
+        }
+
+        public TaskLogic(string OutputFolderPathArg, string TempFolderPathArg, bool VerifyHashesArg, int bs, int lv, int mt, Output OutArg)
 		{
 			OutputFolderPath = OutputFolderPathArg;
 			
@@ -33,8 +39,9 @@ namespace nsZip
 			encryptedDir = Path.Combine(TempFolderPathArg, "encrypted");
 			compressedDir = Path.Combine(TempFolderPathArg, "compressed");
 			BlockSize = bs;
-			int ZstdLevel = lv;
-			VerifyHashes = VerifyHashesArg;
+			ZstdLevel = lv;
+            MaxDegreeOfParallelism = mt;
+            VerifyHashes = VerifyHashesArg;
 			Out = OutArg;
 		}
 
@@ -123,7 +130,7 @@ namespace nsZip
 				var pfs = new PartitionFileSystem(inputFileStorage);
 				ProcessNsp.Decrypt(pfs, decryptedDir, VerifyHashes, keyset, Out);
 				TrimDeltaNCA.Process(decryptedDir, keyset, Out);
-				CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);
+				CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel, MaxDegreeOfParallelism);
 
 				if (VerifyHashes)
 				{
@@ -164,7 +171,7 @@ namespace nsZip
 			Out.Event($"Task CompressXCI \"{xciFileNoExtension}\" started\r\n");
 			var keyset = ProcessKeyset.OpenKeyset();
 			ProcessXci.Decrypt(xciFile, decryptedDir, VerifyHashes, keyset, Out);
-			CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel);
+			CompressFolder.Compress(Out, decryptedDir, compressedDir, BlockSize, ZstdLevel, MaxDegreeOfParallelism);
 
 			if (VerifyHashes)
 			{

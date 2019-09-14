@@ -68,8 +68,11 @@ namespace LibHac.IO
         public static void CopyTo(this IStorage input, IStorage output, IProgressReport progress = null)
         {
             const int bufferSize = 81920;
-            long remaining = Math.Min(input.GetSize(), output.GetSize());
-            if (remaining < 0) throw new ArgumentException("Storage must have an explicit length");
+            long remaining = input.GetSize();
+            long outsize = output.GetSize();
+            if(outsize > 0)
+                remaining = Math.Min(remaining, outsize);
+            if(remaining < 0) throw new ArgumentException("Storage must have an explicit length");
             progress?.SetTotal(remaining);
 
             long pos = 0;
