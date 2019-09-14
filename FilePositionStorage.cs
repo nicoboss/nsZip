@@ -8,18 +8,18 @@ namespace LibHac.IO
 		private IFile BaseFile { get; }
 		private long Position = 0;
 
-        public FilePositionStorage(IFile baseFile) 
-            : this(baseFile, false)
-        {
-        }
+		public FilePositionStorage(IFile baseFile) 
+			: this(baseFile, false)
+		{
+		}
 
-        public FilePositionStorage(IFile baseFile, bool canAutoExpand)
-        {
-            BaseFile = baseFile;
-            CanAutoExpand = canAutoExpand;
-        }
+		public FilePositionStorage(IFile baseFile, bool canAutoExpand)
+		{
+			BaseFile = baseFile;
+			CanAutoExpand = canAutoExpand;
+		}
 
-        protected override void ReadImpl(Span<byte> destination, long offset)
+		protected override void ReadImpl(Span<byte> destination, long offset)
 		{
 			Position = offset;
 			BaseFile.Read(destination, offset);

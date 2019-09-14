@@ -14,19 +14,19 @@ namespace nsZip
 		Output Out;
 		int BlockSize = 262144;
 		int ZstdLevel = 18;
-        int MaxDegreeOfParallelism = 0;
-        string OutputFolderPath;
+		int MaxDegreeOfParallelism = 0;
+		string OutputFolderPath;
 		string decryptedDir;
 		string encryptedDir;
 		string compressedDir;
 		bool VerifyHashes = true;
 
-        public TaskLogic(string OutputFolderPathArg, string TempFolderPathArg, bool VerifyHashesArg, int bs, int lv, Output OutArg)
-            : this(OutputFolderPathArg, TempFolderPathArg, VerifyHashesArg, bs, lv, 0, OutArg)
-        {
-        }
+		public TaskLogic(string OutputFolderPathArg, string TempFolderPathArg, bool VerifyHashesArg, int bs, int lv, Output OutArg)
+			: this(OutputFolderPathArg, TempFolderPathArg, VerifyHashesArg, bs, lv, 0, OutArg)
+		{
+		}
 
-        public TaskLogic(string OutputFolderPathArg, string TempFolderPathArg, bool VerifyHashesArg, int bs, int lv, int mt, Output OutArg)
+		public TaskLogic(string OutputFolderPathArg, string TempFolderPathArg, bool VerifyHashesArg, int bs, int lv, int mt, Output OutArg)
 		{
 			OutputFolderPath = OutputFolderPathArg;
 			
@@ -40,8 +40,8 @@ namespace nsZip
 			compressedDir = Path.Combine(TempFolderPathArg, "compressed");
 			BlockSize = bs;
 			ZstdLevel = lv;
-            MaxDegreeOfParallelism = mt;
-            VerifyHashes = VerifyHashesArg;
+			MaxDegreeOfParallelism = mt;
+			VerifyHashes = VerifyHashesArg;
 			Out = OutArg;
 		}
 

@@ -19,8 +19,8 @@ namespace nsZip
 		private readonly Output Out;
 		private readonly string outFolderPath;
 		private readonly int ZstdLevel;
-        private readonly int MaxDegreeOfParallelism;
-        private int amountOfBlocks;
+		private readonly int MaxDegreeOfParallelism;
+		private int amountOfBlocks;
 		private byte[] nsZipHeader;
 		private SHA256Cng sha256Compressed;
 		private SHA256Cng sha256Header;
@@ -31,23 +31,23 @@ namespace nsZip
 		{
 			bs = bsArg;
 			ZstdLevel = ZstdLevelArg;
-            MaxDegreeOfParallelism = MaxDegreeOfParallelismArg;
-            Out = OutArg;
+			MaxDegreeOfParallelism = MaxDegreeOfParallelismArg;
+			Out = OutArg;
 			inFolderPath = inFolderPathArg;
 			outFolderPath = outFolderPathArg;
 
-            if(MaxDegreeOfParallelism == 0 || MaxDegreeOfParallelism > Environment.ProcessorCount)
-            {
-                MaxDegreeOfParallelism = Environment.ProcessorCount;
-            }
+			if(MaxDegreeOfParallelism == 0 || MaxDegreeOfParallelism > Environment.ProcessorCount)
+			{
+				MaxDegreeOfParallelism = Environment.ProcessorCount;
+			}
 
-            if(!Environment.Is64BitProcess)
-            {
-                MaxDegreeOfParallelism = Math.Min(16, MaxDegreeOfParallelism);
-            }
+			if(!Environment.Is64BitProcess)
+			{
+				MaxDegreeOfParallelism = Math.Min(16, MaxDegreeOfParallelism);
+			}
 
-            CompressFunct();
-        }
+			CompressFunct();
+		}
 
 		public static void Compress(Output OutArg, string inFolderPathArg, string outFolderPathArg,
 			int bsArg, int ZstdLevel, int MaxDegreeOfParallelismArg)
@@ -114,10 +114,10 @@ namespace nsZip
 						blocksLeft = amountOfBlocks - chunkIndex * blocksPerChunk;
 						blocksInThisChunk = Math.Min(blocksPerChunk, blocksLeft);
 
-                        var opt = new ParallelOptions() { MaxDegreeOfParallelism = this.MaxDegreeOfParallelism };
-                        
-                        //for(int index = 0; index < blocksInThisChunk; ++index)
-                        Parallel.For(0, blocksInThisChunk, opt, index =>
+						var opt = new ParallelOptions() { MaxDegreeOfParallelism = this.MaxDegreeOfParallelism };
+
+						//for(int index = 0; index < blocksInThisChunk; ++index)
+						Parallel.For(0, blocksInThisChunk, opt, index =>
 						{
 							var currentBlockID = chunkIndex * blocksPerChunk + index;
 							var startPosRelative = index * bs;
@@ -188,14 +188,14 @@ namespace nsZip
 
 		private int CompressBlock(ref byte[] input, int startPos, int blockSize, out CompressionAlgorithm compressionAlgorithm)
 		{
-            if(ZstdLevel < 1)
-            {
-                compressionAlgorithm = CompressionAlgorithm.None;
-                return blockSize;
-            }
+			if(ZstdLevel < 1)
+			{
+				compressionAlgorithm = CompressionAlgorithm.None;
+				return blockSize;
+			}
 
-            // compress
-            using (var memoryStream = new MemoryStream())
+			// compress
+			using (var memoryStream = new MemoryStream())
 			using (var compressionStream = new ZstandardStream(memoryStream, CompressionMode.Compress))
 			{
 				compressionStream.CompressionLevel = ZstdLevel;
