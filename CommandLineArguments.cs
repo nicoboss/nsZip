@@ -4,13 +4,13 @@ namespace nsZip
 {
 	internal class Options
 	{
-		[Option('i', "input", Required = true, HelpText = "NSP, XCI, NSPZ, XCIZ input file to compress/decompress")]
+		[Option('i', "input", Required = true, HelpText = "NSP, XCI, NSPZ, XCIZ input file to compress/decompress)")]
 		public string InputFile { get; set; }
 
-		[Option('o', "output", Required = false, Default = "./out/", HelpText = "Output Folder (default: ./out/")]
+		[Option('o', "output", Required = false, Default = "./out/", HelpText = "Output Folder (default: ./out/)")]
 		public string OutputFolderPath { get; set; }
 
-		[Option('t', "temp", Required = false, Default = "./temp/", HelpText = "Temp Folder (default: ./temp/")]
+		[Option('t', "temp", Required = false, Default = "./temp/", HelpText = "Temp Folder (default: ./temp/)")]
 		public string TempFolderPath { get; set; }
 
 		[Option('l', "level", Required = false, Default = 18, HelpText = "Compression level [1-22] (default: 18)")]
@@ -21,5 +21,8 @@ namespace nsZip
 
 		[Option("mt", Required = false, Default = 0, HelpText = "Number of threads to use for compression (default: logical CPUs)")]
 		public int MaxDegreeOfParallelism { get; set; }
+
+		[Option("log", Required = false, Default = 1, HelpText = "Log level (default: 1)")]
+		public int Log { get; set; }
 	}
 }
