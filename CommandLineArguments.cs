@@ -4,7 +4,7 @@ namespace nsZip
 {
 	internal class Options
 	{
-		[Option('i', "input", Required = true, HelpText = "NSP, XCI, NSPZ, XCIZ input file to compress/decompress)")]
+		[Option('i', "input", Required = true, HelpText = "NSP, XCI, NSPZ, XCIZ input file to compress/decompress")]
 		public string InputFile { get; set; }
 
 		[Option('o', "output", Required = false, Default = "./out/", HelpText = "Output Folder (default: ./out/)")]
