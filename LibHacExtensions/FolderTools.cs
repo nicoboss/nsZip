@@ -13,7 +13,7 @@ namespace nsZip.LibHacExtensions
 		{
 			using (var nspBuilder = new PartitionFileSystemBuilder(inFolderFs))
 			using (var newNSP = nspBuilder.Build(PartitionFileSystemType.Standard))
-			using (var outFileWriter = new FilePositionStorage(outFile))
+			using (var outFileWriter = new FilePositionStorage(outFile, true))
 			{
 				newNSP.CopyTo(outFileWriter);
 			}

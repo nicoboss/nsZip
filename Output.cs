@@ -15,13 +15,21 @@ namespace nsZip
 		long total;
 		long cooldown = 500;
 		DateTime cooldownStart;
-		
+
 		public Output()
+			: this(1)
 		{
-			debug = new StreamWriter(File.Open("debug.log", FileMode.Append), Encoding.UTF8);
-			error = new StreamWriter(File.Open("error.log", FileMode.Append), Encoding.UTF8);
-			debug.WriteLine();
-			error.WriteLine();
+		}
+
+		public Output(int log)
+		{
+			if(log != 0)
+			{
+				debug = new StreamWriter(File.Open("debug.log", FileMode.Append, FileAccess.Write, FileShare.ReadWrite), Encoding.UTF8);
+				error = new StreamWriter(File.Open("error.log", FileMode.Append, FileAccess.Write, FileShare.ReadWrite), Encoding.UTF8);
+				debug.WriteLine();
+				error.WriteLine();
+			}
 		}
 
 		public void Print(string text)
@@ -32,16 +40,25 @@ namespace nsZip
 		public void Log(string text)
 		{
 			Console.Write(text);
-			debug.Write(text);
-			debug.Flush();
+
+			if(debug != null)
+			{
+				debug.Write(text);
+				debug.Flush();
+			}
 		}
 
 		private void LogImportant(string text)
 		{
 			var time = DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss] ");
 			var timedText = time + text;
-			error.Write(timedText);
-			error.Flush();
+
+			if(error != null)
+			{
+				error.Write(timedText);
+				error.Flush();
+			}
+
 			Log(timedText);
 		}
 
@@ -104,8 +121,12 @@ namespace nsZip
 		public void LogMessage(string message)
 		{
 			Console.Write($"{message}\r\n");
-			debug.Write($"{message}\r\n");
-			debug.Flush();
+
+			if(debug != null)
+			{
+				debug.Write($"{message}\r\n");
+				debug.Flush();
+			}
 		}
 	}
 }

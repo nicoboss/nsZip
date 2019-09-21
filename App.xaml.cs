@@ -38,17 +38,19 @@ namespace nsZip
 			}
 			if (e.Args.Length > 0)
 			{
+				int res = 0;
+
 				var args = Parser.Default.ParseArguments<Options>(e.Args);
 				if (e.Args.Length > 0)
 				{
 					args.WithParsed(opts => {
-						var Out = new Output();
+						var Out = new Output(opts.Log);
 						Directory.CreateDirectory(opts.OutputFolderPath);
-						var tl = new TaskLogic(opts.OutputFolderPath, opts.TempFolderPath, true, opts.BlockSize, opts.ZstdLevel, Out);
+						var tl = new TaskLogic(opts.OutputFolderPath, opts.TempFolderPath, true, opts.BlockSize, opts.ZstdLevel, opts.MaxDegreeOfParallelism, Out);
 						var inFile = opts.InputFile;
 						if (tl.checkIfAlreadyExist(inFile))
 						{
-							Environment.Exit(0);
+							Environment.Exit(-1);
 						}
 
 						try
@@ -80,6 +82,8 @@ namespace nsZip
 						catch (Exception ex)
 						{
 							Out.LogException(ex);
+
+							res = -2;
 						}
 						finally
 						{
@@ -87,7 +91,7 @@ namespace nsZip
 						}
 					});
 				}
-				Environment.Exit(0);
+				Environment.Exit(res);
 			}
 			else
 			{
