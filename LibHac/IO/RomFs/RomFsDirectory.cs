@@ -23,7 +23,7 @@ namespace LibHac.IO.RomFs
         public IEnumerable<DirectoryEntry> Read()
         {
             FindPosition position = InitialPosition;
-            HierarchicalRomFileTable tab = ParentFileSystem.FileTable;
+            HierarchicalRomFileTable<RomFileInfo> tab = ParentFileSystem.FileTable;
 
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
@@ -47,7 +47,7 @@ namespace LibHac.IO.RomFs
             int count = 0;
 
             FindPosition position = InitialPosition;
-            HierarchicalRomFileTable tab = ParentFileSystem.FileTable;
+            HierarchicalRomFileTable<RomFileInfo> tab = ParentFileSystem.FileTable;
 
             if (Mode.HasFlag(OpenDirectoryMode.Directories))
             {
