@@ -1,5 +1,5 @@
 ﻿using System;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace nsZip.LibHacExtensions
 {

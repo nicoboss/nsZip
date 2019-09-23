@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using nsZip.LibHacControl;
 using nsZip.LibHacExtensions;
 

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using LibHac.IO;
+using LibHac.Fs;
 
 namespace nsZip.LibHacExtensions
 {

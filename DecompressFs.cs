@@ -4,7 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using nsZip.LibHacExtensions;
 using Zstandard.Net;
 

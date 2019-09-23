@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using LibHac.NcaLegacy;
 
 namespace nsZip.LibHacExtensions

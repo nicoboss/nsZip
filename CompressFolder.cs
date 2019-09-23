@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using nsZip.LibHacExtensions;
 using Zstandard.Net;
 

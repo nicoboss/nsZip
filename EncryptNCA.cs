@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using LibHac;
-using LibHac.IO;
+using LibHac.Fs;
 using LibHac.NcaLegacy;
 using nsZip.Crypto;
 using nsZip.LibHacExtensions;
