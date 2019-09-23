@@ -1,4 +1,4 @@
-﻿namespace LibHac.IO.Save
+﻿namespace LibHac.Fs.Save
 {
     internal static class SaveResults
     {

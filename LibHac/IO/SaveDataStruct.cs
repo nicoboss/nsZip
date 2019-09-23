@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Buffers.Binary;
-using LibHac.IO.Save;
+using LibHac.Fs.Save;
 using LibHac.Kvdb;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class SaveDataStruct : IComparable<SaveDataStruct>, IComparable, IEquatable<SaveDataStruct>, IExportable
     {

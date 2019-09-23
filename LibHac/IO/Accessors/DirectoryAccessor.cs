@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LibHac.IO.Accessors
+namespace LibHac.Fs.Accessors
 {
     public class DirectoryAccessor : IDisposable
     {

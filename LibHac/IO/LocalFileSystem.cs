@@ -2,7 +2,7 @@
 using System.IO;
 using System.Security;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class LocalFileSystem : IAttributeFileSystem
     {

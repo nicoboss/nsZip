@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class LocalDirectory : IDirectory
     {

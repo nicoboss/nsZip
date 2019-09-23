@@ -4,7 +4,7 @@
 using System.Runtime.InteropServices;
 #endif
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class ConcatenationDirectory : IDirectory
     {

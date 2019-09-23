@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO.Save
+namespace LibHac.Fs.Save
 {
     // todo: Change constraint to "unmanaged" after updating to
     // a newer SDK https://github.com/dotnet/csharplang/issues/1937

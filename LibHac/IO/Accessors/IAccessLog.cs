@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-namespace LibHac.IO.Accessors
+namespace LibHac.Fs.Accessors
 {
     public interface IAccessLog
     {

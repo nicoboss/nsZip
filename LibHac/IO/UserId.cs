@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public struct UserId : IEquatable<UserId>, IComparable<UserId>, IComparable
     {

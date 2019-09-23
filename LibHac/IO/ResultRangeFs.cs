@@ -1,4 +1,4 @@
-﻿namespace LibHac.IO
+﻿namespace LibHac.Fs
 {
     public static class ResultRangeFs
     {

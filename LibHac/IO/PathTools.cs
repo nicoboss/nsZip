@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.IO.Enumeration;
 #endif
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public static class PathTools
     {

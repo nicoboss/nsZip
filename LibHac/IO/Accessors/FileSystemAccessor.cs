@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LibHac.IO.Accessors
+namespace LibHac.Fs.Accessors
 {
     public class FileSystemAccessor
     {

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using LibHac.IO.Accessors;
+using LibHac.Fs.Accessors;
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     public class FileSystemManager
     {

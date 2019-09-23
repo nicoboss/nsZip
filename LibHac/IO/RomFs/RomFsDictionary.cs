@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace LibHac.IO.RomFs
+namespace LibHac.Fs.RomFs
 {
     // todo: Change constraint to "unmanaged" after updating to
     // a newer SDK https://github.com/dotnet/csharplang/issues/1937

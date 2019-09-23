@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 #endif
 
-namespace LibHac.IO
+namespace LibHac.Fs
 {
     /// <summary>
     /// An <see cref="IFileSystem"/> that stores large files as smaller, separate sub-files.
