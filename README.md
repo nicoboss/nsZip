@@ -2,6 +2,9 @@
 
 Work in progress file format for compressed Nintendo Switch games and a tool to compress/decompress them.
 
+## Please note that nsZip currently only supports the depreciated NSZP but not the new homebrew compatible NSZ file format so I highly recommend to use https://github.com/nicoboss/nsz instead.
+
+
 # NSZ file format:
 ## Header:
 | Offset|Size |Description                    |
